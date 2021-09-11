@@ -200,5 +200,3 @@ Adding playbook to update GPDB and other extensions
 Converting Makefile.init from original project.
 
 Documenting how to make OS template for GPDB and GPFarmer.
-
-Test
