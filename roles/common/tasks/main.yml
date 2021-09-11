@@ -1,0 +1,16 @@
+---
+
+# Install Greenplum Database
+
+# for now fail if it's not a Red Hat based system
+- name: Check OS ( GPDB )
+  fail: msg="Not a Red Hat based system!"
+  when: ansible_os_family != 'RedHat'
+
+- name: Installation of common for Red Hat / CentOS
+  include: common-install.yml
+  tags: install
+
+- name: Uninstallation of common for Red Hat / CentOS
+  include: common-uninstall.yml
+  tags: uninstall

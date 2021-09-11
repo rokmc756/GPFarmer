@@ -1,0 +1,16 @@
+---
+madlib_major_version: 1
+madlib_minor_version: 18
+madlib_patch_version:
+madlib_gpdb_version: .0+2-gp6
+madlib_rhel_version: rhel7
+madlib_database_name: madlib_testdb
+madlib_mdw_hostname: mdw6
+
+# madlib-1.15.1-gp5-rhel7-x86_64.tar.gza
+# madlib-1.15.1-gp5-rhel6-x86_64.tar.gz
+# madlib-1.15.1-gp4.3orca-rhel5-x86_64.tar.gz
+# madlib-1.16+3-gp6-rhel7-x86_64.tar.gz
+# madlib-1.17.0+9-gp6-rhel7-x86_64.tar.gz
+# madlib-1.17.0+9-gp6-rhel7-x86_64.tar.gz
+# madlib-1.18.0+2-gp6-rhel7-x86_64.tar.gz

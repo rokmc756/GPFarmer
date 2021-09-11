@@ -1,0 +1,7 @@
+ansible_ssh_pass: changeme
+ansible_become_pass: rmsidwoalfh
+gpadmin_home_dir: "/home/gpadmin"
+gpdb_base_dir: "/usr/local"
+gpdb_data_dir: "/data"
+gpcc_base_dir: "/usr/local"
+gptext_base_dir: "/usr/local"

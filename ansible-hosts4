@@ -1,0 +1,15 @@
+[all:vars]
+ssh_key_filename="id_rsa"
+remote_machine_username="gpadmin"
+remote_machine_password="changeme"
+
+[master]
+mdw4 ansible_ssh_host=192.168.0.41
+
+[standby]
+smdw4 ansible_ssh_host=192.168.0.42
+
+[segments]
+sdw4-01 ansible_ssh_host=192.168.0.43
+sdw4-02 ansible_ssh_host=192.168.0.44
+sdw4-03 ansible_ssh_host=192.168.0.45

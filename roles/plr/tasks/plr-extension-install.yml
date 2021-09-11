@@ -1,0 +1,82 @@
+---
+
+# Install plr extention on Greenplum database
+
+- name: Check if the GPDB software is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db
+  register: gpdb_installed
+
+- name: Stop if GPDB software is not installed
+  fail: msg="Greenplum Database software is not installed!"
+  when: gpdb_installed.stat.exists != True
+
+- name: Verify that database is up and running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  register: select_version
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+- name: Verify if plr gppkg is installed
+  become_user: gpadmin
+  command: 'rpm -q plr --dbpath /usr/local/greenplum-db/share/packages/database'
+  ignore_errors: true
+  register: plr_installed
+  changed_when: False
+  when: inventory_hostname in groups['master']
+
+- name: Stop if plr gppkg package is not installed
+  fail: msg="plr gppkg package is not installed!"
+  when:
+    - inventory_hostname in groups['master']
+    - "'package plr is not installed' not in plr_installed.stdout"
+
+- name: Copy plr gppkg file
+  copy: src=plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_rhel_version }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  when:
+    - inventory_hostname in groups['master']
+    - "'package plr is not installed' in plr_installed.stdout"
+
+- name: Install plr package
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_rhel_version }}-x86_64.gppkg )
+  when:
+    - inventory_hostname in groups['master']
+    - "'package plr is not installed' in plr_installed.stdout"
+
+- name: Restart GPDB and apply parameters for plr in greenplum_path.sh
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Verify that database for plr is installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plr_database_name }}'" )
+  register: plr_database_installed
+  when: inventory_hostname in groups['master']
+
+- name: Create database for plr
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plr_database_name }} )
+  register: plr_database_created
+  when: "'100' not in plr_database_installed.stdout"
+
+- name: Enabling PL/R Language Support for GPDB 4.x
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createlang plr -d {{ plr_database_name }} )
+  register: plr_language_support_enabled
+  when:
+    - plr_gpdb_version == "GPDB4.3"
+    - "'100' not in plr_database_installed.stdout"
+
+- name: Enabling PL/R Language Support for GPDB 6.x
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c "CREATE EXTENSION plr;" )
+  register: plr_language_support_enabled
+  when:
+    - plr_gpdb_version == "gpdb6"
+    - "'100' not in plr_database_installed.stdout"

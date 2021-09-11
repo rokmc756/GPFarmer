@@ -1,0 +1,283 @@
+---
+
+# Install PLContainer extention on Greenplum database
+
+- name: Check if the GPDB software is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db
+  register: gpdb_installed
+
+- name: Stop if GPDB software is not installed
+  fail: msg="Greenplum Database software is not installed!"
+  when: gpdb_installed.stat.exists != True
+
+- name: Get Kernel version
+  shell: uname -r | egrep '^[0-9]*\.[0-9]*' -o
+  register: kernel_shell_output
+
+- debug: msg={{ kernel_shell_output.stdout}}
+
+- name: Stop installing plcontainer due to kernel version not enough
+  fail: msg="{{ kernel_shell_output.stdout }} - Kernel version should be higher than 3.10"
+  when: kernel_shell_output.stdout < "3.10"
+
+- name: Install the dependencies required for Docker
+  yum: name={{ item }} state=present
+  with_items:
+    - yum-utils
+    - device-mapper-persistent-data
+    - lvm2
+  register: dependent_packages_intalled
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" ) and ansible_distribution_major_version|int >= 5
+
+- name: Add the Docker repo
+  get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+  register: docker_repo_added
+
+- name: Copy CentOS extra repo for dependent packages of docker-ce
+  become_user: root
+  copy: src=CentOS-7-extra.repo dest=/etc/yum.repos.d/ mode=0644 owner=root group=root
+  register: centos_extra_repo_copied
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Update yum cache
+  become_user: gpadmin
+  changed_when: False
+  shell: sudo yum makecache fast
+  register: yum_cache_updated
+
+- name: Install Docker
+  yum: name={{ item }} state=present
+  with_items:
+    - docker-ce
+  register: doker_installed
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" ) and ansible_distribution_major_version|int >= 5
+
+- name: Start Docker daemon
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+    masked: no
+  register: docker_daemon_enabled_and_started
+
+- name: Assign the Greenplum Database administrator gpadmin to the group docker
+  become_user: gpadmin
+  changed_when: False
+  shell: sudo usermod -aG docker gpadmin
+  register: to_docker_group_assigned
+
+- name: Change permission for docker socket
+  become_user: gpadmin
+  changed_when: False
+  shell: sudo chmod 666 /var/run/docker.sock; sudo chown root.docker /var/run/docker.sock
+  register: docker_permission_changed
+
+- name: Lists the currently running Docker containers.
+  become_user: gpadmin
+  changed_when: False
+  shell: sudo docker ps
+  register: ps_docker_listed
+
+- name: Restart the Greenplum Database system to give Greenplum Database access to Docker.
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Verify that database is up and running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  register: running_database_checked
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in running_database_checked.stdout"
+
+- name: Verify if plcontainer gppkg is installed
+  become_user: gpadmin
+  command: 'rpm -q plcontainer --dbpath /usr/local/greenplum-db/share/packages/database'
+  ignore_errors: true
+  register: plcontainer_installed
+  changed_when: False
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Stop if plcontainer gppkg package is not installed
+  fail: msg="plcontainer gppkg package is already installed!"
+  when:
+    - inventory_hostname in groups['master']
+    - "'package plcontainer is not installed' not in plcontainer_installed.stdout"
+
+- name: Copy plcontainer gppkg file
+  copy: src=plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}-{{ plcontainer_rhel_version }}_x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  register: plcontainer_gppkg_copied
+  when:
+    - inventory_hostname in groups['master']
+    - "'package plcontainer is not installed' in plcontainer_installed.stdout"
+
+- name: Install plcontainer package
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}-{{ plcontainer_rhel_version }}_x86_64.gppkg )
+  register: plcontainer_plcontainer_installed
+  when:
+    - inventory_hostname in groups['master']
+    - "'package plcontainer is not installed' in plcontainer_installed.stdout"
+
+- name: Verify if plr gppkg is installed
+  become_user: gpadmin
+  command: 'rpm -q plr --dbpath /usr/local/greenplum-db/share/packages/database'
+  ignore_errors: true
+  register: plr_installed
+  changed_when: False
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Stop if plr gppkg package is not installed
+  fail: msg="plr gppkg package is already installed!"
+  when:
+    - inventory_hostname in groups['master']
+    - "'package plr is not installed' not in plr_installed.stdout"
+
+- name: Copy plr gppkg file
+  copy: src=plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_rhel_version }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  register: plr_gppkg_copied
+  when:
+    - inventory_hostname in groups['master']
+    - "'package plr is not installed' in plr_installed.stdout"
+
+- name: Install plr package
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_rhel_version }}-x86_64.gppkg )
+  register: plr_gppkg_installed
+  when:
+    - inventory_hostname in groups['master']
+    - "'package plr is not installed' in plr_installed.stdout"
+
+- name: Restart GPDB and apply parameters for plcontainer in greenplum_path.sh
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Add the plc_coordinator shared library to the Greenplum Database shared_preload_libraries parameter.
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -s shared_preload_libraries )
+  register: plcontainer_shared_library_added
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Verify that database for plcontainer is installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plcontainer_database_name }}'" )
+  register: plcontainer_database_installed
+  when: inventory_hostname in groups['master']
+
+- name: Create database for plcontainer
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plcontainer_database_name }} )
+  register: plcontainer_database_created
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' not in plcontainer_database_installed.stdout"
+
+- name: Create plcontainer extension for a database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plcontainer_database_name }} -c "CREATE EXTENSION plcontainer" )
+  register: plcontainer_extension_database_created
+  when:
+    - inventory_hostname in groups['master']
+    - plcontainer_database_created.rc == 0
+
+- name: Verify that database for plr is installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plr_database_name }}'" )
+  register: plr_database_installed
+  when: inventory_hostname in groups['master']
+
+- name: Create database for plr
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plr_database_name }} )
+  register: plr_database_created
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' not in plr_database_installed.stdout"
+
+- name: Create plr extension for a database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c "CREATE EXTENSION plr" )
+  register: plr_extension_database_created
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' in plr_database_installed.stdout"
+
+- name: Copy plcontainer python docker image
+  copy: src=plcontainer-python-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  register: python_docker_image_copied
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Copy plcontainer python3 docker gppkg file
+  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  register: python3_docker_image_copied
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Copy plcontainer R docker image
+  copy: src=plcontainer-r-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  register: r_docker_image_copied
+  when:
+    - inventory_hostname in groups['master']
+
+# - name: Copy plcontainer R beta docker image
+#  copy: src=plcontainer-r-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+#  when:
+#    - inventory_hostname in groups['master']
+#    - "'package plcontainer is not installed' in plcontainer_installed.stdout"
+
+- name: Display the installed Docker images
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && plcontainer image-list )
+  register: installed_docker_images_listed
+  when:
+    - inventory_hostname in groups['master']
+
+# Add a Python 2 based runtime
+- name: Add a Python 2 based runtime
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && plcontainer runtime-add -r plc_python_shared -i pivotaldata/plcontainer_python_shared:devel -l python )
+  register: python3_based_runtime_added
+  when:
+    - inventory_hostname in groups['master']
+    - "{{ installed_docker_images_listed.stdout.find('plc_python_shared') != -1 }}"
+
+- name: Add a Python 3 based runtime that is supported with PL/Container 2.1.x
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && plcontainer runtime-add -r plc_python3_shared -i pivotaldata/plcontainer_python3_shared:devel -l python3 )
+  register: python3_based_runtime_added
+  when:
+    - inventory_hostname in groups['master']
+    - "{{ installed_docker_images_listed.stdout.find('plc_r_shared') != -1 }}"
+
+- name: Add an R based runtime
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && plcontainer runtime-add -r plc_r_shared -i pivotaldata/plcontainer_r_shared:devel -l r )
+  register: r_based_runtime_added
+  when:
+    - inventory_hostname in groups['master']
+    - "{{ installed_docker_images_listed.stdout.find('plc_python3_shared') != -1 }}"
+
+- name: List the names of the runtimes your created and added to the PL/Container XML file
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && plcontainer runtime-show )
+  register: plcontainer_runtime_listed
+  when: inventory_hostname in groups['master']
+
+- name: Print list of the names of the runtimes
+  debug: msg={{ plcontainer_runtime_listed }}
+  when: inventory_hostname in groups['master']

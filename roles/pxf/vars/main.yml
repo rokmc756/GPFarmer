@@ -1,0 +1,11 @@
+---
+pxf_major_version: 5
+pxf_minor_version: 15.1
+pxf_patch_version: 2
+pxf_gpdb_version: gp6
+pxf_rhel_version: el7
+pxf_database_name: pxf_testdb
+pxf_mdw_hostname: mdw6
+pxf_username: pxf_user
+pxf_setup_action: "{{ setup_action }}"
+# pxf-gp6-5.15.1-2.el7.x86_64.rpm

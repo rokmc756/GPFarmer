@@ -1,0 +1,68 @@
+- Need to add cgroup feature
+In RHEL 7 the following command should be run and gpdb.conf file should be configured.
+$ yum install libcgroup libcgroup-tools
+$ modprobe netprio_cgroup
+
+$ sudo vi /etc/cgconfig.d/gpdb.conf
+group gpdb {
+     perm {
+         task {
+             uid = gpadmin;
+             gid = gpadmin;
+         }
+         admin {
+             uid = gpadmin;
+             gid = gpadmin;
+         }
+     }
+     cpu {
+     }
+     cpuacct {
+     }
+     cpuset {
+     }
+     memory {
+     }
+} 
+
+
+
+https://linuxize.com/post/how-to-add-user-to-sudoers-in-centos/featured.jpg
+ZiSu Hyun 10:28 AM
+IP : 172.16.127.174 , HOSTNAME :
+scanning for old ssh keys, adding new keys to ‘./known_hosts’ file
+# 172.16.127.174:22 SSH-2.0-OpenSSH_7.4
+# 172.16.127.174:22 SSH-2.0-OpenSSH_7.4
+# 172.16.127.174:22 SSH-2.0-OpenSSH_7.4
+Pinging target host: 172.16.127.174
+172.16.127.174 | FAILED! => {
+    “msg”: “to use the ‘ssh’ connection type with passwords, you must install the sshpass program”
+}
+It will init host 172.16.127.175 and install ssh key and basic packages
+Note: NEVER use this step to init a host in an untrusted network!
+Note: this will OVERWRITE any existing keys on the host!
+3 seconds to abort ...
+Jack Moon 10:31 AM
+brew install https://raw.githubusercontent.com/kadwanev/bigboybrew/master/Library/Formula/sshpass.rb
+Jack Moon 12:12 PM
+https://github.com/greenplum-db/gpdb/pull/9318
+
+ashwinstarashwinstar
+#9318 Change default value of wal_sender_timeout GUC
+Based on reports from field for GPDB, 1 min of wal_sender_timeout GUC  
+is causing primary to terminate the replication connection too often  
+in heavy workload situations. This causes mirror to be marked down and  
+piles up WAL on primary. This is moslty seen in configurations where  
+fsync takes long time on mirrors. Hence, would be helpful to have  
+Show more
+Comments
+1
+<https://github.com/greenplum-db/gpdb|greenplum-db/gpdb>greenplum-db/gpdb | Dec 27th | Added by GitHub
+
+
+
+
+
+Jack Moon 12:21 PM
+gpdb_install FACT 변수로 변경할것
+수행시 실패가 되게 되면 바이너리 설치이후에  실패가 되면 gpdb_install 변수가 휘발성으로 날라가서 True 를 기억하지 못함

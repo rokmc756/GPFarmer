@@ -1,0 +1,9 @@
+---
+plr_prefix_major_version:
+plr_major_version: 2
+plr_minor_version: 3
+plr_patch_version: 3
+plr_gpdb_version: GPDB4.3
+plr_rhel_version: rhel6
+plr_database_name: plr_testdb
+plr_schema_name: plr_test_scheme

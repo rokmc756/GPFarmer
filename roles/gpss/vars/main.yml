@@ -1,0 +1,44 @@
+---
+gpss_major_version: 1
+gpss_minor_version: 6.0
+gpss_patch_version:
+gpss_gpdb_version: gpdb6
+gpss_rhel_version: rhel7
+gpss_database_name: testdb
+gpss_mdw_hostname: mdw6
+gpss_setup_action: "{{ setup_action }}"
+#  gpss-gpdb6-1.6.0-rhel7-x86_64.tar.gz
+
+gpss_file_vars:
+  - bin/gpkafka
+  - bin/gpss
+  - bin/gpsscli
+  - bin/kafkacat
+  - lib/postgresql/gpfmt_gpss.so
+  - lib/postgresql/gpfmt_protobuf.so
+  - lib/postgresql/gpss.so
+  - lib/librdkafka.so
+  - lib/librdkafka.so.1
+  - lib/libserdes.so
+  - lib/libserdes.so.1
+  - share/postgresql/extension/dataflow--1.0.sql
+  - share/postgresql/extension/dataflow.control
+  - share/postgresql/extension/gpss--1.0.sql
+  - share/postgresql/extension/gpss.control
+  - open_source_license_VMware_Tanzu_Greenplum_Streaming_Server_1.6.0_GA.txt
+
+#  - { id: 2, name: bin/gpss }
+#  - { id: 3, name: bin/gpsscli }
+#  - { id: 4, name: bin/kafkacat }
+#  - { id: 5, name: lib/postgresql/gpfmt_gpss.so }
+#  - { id: 6, name: lib/postgresql/gpfmt_protobuf.so }
+#  - { id: 7, name: lib/postgresql/gpss.so }
+#  - { id: 8, name: lib/librdkafka.so }
+#  - { id: 9, name: lib/librdkafka.so.1 }
+#  - { id: 10, name: lib/libserdes.so }
+#  - { id: 11, name: lib/libserdes.so.1 }
+#  - { id: 12, name: share/postgresql/extension/dataflow--1.0.sql }
+#  - { id: 13, name: share/postgresql/extension/dataflow.control }
+#  - { id: 14, name: share/postgresql/extension/gpss--1.0.sql }
+#  - { id: 15, name: share/postgresql/extension/gpss.control }
+#  - { id: 16, name: open_source_license_VMware_Tanzu_Greenplum_Streaming_Server_1.6.0_GA.txt }

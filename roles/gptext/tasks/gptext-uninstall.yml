@@ -1,0 +1,66 @@
+---
+
+# Uninstall GPTEXT on Greenplum database
+
+- name: Check if the Greenplum Database software is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db
+  register: gpdb_installed
+
+- name: Stop if database software is not installed
+  fail: msg="Greenplum Database software is not installed!"
+  when: gpdb_installed.stat.exists != True
+
+- name: Verify that database is up and running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c 'SELECT VERSION();' )
+  register: select_version
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+  when:
+    - inventory_hostname in groups['master']
+ 
+- name: Check GPTEXT version
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ gptext_database_name }} -c "select gptext.version()" )
+  register: gptext_version
+  failed_when: "'Greenplum Text Analytics ' not in gptext_version.stdout"
+  when:
+    - inventory_hostname in groups['master']
+    - "'(Greenplum Database ' in select_version.stdout"
+
+- name: Uninstall GPTEXT
+  become_user: gpadmin
+  shell: |
+    . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpdb_base_dir }}/greenplum-text/greenplum-text_path.sh && gptext-uninstall <<EOF
+    y
+    EOF
+  async: 300
+  poll: 5
+  register: gptext_extension_uninstalled
+  changed_when: gptext_version == True
+  when:
+    - inventory_hostname in groups['master']
+    - "'Greenplum Text Analytics ' in gptext_version.stdout"
+
+- name: Check if symbolic link of Greenplum Text is still reamining
+  stat: path={{ gpdb_base_dir }}/greenplum-text
+  register: gptext_installed
+
+- name: Check if the directory of Greenplum Text is still reamining
+  stat: path={{ gpdb_base_dir }}/greenplum-text-{{ gptext_major_version }}.{{ gptext_minor_version }}
+  register: gptext_version_installed
+
+# It removes synlink / directory linked and including files in it
+- name: Remove if GPTEXT link is still remaining
+  file:
+    path: "{{ gpdb_base_dir }}/greenplum-text"
+    state: absent
+  when: gptext_installed.stat.islnk is defined and gptext_installed.stat.islnk
+
+# It might not be needed due to not working since above playbook already removed files and directory
+- name: Remove if GPTEXT directory is still remaining
+  file:
+    path: "{{ gpdb_base_dir }}/greenplum-text-{{ gptext_major_version }}.{{ gptext_minor_version }}"
+    state: absent
+  when: gptext_version_installed.stat.isdir is defined and gptext_version_installed.stat.isdir

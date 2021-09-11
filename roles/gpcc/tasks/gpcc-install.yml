@@ -1,0 +1,281 @@
+---
+# Install Greenplum Command Center v2 on Red Hat / CentOS
+
+- name: Get the specific ip address
+  set_fact:
+    prod_ip_addr_range: "{{ item }}"
+  when: "item | ipaddr('{{ gpcc_network_range }}')"
+  with_items: "{{ ansible_all_ipv4_addresses }}"
+
+- name: Check if the Greenplum Database software is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db
+  register: gpdb_installed
+
+- name: Stop if database software is not installed
+  fail: msg="Greenplum Database software is not installed!"
+  when: gpdb_installed.stat.exists != True
+
+- name: Verify that database is up and running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  register: select_version
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+# Status: Command Center software is installed
+- name: Set default values for run mode variables
+  set_fact:
+    gpcc_gpperfmon_install: False
+    gpcc_setup_cc_sne: False
+
+- name: Verify that gpperfmon is not installed (1)
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT COUNT(*) AS count FROM pg_database WHERE datname = 'gpperfmon'" )
+  register: select_gpperfmon
+
+- name: Add login to pg_hba.conf
+  lineinfile:
+    dest: /data/master/gpseg-1/pg_hba.conf
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { line: "local    gpperfmon   gpmon                           md5" , state: present }
+    - { line: "host     all         gpmon         127.0.0.1/28      md5" , state: present }
+    - { line: "host     all         gpmon         ::1/128           md5" , state: present }
+    - { line: "host     all         gpmon         {{ prod_ip_addr_range }}/24 md5" , state: present }
+  register: gpmon_pg_hba_config
+  when: select_gpperfmon.stdout.find('     0') != -1
+
+- name: Reload database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a && gpstart -a )
+  async: 120
+  poll: 5
+  changed_when: gpmon_pg_hba_config == True
+
+# - meta: end_play
+
+- name: Verify that gpperfmon is not installed (1)
+  set_fact:
+    gpcc_gpperfmon_install: True
+  when: select_gpperfmon.stdout.find('     0') != -1
+
+- name: Install gpperfmon agents
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpperfmon_install --enable --password '{{ gpcc_password }}' --port 5432 )
+  when: gpcc_gpperfmon_install == True
+
+- name: Check if the Command Center version is already installed
+  stat: path={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}
+  register: gpcc_installed
+
+- name: Copy Command Center zip file
+  copy: src=greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-{{ gpcc_rhel_name}}x86_64.zip dest={{ gpadmin_home_dir }}/gpcc.zip mode=0644 owner=gpadmin group=gpadmin
+  when: gpcc_installed.stat.exists != True
+
+- name: Remove old temp installer directory
+  file: path={{ gpadmin_home_dir }}/gpcc-tmp-install state=absent
+  changed_when: False
+  when: gpcc_installed.stat.exists != True
+
+- name: Create new temp installer directory
+  file: path={{ gpadmin_home_dir }}/gpcc-tmp-install state=directory owner=gpadmin group=gpadmin
+  changed_when: False
+  when: gpcc_installed.stat.exists != True
+
+- name: Unzip Command Center archive
+  unarchive: src={{ gpadmin_home_dir }}/gpcc.zip dest={{ gpadmin_home_dir }}/gpcc-tmp-install remote_src=yes owner=gpadmin group=gpadmin
+  when: gpcc_installed.stat.exists != True
+
+# make next tasks easier by not always using the Ansible variables in the filename
+- name: Rename .bin file
+  command: creates={{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpadmin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-LINUX-x86_64.bin {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin
+  when:
+   - gpcc_installed.stat.exists != True
+   - gpcc_major_version <= 3
+
+# make next tasks easier by not always using the Ansible variables in the filename
+- name: Rename .bin file
+  command: creates={{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpadmin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-{{ gpcc_rhel_name }}x86_64/gpccinstall-{{ gpcc_major_version }}.{{ gpcc_minor_version }} {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin
+  when:
+   - gpcc_installed.stat.exists != True
+   - gpcc_major_version < 6 and gpcc_major_version > 3
+
+# make next tasks easier by not always using the Ansible variables in the filename
+- name: Rename .bin file
+  command: creates={{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpadmin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-{{ gpcc_rhel_name }}x86_64/gpccinstall-{{ gpcc_major_version }}.{{ gpcc_minor_version }} {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin
+  when:
+   - gpcc_installed.stat.exists != True
+   - gpcc_major_version >= 6
+
+- name: Copy Command Center setup config file
+  copy: src=gpcc_config.ini dest={{ gpadmin_home_dir }}/gpcc_config.ini mode=0644 owner=gpadmin group=gpadmin
+  when: gpcc_installed.stat.exists != True and gpcc_major_version > 3
+
+- name: Copy Command Center setup config file
+  copy: src=gpcmdr_setup.ini dest={{ gpadmin_home_dir }}/gpcmdr_setup.ini mode=0644 owner=gpadmin group=gpadmin
+  when: gpcc_installed.stat.exists != True and gpcc_major_version <= 3
+
+- name: Copy Command Center install script file
+  copy: src=install_gpcc.sh dest={{ gpadmin_home_dir }}/install_gpcc.sh mode=0755 owner=gpadmin group=gpadmin
+  when: gpcc_installed.stat.exists != True and gpcc_major_version > 3
+
+- name: Check if directory for ssl keys is already created
+  stat: path={{ gpadmin_home_dir }}/certs
+  register: check_dir_sslkey_installed
+
+- name: Create new ssl directory
+  file: path={{ gpadmin_home_dir }}/certs state=directory owner=gpadmin group=gpadmin
+  changed_when: False
+  register: dir_sslkey_installed
+  when: check_dir_sslkey_installed.stat.exists != True
+
+- name: Create ssl key for GPCC access
+  become_user: gpadmin
+  shell: ( openssl req -newkey rsa:2048 -x509 -keyout {{ gpadmin_home_dir }}/certs/cert.pem -out {{ gpadmin_home_dir }}/certs/cert.pem -days 3650 -nodes -subj "/C=KR/ST=Seoul/L=GANGNAM/O=Pivotal/CN=jtest.pivotal.io/emailAddress=jomoon@pivotal.io" )
+
+- name: Install Comment Center Software 4 and later version
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gpadmin_home_dir }}/install_gpcc.sh )
+  when: gpcc_installed.stat.exists != True and gpcc_major_version > 3
+
+- name: Command Center instance URL
+  debug: msg="https://{{ inventory_hostname }}:28080/"
+  when: gpcc_setup_cc_sne == True
+# This will only work on the first run (secured by gpcc_installed.stat.exists != True)
+# Note: You hereby accept the license! Please see installer for remaining questions.
+- name: First accept license and make unattended installation possible
+  lineinfile:
+    dest: "{{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^more <<-EOF', line: 'cat <<-EOF', state: present, backrefs: no }
+    - { regexp: '^agreed=', line: 'agreed=1', state: present, backrefs: yes }
+    - { regexp: '^installPath=$', line: 'installPath={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}', state: present, backrefs: yes }
+    - { regexp: '^        pathVerification=', line: '        pathVerification=1', state: present, backrefs: yes }
+    - { regexp: '^    agreed=', line: '    agreed=1', state: present, backrefs: yes }
+  when: gpcc_installed.stat.exists != True and gpcc_major_version <= 3
+
+# By Jack
+# - Skip to install gpcc at standby master automatically
+# - Filter EOF error occured by modifing this file as using redirect option
+# - Skip to type hostname of stnadby master node.
+- name: Second make unattended installation possible
+  become_user: gpadmin
+  shell: ( sed -i '987c if\ [\ !\ -z\ \"\${GPHOME}\"\ ]\ &&\ [\ !\ -z\ \$standby\ ]\;\ then' {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin ;
+           sed -i '1022c tail\ -n\ +\${SKIP}\ \$0\ \|\ \${TAR}\ zxf\ -\ -C\ \${installPath}\ \>\ /dev/null\ 2\>\&1\;\ fnums\=\`ls\ \${installPath}\ \|\ wc\ -l\`' {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin ;
+           sed -i '1023c if\ [\ \$\?\ -eq\ 0\ ]\ &&\ [\ \$fnums\ -lt\ 1\ ]\;\ then' {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin )
+  when: gpcc_installed.stat.exists != True and gpcc_major_version <= 3
+
+- name: Install Comment Center Software in {{ gpcc_base_dir }}
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin )
+  when: gpcc_installed.stat.exists != True and gpcc_major_version <= 3
+
+- name: Create symlink to {{ gpcc_base_dir }}/greenplum-cc-web
+  file: src={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }} dest={{ gpcc_base_dir }}/greenplum-cc-web state=link
+  when: gpcc_major_version <= 6 and gpcc_minor_version < 2
+
+- name: Create symlink to {{ gpcc_base_dir }}/greenplum-cc
+  file: src={{ gpcc_base_dir }}/greenplum-cc-{{ gpcc_major_version }}.{{ gpcc_minor_version }} dest={{ gpcc_base_dir }}/greenplum-cc state=link
+  when: gpcc_major_version >= 6 and gpcc_minor_version >= 2
+
+- name: Remove temp installer directory
+  file: path={{ gpadmin_home_dir }}/gpcc-tmp-install state=absent
+  changed_when: False
+  when: gpcc_installed.stat.exists != True
+
+# the gpcc_path.sh from the new installation does not have $GPPERFMONHOME
+- name: Add GPPERFMONHOME to gpcc_path.sh
+  lineinfile:
+    dest: "{{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}/gpcc_path.sh"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^export GPPERFMONHOME=', line: 'export GPPERFMONHOME={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}', state: present }
+  when:
+    - gpcc_gpperfmon_install == True
+    - gpcc_major_version <= 6 and gpcc_minor_version < 2
+
+# the gpcc_path.sh from the new installation does not have $GPPERFMONHOME
+- name: Add GPPERFMONHOME to gpcc_path.sh
+  lineinfile:
+    dest: "{{ gpcc_base_dir }}/greenplum-cc-{{ gpcc_major_version }}.{{ gpcc_minor_version }}/gpcc_path.sh"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^export GPPERFMONHOME=', line: 'export GPPERFMONHOME={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}', state: present }
+  when:
+    - gpcc_gpperfmon_install == True
+    - gpcc_major_version >= 6 and gpcc_minor_version >= 2
+
+- name: Shutdown database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
+  when: gpcc_gpperfmon_install == True
+  async: 180
+  poll: 5
+
+- name: Start database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstart -a )
+  when: gpcc_gpperfmon_install == True
+  async: 180
+  poll: 5
+
+- name: Verify that gpperfmon is installed (1)
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT COUNT(*) AS count FROM pg_database WHERE datname = 'gpperfmon'" )
+  register: select_gpperfmon
+
+- name: Verify that gpperfmon is not installed (1)
+  fail: msg="gpperfmon agents are not installed!"
+  when: gpcc_gpperfmon_install == True and select_gpperfmon.stdout.find('     1') == -1
+
+- name: Verify that Command Center instance is installed (1)
+  stat: path={{ gpcc_base_dir }}/greenplum-cc-web/instances/sne/
+  register: gpcc_sne_configured
+
+- name: Verify that Command Center instance is installed (2)
+  set_fact:
+    gpcc_setup_cc_sne: True
+  when: gpcc_sne_configured.stat.exists != True
+
+- name: Change the name of web server in order to setup gpcc automatically
+  lineinfile:
+    dest: "{{ gpadmin_home_dir }}/gpcc_config.ini"
+    regexp: "web_port"
+    line: "webserver_port: 28080"
+  when: gpcc_setup_cc_sne == True and gpcc_major_version > 3
+
+- name: Change the name of web server in order to setup gpcc automatically
+  lineinfile:
+    dest: "{{ gpadmin_home_dir }}/gpcmdr_setup.ini"
+    regexp: "web_port"
+    line: "webserver_port: 28080"
+  when: gpcc_setup_cc_sne == True and gpcc_major_version <= 3
+
+- name: Setup Command Center instance for 3 and ealier versions
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_base_dir }}/greenplum-cc-web/gpcc_path.sh && gpcmdr --setup --config_file {{ gpadmin_home_dir }}/gpcmdr_setup.ini )
+  when: gpcc_setup_cc_sne == True and gpcc_major_version <= 3
+
+- name: Start Command Center instance for 4 and later versions
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_base_dir }}/greenplum-cc-web/gpcc_path.sh && gpcc start )
+  when: gpcc_setup_cc_sne == True and gpcc_major_version > 3 and gpcc_major_version <= 6  and gpcc_minor_version < 2
+
+- name: Start Command Center instance for 6 and later versions
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_base_dir }}/greenplum-cc/gpcc_path.sh && gpcc start )
+  when: gpcc_setup_cc_sne == True and gpcc_major_version >= 6 and gpcc_minor_version >= 2

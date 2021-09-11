@@ -1,0 +1,147 @@
+---
+# Uninstall Greenplum Command Center v2 on Red Hat / CentOS
+
+- name: Check if the Greenplum Database software is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db
+  register: gpdb_installed
+
+- name: Stop if database software is not installed
+  fail: msg="Greenplum Database software is not installed!"
+  when: gpdb_installed.stat.exists != True
+
+- name: Verify that database is up and running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  register: select_version
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+- name: Check if the Command Center version is already installed
+  stat: path={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}
+  register: gpcc_installed
+  when:
+   - gpcc_major_version <= 6 and gpcc_minor_version < 2
+
+- name: Check if the Command Center version is already installed
+  stat: path={{ gpcc_base_dir }}/greenplum-cc-{{ gpcc_major_version }}.{{ gpcc_minor_version }}
+  register: gpcc_installed
+  when:
+   - gpcc_major_version >= 6 and gpcc_minor_version >= 2
+
+- name: Fail if command center is not installed
+  fail: msg="GPCC is not installed!"
+  when: gpcc_installed.stat.exists == False
+
+- name: Stop Command Center instance for 3 and ealier versions
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_base_dir }}/greenplum-cc-web/gpcc_path.sh && gpcmdr --stop sne )
+  when:
+    - gpcc_installed.stat.exists == True
+    - gpcc_major_version <= 6 and gpcc_minor_version < 2
+
+- name: Stop Command Center instance for and later versions
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_base_dir }}/greenplum-cc/gpcc_path.sh && gpcc stop )
+  when:
+    - gpcc_installed.stat.exists == True
+    - gpcc_major_version >= 6 and gpcc_minor_version >= 2
+
+- name: Remove GPCC symlink and directories still remained
+  file:
+    owner: gpadmin
+    group: gpadmin
+    path: "{{ gpdb_base_dir }}/{{ item }}"
+    state: absent
+  with_items:
+    - "{{ gpcc_base_dir }}/greenplum-cc-web"
+    - "{{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}"
+  when:
+    - gpcc_installed.stat.exists == True
+    - gpcc_major_version <= 6 and gpcc_minor_version < 2
+
+- name: Remove GPCC symlink and directories still remained
+  file:
+    owner: gpadmin
+    group: gpadmin
+    path: "{{ gpdb_base_dir }}/{{ item }}"
+    state: absent
+  with_items:
+    - "{{ gpcc_base_dir }}/greenplum-cc"
+    - "{{ gpcc_base_dir }}/greenplum-cc-{{ gpcc_major_version }}.{{ gpcc_minor_version }}"
+  when:
+    - gpcc_installed.stat.exists == True
+    - gpcc_major_version >= 6 and gpcc_minor_version >= 2
+
+- name: Disable the data colleciton agents
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_enable_gpperfmon -v off )
+  register: gpperfmon_disabled
+
+    #- name: RHEL 6 and 7 Remove existing lines in pam_ldap.conf_new
+    #become: yes
+    #lineinfile:
+    #dest: pg_hba.conf
+    #state: absent
+    #regexp: "{{ item.regexp }}"
+    #line: "{{ item.line }}"
+    #when: (ansible_facts['distribution_major_version'] == "6") or (ansible_facts['distribution_major_version'] == "7")
+
+- name:  Remove out the gpmon entries in pg_hba.conf"
+  become: yes
+  become_user: gpadmin
+  lineinfile:
+    path: "{{ gpdb_master_data_dir }}/pg_hba.conf"
+    # String to Search
+    regexp: "gpmon"
+    # State is set to Absent to remove if the Searching Line is found
+    state: absent
+    backup: yes
+  register: gpmon_entries_removed
+
+- name: Drop the Command Center superuser role from the database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d postgres -c 'DROP {{ item }};' )
+  ignore_errors: yes
+  with_items:
+    - "function gpcc_schema.pghba_list_version()"
+    - "function gpcc_schema.pghba_check_reload(text)"
+    - "function gpcc_schema.replace_pghba(text,text,boolean)"
+    - "function gpcc_schema.write_pghba(text)"
+    - "function gpcc_schema.read_pghba(text)"
+    - "table gpcc_schema.pghba_lock"
+    - "function gpcc_schema.read_file(text)"
+  register: gpmon_role_denpendencies_dropped
+  #    - "table gpcc_schema.pghba_lock"
+
+- name: Drop the Command Center superuser role from the database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d template1 -c 'DROP ROLE gpmon;' )
+  ignore_errors: yes
+  register: gpmon_role_dropped
+  when: gpmon_role_denpendencies_dropped.rc != 0
+
+- name: Restart GPDB
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 180
+  poll: 5
+  register: gpdb_restarted
+
+- name: Clean up any uncommitted Command Center data and log files that reside on the master file system
+  become_user: gpadmin
+  shell: ( rm -rf {{ gpdb_master_data_dir }}/gpperfmon/{{ item }}/* )
+  register: gpcc_data_logs_cleaned
+  with_items:
+    - data
+    - logs
+
+- name: Drop the gpperfmon database if you do not want to keep your historical Command Center data
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb gpperfmon )
+  async: 180
+  poll: 5
+
+- meta: end_play

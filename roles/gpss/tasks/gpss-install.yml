@@ -1,0 +1,124 @@
+---
+
+# Install gpss extention on Greenplum database
+
+- name: Check if the GPDB software is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db
+  register: gpdb_installed
+
+- name: Stop if GPDB software is not installed
+  fail: msg="Greenplum Database software is not installed!"
+  when: gpdb_installed.stat.exists != True
+
+- name: Verify that database is up and running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  register: select_version
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+- name: Copy GPSS tarball file
+  become_user: gpadmin
+  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Untar GPSS tarball archive
+  become_user: gpadmin
+  unarchive: src={{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} copy=no owner=gpadmin group=gpadmin
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Install GPSS tarball in {{ gpdb_base_dir }}
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && cd {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64/ ; ./install_gpdb_component )
+  async: 120
+  poll: 5
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Verify if GPSS gppkg is installed
+  become_user: gpadmin
+  command: 'rpm -q gpss --dbpath /usr/local/greenplum-db/share/packages/database'
+  register: select_gpss_version
+  when:
+    - inventory_hostname in groups['master']
+  failed_when:
+    - select_gpss_version.rc != 1
+#  #ignore_warnings: True
+#  ## command: '/usr/bin/rpm -qa custom-rpm --queryformat %{VERSION}'
+ 
+- name: Stop if GPSS gppkg package is installed
+  fail: msg="GPSS gppkg package is alredy installed!"
+  when:
+    - inventory_hostname in groups['master']
+    - "'package gpss is not installed' not in select_gpss_version.stdout"
+
+- name: Copy GPSS gppkg file
+  become_user: gpadmin
+  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  when:
+    - inventory_hostname in groups['master']  # etl host
+
+- name: Install GPSS gppkg package
+  become_user: gpadmin
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.gppkg )
+  when:
+    - inventory_hostname in groups['master']  # etl host
+
+- name: Verify that database for GPSS extention is installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ gpss_database_name }}'" )
+  register: gpss_database_installed
+  when: inventory_hostname in groups['master']
+
+- name: Create database for GPSS
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ gpss_database_name }} )
+  register: gpss_database_created
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' not in gpss_database_installed.stdout"
+
+- name: Create extension for GPSS
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ gpss_database_name }} -tAc "CREATE extension gpss" )
+  register: gpss_extension_installed
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' not in gpss_database_installed.stdout"
+
+- name: "Check if GPSS rpm package is installed"
+  package_facts:
+    manager: "auto"
+  when:
+    - inventory_hostname in groups['master']  # etl host
+
+- name: Stop if GPSS rpm package is installed
+  fail: msg="GPSS rpm package is already installed!"
+  when:
+   - inventory_hostname in groups['master']  # etl host
+   - "'gpss' in ansible_facts.packages"
+
+- name: Copy GPSS rpm package
+  become_user: root # etl user
+  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.rpm dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  when:
+    - inventory_hostname in groups['master']  # etl host
+
+- name: Install GPSS rpm package in {{ gpdb_base_dir }}
+  become_user: root # etl user
+  yum:
+    name: /home/gpadmin/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.rpm
+    state: present
+  async: 60
+  poll: 5
+  when:
+    - inventory_hostname in groups['master']  # etl host
+
+- name: Before using the GPSS ETL tools
+  become_user: root # etl user
+  shell: ( . /usr/local/gpss/gpss_path.sh )
+  when:
+    - inventory_hostname in groups['master']  # etl host

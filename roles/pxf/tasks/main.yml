@@ -1,0 +1,21 @@
+---
+
+# Install PXF for GPDB
+
+# for now fail if it's not a Red Hat based system
+- name: Check OS ( GPDB )
+  fail: msg="Not a Red Hat based system!"
+  when: ansible_os_family != 'RedHat'
+
+- name: Installation of pxf for Red Hat / CentOS
+  include: pxf-install.yml
+  tags: install
+
+- name: Uninstallation of pxf for Red Hat / CentOS
+  include: pxf-uninstall.yml
+  tags: uninstall
+
+- name: Upgrade of pxf for Red Hat / CentOS
+  include: pxf-upgrade.yml
+  tags: upgrade.yml
+

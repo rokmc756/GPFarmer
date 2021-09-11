@@ -1,0 +1,572 @@
+---
+
+# Install Greenplum Database on Red Hat / CentOS
+
+# new installation: {{ gpdb_base_dir }}/greenplum-db must not exist
+#          upgrade: {{ gpdb_base_dir }}/greenplum-db-{ new version } must not exist
+#       linkchange: {{ gpdb_base_dir }} /greenplum-db points to another directory
+
+- name: Detect Google Cloud
+  stat: path=/etc/yum.repos.d/google-cloud.repo
+  register: google_cloud_detect
+
+- name: Register Google Cloud
+  set_fact:
+    google_cloud: true
+  when: google_cloud_detect.stat.exists
+
+- name: Check if any version of Greenplum Database is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db
+  register: gpdb_installed
+
+- name: Check if the Greenplum Database version is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}
+  register: gpdb_version_installed
+
+- name: Sanity check for {{ gpdb_base_dir }}/greenplum-db
+  fail: msg="{{ gpdb_base_dir }}/greenplum-db is supposed to be a symlink!"
+  when: gpdb_installed.stat.exists == True and gpdb_installed.stat.islnk != True
+
+- name: Set name for binary installer file (name includes build number)
+  set_fact:
+    binary_installer_file: greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}-{{ gpdb_rhel_name }}-x86_64
+  when: gpdb_build_version is defined and gpdb_build_version != None
+
+- name: Set name for binary installer file (name does not include build number)
+  set_fact:
+    binary_installer_file: greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}-{{ gpdb_rhel_name }}-x86_64
+  when: gpdb_build_version is not defined or (gpdb_build_version is defined and gpdb_build_version == None)
+
+- name: Get the specific ip addresses to be used
+  set_fact:
+    prod_ip_addr: "{{ item }}"
+  when: "item | ipaddr(' {{ gpdb_network_range }}/24')"
+  with_items: "{{ ansible_all_ipv4_addresses }}"
+
+- name: Set default values for run mode variables
+  set_fact:
+    gpdb_install: False
+    gpdb_upgrade: False
+    gpdb_linkchange: False
+
+# Non-existent {{ gpdb_base_dir }}/greenplum-db is a new installation
+- name: Identify Greenplum Database Installation
+  set_fact:
+    gpdb_install: True
+  when: gpdb_installed.stat.exists != True
+
+# If {{ gpdb_base_dir }}/greenplum-db-{ new version } does not exists, it's an upgrade
+- name: Identify Greenplum Database Upgrade
+  set_fact:
+    gpdb_upgrade: True
+  when: gpdb_installed.stat.exists == True and gpdb_version_installed.stat.exists != True
+
+# If the link points to a different existing directory, it's a link change
+- name: Identify Greenplum Database Linkchange
+  set_fact:
+    gpdb_linkchange: True
+  when: gpdb_installed.stat.exists == True and gpdb_version_installed.stat.exists == True and gpdb_installed.stat.lnk_source != "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}"
+
+- name: Greenplum Database Installation
+  debug: msg="New Greenplum Database installation"
+  when: gpdb_install == True
+
+- name: Greenplum Database Upgrade
+  debug: msg="Upgrading Greenplum Database"
+  when: gpdb_upgrade == True
+
+- name: Greenplum Database Linkchange
+  debug: msg="Changing link to Greenplum Database version"
+  when: gpdb_linkchange == True
+
+- name: Greenplum Database - Nothing to do
+  debug: msg="Nothing to do (no installation/upgrade required)"
+  when: gpdb_install == False and gpdb_upgrade == False and gpdb_linkchange == False
+
+
+###########################################################
+# Basic system setup
+
+- name: gpadmin group
+  group: name=gpadmin state=present
+
+# do not create ssh keys
+# this conflicts somehow with gpssh-exkeys
+- name: gpadmin user
+  user: name=gpadmin password="{{ 'changeme' | password_hash('sha512') }}" comment='Greenplum Administrator' createhome=yes shell=/bin/bash generate_ssh_key=no groups=gpadmin append=yes state=present
+  changed_when: False
+
+- name: Fix ownership for {{ gpdb_base_dir }}
+  file: path={{ gpdb_base_dir }} state=directory mode=0755 owner=gpadmin group=gpadmin
+
+# Need to check if it works
+- name: Stop and disable iptables
+  service: name=iptables state=stopped enabled=no
+  changed_when: False
+  when:
+    - hostvars[inventory_hostname].ansible_distribution_major_version == 6 or hostvars[inventory_hostname].ansible_distribution_major_version == 5
+
+- name: Stop and disable firewalld
+  service: name=firewalld state=stopped enabled=no
+  changed_when: False
+  when:
+    - hostvars[inventory_hostname].ansible_distribution_major_version == 7
+
+- name: Disable selinux
+  selinux: state=disabled
+  notify:
+    - restart system
+    - waiting for server to come back after reboot
+
+- name: Modify /etc/sysctl.conf
+  lineinfile:
+    dest: /etc/sysctl.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^kernel.shmmax', line: '{{ gpdb_kernel_shmmax }}', state: present }
+    - { regexp: '^kernel.shmmni', line: '{{ gpdb_kernel_shmmni }}', state: present }
+    - { regexp: '^kernel.shmall', line: '{{ gpdb_kernel_shmall }}', state: present }
+    - { regexp: '^kernel.sem', line: '{{ gpdb_kernel_sem }}', state: present }
+    - { regexp: '^kernel.sysrq', line: '{{ gpdb_kernel_sysrq }}', state: present }
+    - { regexp: '^kernel.core_uses_pid', line: '{{ gpdb_kernel_core_uses_pid }}', state: present }
+    - { regexp: '^kernel.msgmnb', line: '{{ gpdb_kernel_msgmnb }}', state: present }
+    - { regexp: '^kernel.msgmax', line: '{{ gpdb_kernel_msgmax }}', state: present }
+    - { regexp: '^kernel.msgmni', line: '{{ gpdb_kernel_msgmni }}', state: present }
+    - { regexp: '^net.ipv4.tcp_syncookies', line: '{{ gpdb_net_ipv4_tcp_syncookies }}', state: present }
+    - { regexp: '^net.ipv4.ip_forward', line: '{{ gpdb_net_ipv4_ip_forward }}', state: present }
+    - { regexp: '^net.ipv4.conf.default.accept_source_route', line: '{{ gpdb_net_ipv4_conf_default_accept_source_route }}', state: present }
+    - { regexp: '^net.ipv4.tcp_tw_recycle', line: '{{ gpdb_net_ipv4_tcp_tw_recycle }}', state: present }
+    - { regexp: '^net.ipv4.tcp_max_syn_backlog', line: '{{ gpdb_net_ipv4_tcp_max_syn_backlog }}', state: present }
+    - { regexp: '^net.ipv4.conf.all.arp_filter', line: '{{ gpdb_net_ipv4_conf_all_arp_filter }}', state: present }
+    - { regexp: '^net.ipv4.ip_local_port_range', line: '{{ gpdb_net_ipv4_ip_local_port_range }}', state: present }
+    - { regexp: '^net.core.netdev_max_backlog', line: '{{ gpdb_net_core_netdev_max_backlog }}', state: present }
+    - { regexp: '^net.core.rmem_max', line: '{{ gpdb_net_core_rmem_max }}', state: present }
+    - { regexp: '^net.core.wmem_max', line: '{{ gpdb_net_core_wmem_max }}', state: present }
+    - { regexp: '^vm.overcommit_memory', line: '{{ gpdb_vm_overcommit_memory }}', state: present }
+  notify:
+    - reload sysctl
+
+- name: Modify /etc/ssh/sshd_config
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^PermitRootLogin', line: 'PermitRootLogin yes', state: present }
+  notify:
+    - reload sshd
+
+# move the security limits in it's own file,
+# instead of adding them to the main config file
+- name: Security limits
+  copy: src=security_limits.conf dest=/etc/security/limits.d/95-gpdb.conf
+  notify:
+    - restart system
+    - waiting for server to come back after reboot
+
+# FIXME: XFS options
+# FIXME: I/O scheduler
+
+- meta: flush_handlers
+
+###########################################################
+# Database installation
+
+- name: Create empty variable for data directories
+  set_fact: data_dirs=""
+  when:
+    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    - gpdb_install == True
+
+- name: Create empty variable for mirror data directories
+  set_fact: mirror_data_dirs=""
+  when:
+    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    - gpdb_mirror_enable == True and gpdb_install == True
+
+- name: Loop over number for primary segments
+  #debug: msg="data_dirs={{ item }}"
+  set_fact: data_dirs="{{ data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/primary"
+  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
+  when:
+    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    - gpdb_install == True
+
+- name: Loop over number for mirror segments
+  #debug: msg="data_dirs={{ item }}"
+  set_fact: mirror_data_dirs="{{ mirror_data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/mirror"
+  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
+  when:
+    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    - gpdb_mirror_enable == True and gpdb_install == True
+
+- name: Copy removal script
+  copy: src=remove_gpdb_installation.sh dest=/root/remove_gpdb_installation.sh mode=0755 owner=root group=root
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Copy Greenplum Database {{ gpdb_major_version }} {{ gpdb_binary_type }} file
+  copy: src={{ binary_installer_file }}.zip dest=/home/gpadmin/{{ binary_installer_file }}.zip mode=0644 owner=gpadmin group=gpadmin
+  when:
+    - gpdb_binary_type == 'zip'
+
+- name: Copy Greenplum Database {{ gpdb_major_version }} {{ gpdb_binary_type }} file
+  copy: src={{ binary_installer_file }}.rpm dest=/home/gpadmin/{{ binary_installer_file }}.rpm mode=0644 owner=gpadmin group=gpadmin
+  when:
+    - gpdb_binary_type == 'rpm'
+
+- name: Remove old temp installer directory
+  file: path=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install state=absent
+  changed_when: False
+  when:
+    - gpdb_install == True or gpdb_upgrade == True
+    #  - inventory_hostname in groups['master']
+
+- name: Create new temp installer directory
+  file: path=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install state=directory owner=gpadmin group=gpadmin
+  changed_when: False
+  when:
+    - gpdb_install == True or gpdb_upgrade == True
+    #  - inventory_hostname in groups['master']
+
+- block:
+  - name: Unzip Greenplum Database {{ gpdb_major_version }} archive (Ansible < 2.2)
+    unarchive: src=/home/gpadmin/{{ binary_installer_file }}.zip dest=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install remote_src=yes copy=no owner=gpadmin group=gpadmin
+    when: ansible_version.full is version_compare('2.2.0.0', operator='<', strict=False)
+
+  - name: Unzip Greenplum Database {{ gpdb_major_version }} archive (Ansible >= 2.2)
+    unarchive: src=/home/gpadmin/{{ binary_installer_file }}.zip dest=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install remote_src=yes owner=gpadmin group=gpadmin
+    when: ansible_version.full is version_compare('2.2.0.0', operator='>=', strict=False)
+
+  when:
+    - gpdb_install == True or gpdb_upgrade == True
+    - gpdb_binary_type != 'rpm'
+    # - gpdb_major_version == 4 or gpdb_major_version == 5
+    # - inventory_hostname in groups['master']
+
+# This will only work on the first run
+# Note: You hereby accept the license! Please see installer for remaining questions.
+- name: Accept license and make unattended installation possible
+  lineinfile:
+    dest: /home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install/{{ binary_installer_file }}.bin
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+    backrefs: "{{ item.backrefs }}"
+  with_items:
+    - { regexp: '^more << EOF', line: 'cat << EOF', state: present, backrefs: no }
+    - { regexp: '^agreed=', line: 'agreed=1', state: present, backrefs: yes }
+    - { regexp: '^pathVerification=', line: 'pathVerification=1', state: present, backrefs: yes }
+    - { regexp: '^validMigrateDecision=', line: 'validMigrateDecision=1', state: present, backrefs: yes }
+    - { regexp: '^user_specified_installPath=', line: 'user_specified_installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}', state: present, backrefs: yes }
+    - { regexp: '^installPath=', line: 'installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}', state: present, backrefs: yes }
+    - { regexp: '^    agreed=', line: '    agreed=1', state: present, backrefs: yes }
+  when:
+    - gpdb_install == True or gpdb_upgrade == True
+    - gpdb_binary_type != 'rpm'
+    #  - inventory_hostname in groups['master']
+
+#- name: fail
+#  fail: msg="stop here"
+
+- name: Check if database is running
+  stat: path=/tmp/.s.PGSQL.5432
+  register: gpdb_running
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_upgrade == True or gpdb_linkchange == True
+
+- name: Shutdown database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
+  async: 60
+  poll: 5
+  when:
+   - inventory_hostname in groups['master']
+   - (gpdb_upgrade == True or gpdb_linkchange == True) and gpdb_running.stat.exists == True
+
+- name: Install Greenplum Database software in {{ gpdb_base_dir }}
+  become_user: gpadmin
+  command: /home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install/{{ binary_installer_file }}.bin
+  async: 120
+  poll: 5
+  when:
+    - gpdb_install == True or gpdb_upgrade == True
+    - gpdb_initdb_single == True and seg_serialized_install == False
+    - gpdb_binary_type == 'zip'
+
+- name: Install Greenplum Database software in {{ gpdb_base_dir }}
+  yum:
+    name: /home/gpadmin/{{ binary_installer_file }}.rpm
+    state: present
+  async: 60
+  poll: 5
+  when:
+    - gpdb_install == True or gpdb_upgrade == True
+    - seg_serialized_install == False
+    - gpdb_binary_type == 'rpm'
+    # - gpdb_initdb_single == False and seg_serialized_install == False
+
+- name: Fix ownership for {{ gpdb_base_dir }}/greenplum-db
+  file: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }} state=directory mode=0755 owner=gpadmin group=gpadmin recurse=yes
+  #when:
+  #  - gpdb_binary_type == 'rpm'
+
+- name: Remove temp installer directory
+  file: path=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install state=absent
+  changed_when: False
+  when:
+    - gpdb_install == True or gpdb_upgrade == True
+    # - gpdb_major_version == 5 or gpdb_major_version == 4
+    # - inventory_hostname in groups['master']
+
+- name: Check again if the Greenplum Database version is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}
+  register: gpdb_version_installed_verify
+  #when:
+  #  - inventory_hostname in groups['master']
+
+- name: Stop if Greenplum Database software is not installed
+  fail: msg="Greenplum Database software is not installed!"
+  when:
+    - gpdb_version_installed_verify.stat.exists != True
+      #  - inventory_hostname in groups['master']
+
+
+# Status: database software is installed
+###########################################################
+# Database initialization
+
+- name: Copy gpinitsystem config file for single node
+  command: creates=/home/gpadmin/gpinitsystem_config cp -a {{ gpdb_base_dir }}/greenplum-db/docs/cli_help/gpconfigs/gpinitsystem_singlenode /home/gpadmin/gpinitsystem_config
+  when:
+   - inventory_hostname in groups['master']
+   - gpdb_install == True and gpdb_initdb_single == True
+
+- name: Copy gpinitsystem config file for multiple nodes
+  command: creates=/home/gpadmin/gpinitsystem_config cp -a {{ gpdb_base_dir }}/greenplum-db/docs/cli_help/gpconfigs/gpinitsystem_config /home/gpadmin/gpinitsystem_config
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_install == True and gpdb_initdb_single == False
+
+- name: Create hostfile file for single node
+  become_user: root
+  shell: "rm -f {{ playbook_dir }}/hostfile; sed -n $(( $( grep -n master {{ playbook_dir }}/ansible-hosts | cut -d ':' -f 1 ) + 1 ))p {{ playbook_dir }}/ansible-hosts | awk '{print $1}' > {{ playbook_dir }}/hostfile"
+  delegate_to: 127.0.0.1
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_install == True and gpdb_initdb_single == True
+
+#  become_user: root
+- name: Create hostfile file for multiple nodes
+  become_user: pivotal
+  shell: "rm -f {{ playbook_dir }}/hostfile;  tail -n +$(($( grep -n segments {{ playbook_dir }}/ansible-hosts | cut -d ':' -f 1 ) + 1)) {{ playbook_dir }}/ansible-hosts | awk '{print $1}' >> {{ playbook_dir }}/hostfile"
+  delegate_to: 127.0.0.1
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_install == True and gpdb_initdb_single == False
+
+- name: Copy hostfile files
+  copy: src={{ playbook_dir }}/hostfile dest=/home/gpadmin/hostfile owner=gpadmin group=gpadmin mode=0644
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_install == True
+
+- name: Fix permissions and ownership for gpinitsystem config file and hostlist file
+  file: path=/home/gpadmin/{{ item.path }} owner={{ item.owner }} group={{item.group }} mode={{ item.mode }}
+  with_items:
+    - { path: 'gpinitsystem_config', owner: 'gpadmin', group: 'gpadmin', mode: '0664' }
+    - { path: 'hostfile', owner: 'gpadmin', group: 'gpadmin', mode: '0700' }
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_install == True
+
+- name: Fix hostname in hostlist file
+  replace: dest=/home/gpadmin/hostfile regexp='^replace_this_with_hostname_of_your_machine$' replace='{{ ansible_hostname }}'
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_install == True
+
+- name: Fix settings in gpinitsystem config file
+  lineinfile:
+    dest: /home/gpadmin/gpinitsystem_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^MACHINE_LIST_FILE=', line: 'MACHINE_LIST_FILE=/home/gpadmin/hostfile', state: present }
+    - { regexp: '^declare -a DATA_DIRECTORY=', line: 'declare -a DATA_DIRECTORY=({{ data_dirs }} )', state: present }
+    - { regexp: '^MASTER_HOSTNAME=', line: 'MASTER_HOSTNAME={{ ansible_hostname }}', state: present }
+    - { regexp: '^MASTER_DIRECTORY=', line: 'MASTER_DIRECTORY={{ gpdb_data_dir }}/master', state: present }
+    - { regexp: '^#?DATABASE_NAME=', line: 'DATABASE_NAME=gpadmin', state: present }
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_install == True
+
+- name: Fix settings in gpinitsystem config file when enabling mirror
+  lineinfile:
+    dest: /home/gpadmin/gpinitsystem_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^#MIRROR_PORT_BASE=', line: 'MIRROR_PORT_BASE=21000', state: present }
+    - { regexp: '^#REPLICATION_PORT_BASE=', line: 'REPLICATION_PORT_BASE=22000', state: present }
+    - { regexp: '^#MIRROR_REPLICATION_PORT_BASE=', line: 'MIRROR_REPLICATION_PORT_BASE=23000', state: present }
+    - { regexp: '^#declare -a MIRROR_DATA_DIRECTORY=', line: 'declare -a MIRROR_DATA_DIRECTORY=({{ mirror_data_dirs 
+}} )', state: present }
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_install == True and gpdb_mirror_enable == True
+
+- name: Repoint symlink to new Greenplum Database version
+  file: path={{ gpdb_base_dir }}/greenplum-db src={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }} state=link
+  when:
+    - gpdb_linkchange == True and gpdb_install == True
+      # - gpdb_upgrade == True or gpdb_linkchange == True and gpdb_install == True
+
+  # - inventory_hostname in groups['master']
+
+# Status: Config files ready, initialize database if required
+
+# check if the 'known_hosts' file exists - this is taken as sign that the ssh key exchange happened before
+# that is not very reliable
+- name: Check if the ssh login for gpadmin is already setup
+  stat: path=/home/gpadmin/.ssh/known_hosts
+  register: ssh_initialized_gpadmin
+
+- name: Check if the ssh login for root is already setup
+  stat: path=/root/.ssh/known_hosts
+  register: ssh_initialized_root
+
+- name: Check if the database is already initialized
+  stat: path={{ gpdb_data_dir }}
+  register: gpdb_initialized
+
+- name: Create {{ gpdb_data_dir }} directories
+  file: path={{ item.path }} state=directory owner=gpadmin group=gpadmin mode=0770
+  with_items:
+    - { path: '{{ gpdb_data_dir }}' }
+  when:
+   - gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True
+
+- name: Create {{ gpdb_data_dir }}/master directories for mdw and smdw
+  file: path={{ item.path }} state=directory owner=gpadmin group=gpadmin mode=0770
+  with_items:
+    - { path: '{{ gpdb_data_dir }}/master' }
+  when:
+   - inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
+   - gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True
+
+- name: Create {{ gpdb_data_dir }} segment directories
+  file: path={{ gpdb_data_dir }}/primary state=directory owner=gpadmin group=gpadmin mode=0770
+  when:
+   - gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True
+
+- name: Create {{ gpdb_data_dir }} segment directories
+  file: path={{ gpdb_data_dir }}/mirror state=directory owner=gpadmin group=gpadmin mode=0770
+  when:
+   - gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True
+   - gpdb_mirror_enable == True
+
+- name: Install greeplum binary into segment nodes by running gpseginstall
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpseginstall -f /home/gpadmin/hostfile )
+  async: 120
+  poll: 5
+  register: gpseginstall_installed
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_initialized.stat.exists != True
+    - gpdb_initdb_single == False and seg_serialized_install == True
+  # changed_when: False
+
+      #- name: Repoint symlink to new Greenplum Database version
+      #file: path={{ gpdb_base_dir }}/greenplum-db src={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }} state=link
+  # when:
+  # - gpseginstall_installed == True
+
+- name: Initialize Greenplum Database cluster
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -a -c /home/gpadmin/gpinitsystem_config -h /home/gpadmin/hostfile {{ gpdb_spread_mirrors }} )
+  async: 600
+  poll: 5
+  register: init_db
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_initdb_with_standby == False
+  failed_when: init_db.rc > 1
+
+- name: Initialize Greenplum Database cluster with standby master
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -c /home/gpadmin/gpinitsystem_config -a {{ gpdb_spread_mirrors }} -h /home/gpadmin/hostfile -s {{ smdw_hostname }} )
+  async: 1800
+  poll: 5
+  register: init_db
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_initdb_with_standby == True
+  failed_when: init_db.rc > 1
+
+# the greenplum_path.sh from the new installation does not have $MASTER_DATA_DIRECTORY
+- name: Add MASTER_DATA_DIRECTORY to greenplum_path.sh
+  lineinfile:
+    dest: "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}/greenplum_path.sh"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^export MASTER_DATA_DIRECTORY=', line: 'export MASTER_DATA_DIRECTORY={{ gpdb_data_dir }}/master/gpseg-1', state: present }
+  when:
+    - gpdb_install == True or gpdb_upgrade == True
+
+- name: Start Greenplum Database after upgrade
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstart -a )
+  async: 60
+  poll: 5
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_upgrade == True or gpdb_linkchange == True
+
+- name: Check if database is running
+  stat: path=/tmp/.s.PGSQL.5432
+  register: gpdb_running_nothing
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_install == False and gpdb_upgrade == False and gpdb_linkchange == False
+
+- name: Start database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstart -a )
+  async: 60
+  poll: 5
+  when:
+    - inventory_hostname in groups['master']
+    - (gpdb_install == False and gpdb_upgrade == False and gpdb_linkchange == False) and gpdb_running_nothing.stat.exists == False
+
+- name: Verify that Greenplum Database is up and running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  register: select_version
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+- name: Greenplum Database Installation
+  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }} installed"
+  when: gpdb_install == True
+
+- name: Greenplum Database Upgrade
+  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }} upgraded"
+  when: gpdb_upgrade == True
+
+- name: Greenplum Database Version switched
+  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }} is active"
+  when: gpdb_linkchange == True
+
+# Status: Greenplum Database up and running
+# FIXME: update bash history
