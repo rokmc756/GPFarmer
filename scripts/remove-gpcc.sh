@@ -1,9 +1,19 @@
 #!/bin/bash
 
-HOST_NAME="mdw6"
+MASTER_HOST=171
+# MASTER_HOST=62
+# HOSTS_RANGE="61 62 63 64 65"
+# HOSTS_RANGE="171 172 173 174 175"
+MASTER_HOST_IP=192.168.0.$MASTER_HOST
 
-ssh gpadmin@$HOST_NAME "source /usr/local/greenplum-db/greenplum_path.sh && source /usr/local/greenplum-cc-web/gpcc_path.sh && gpcc stop;"
-ssh gpadmin@$HOST_NAME "rm -rf /usr/local/greenplum-cc-web*;"
+ssh gpadmin@$MASTER_HOST_IP "source /usr/local/greenplum-db/greenplum_path.sh && source /usr/local/greenplum-cc-web/gpcc_path.sh && gpcc stop;"
+
+for i in $HOSTS_RANGE
+do
+    ssh gpadmin@192.168.0.$i "rm -rf /usr/local/greenplum-cc-web* /usr/local/greenplum-solr;"
+done
+
+exit
 
 # su - gpadmin
 # gpconfig -c gp_enable_gpperfmon -v off
@@ -12,11 +22,11 @@ ssh gpadmin@$HOST_NAME "rm -rf /usr/local/greenplum-cc-web*;"
 # local     gpperfmon     gpmon     md5
 # host      gpperfmon     gpmon    0.0.0.0/0    md5
 
-ssh gpadmin@$HOST_NAME "source /usr/local/greenplum-db/greenplum_path.sh && psql template1 -c 'DROP ROLE gpmon;';"
-ssh gpadmin@$HOST_NAME "source /usr/local/greenplum-db/greenplum_path.sh && gpstop -ra;"
+ssh gpadmin@$MASTER_HOST_IP "source /usr/local/greenplum-db/greenplum_path.sh && psql template1 -c 'DROP ROLE gpmon;';"
+ssh gpadmin@$MASTER_HOST_IP "source /usr/local/greenplum-db/greenplum_path.sh && gpstop -ra;"
 
-ssh gpadmin@$HOST_NAME "rm -rf $MASTER_DATA_DIRECTORY/gpperfmon/data/*;"
-ssh gpadmin@$HOST_NAME "rm -rf $MASTER_DATA_DIRECTORY/gpperfmon/logs/*;"
+ssh gpadmin@$MASTER_HOST_IP "rm -rf $MASTER_DATA_DIRECTORY/gpperfmon/data/*;"
+ssh gpadmin@$MASTER_HOST_IP "rm -rf $MASTER_DATA_DIRECTORY/gpperfmon/logs/*;"
 
-ssh gpadmin@$HOST_NAME "source /usr/local/greenplum-db/greenplum_path.sh && dropdb gpperfmon;"
+ssh gpadmin@$MASTER_HOST_IP "source /usr/local/greenplum-db/greenplum_path.sh && dropdb gpperfmon;"
 

@@ -1,0 +1,9 @@
+---
+plperl_prefix_major_version:
+plperl_major_version: 2
+plperl_minor_version: 0
+plperl_patch_version: 4
+plperl_gpdb_version: gp6
+plperl_rhel_version: rhel7
+plperl_database_name: testdb
+plperl_schema_name: test_scheme

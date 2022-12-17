@@ -149,13 +149,27 @@
     state: "{{ item.state }}"
   with_items:
     - { regexp: '^declare -a GPTEXT_HOSTS=', line: 'declare -a GPTEXT_HOSTS=( {{ gptext_all_hosts }} )', state: present }
-    - { regexp: '^#GPTEXT_HOSTS=', line: 'GPTEXT_HOSTS=ALLSEGHOSTS', state: present }
     - { regexp: '^declare -a ZOO_HOSTS=', line: 'declare -a ZOO_HOSTS=( {{ gptext_all_hosts }} )', state: present }
     - { regexp: '^#### OPTIONAL', line: 'GPTEXT_JAVA_HOME=/usr/lib/jvm/java-{{ gptext_java_version }}', state: present }
   when:
     - inventory_hostname in groups['master']
     - gptext_install == True or gptext_upgrade == True
-      # - { regexp: '^#### OPTIONAL', line: 'JAVA_HOME=/usr/lib/jvm/java-{{ gptext_java_version }}', state: present }
+  # - { regexp: '^#### OPTIONAL', line: 'JAVA_HOME=/usr/lib/jvm/java-{{ gptext_java_version }}', state: present }
+  # - { regexp: '^#GPTEXT_HOSTS=', line: 'GPTEXT_HOSTS=ALLSEGHOSTS', state: present }
+
+- name: Install OS name to CentOS for Rocky Linux
+  become_user: root
+  lineinfile:
+    dest: "/etc/os-release"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^ID=', line: 'ID="centos"', state: present, backrefs: no }
+  when:
+    - inventory_hostname in groups['master']
+    - gptext_major_version >= 3 and gptext_minor_version >= 9.1
+    - gptext_installed.stat.exists != True
 
 - name: Install GPTEXT software in {{ gptext_base_dir }}
   become_user: gpadmin
@@ -212,7 +226,10 @@
 
 - name: Start GPText
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gptext_base_dir }}/greenplum-text/greenplum-text_path.sh && gptext-start )
+  shell: |
+    . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gptext_base_dir }}/greenplum-text/greenplum-text_path.sh && gptext-start <<EOF
+    y
+    EOF
   async: 300
   poll: 5
   register: gptext_started
@@ -241,6 +258,20 @@
 - name: Greenplum Text Version switched
   debug: msg="Greenplum Text {{ gptext_major_version }}.{{ gptext_minor_version }} is active"
   when: gptext_linkchange == True
+
+- name: Replace OS name back to Rocky Linux
+  become_user: root
+  lineinfile:
+    dest: "/etc/os-release"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^ID=', line: 'ID="rocky"', state: present, backrefs: no }
+  when:
+    - inventory_hostname in groups['master']
+    - gptext_major_version >= 3 and gptext_major_version >= 9.1
+    - gptext_installed.stat.exists != True
 
 # Status: Greenplum Text up and running
 # FIXME: update bash history

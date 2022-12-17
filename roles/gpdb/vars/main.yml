@@ -6,6 +6,16 @@ gpdb_number_segments: 2
 gpdb_mirror_enable: true
 gpdb_spread_mirrors: ""
 
+# greenplum-db-6.20.3-rhel8-x86_64.rpm
+gpdb_major_version: 6
+gpdb_minor_version: 21.0
+gpdb_build_version:
+gpdb_rhel_name: 'rhel7'
+gpdb_binary_type: 'rpm'
+
+smdw_hostname: "rh7-slave"
+# smdw_hostname: "smdw4"
+
 # if you change the version, Ansible will attempt a database upgrade
 # greenplum-db-4.3.9.0-build-1-RHEL5-x86_64.zip
 #gpdb_major_version: 4
@@ -21,21 +31,9 @@ gpdb_spread_mirrors: ""
 #gpdb_build_version: 1
 #gpdb_rhel_name: 'rhel5'
 
-# files/greenplum-db-4.3.11.1-build-1-rhel5-x86_64.zip
-#gpdb_major_version: 4
-#gpdb_minor_version: 3.11.1
-#gpdb_build_version: 1
-#gpdb_rhel_name: 'rhel5'
-
 # files/greenplum-db-4.3.21.0-rhel5-x86_64.zip
 # gpdb_major_version: 4
 # gpdb_minor_version: 3.21.0
-# gpdb_build_version:
-# gpdb_rhel_name: 'rhel5'
-
-# files/greenplum-db-4.3.26.0-rhel5-x86_64.zip
-# gpdb_major_version: 4
-# gpdb_minor_version: 3.26.0
 # gpdb_build_version:
 # gpdb_rhel_name: 'rhel5'
 
@@ -44,37 +42,14 @@ gpdb_spread_mirrors: ""
 # gpdb_minor_version: 3.6.2
 # gpdb_build_version: 1
 # gpdb_rhel_name: 'RHEL5'
-
-# files/greenplum-db-5.21.0-rhel7-x86_64.zip
-#gpdb_major_version: 5
-#gpdb_minor_version: 16.0
-#gpdb_build_version:
-#gpdb_rhel_name: 'rhel7'
-#gpdb_binary_type: 'zip'
-
-# files/greenplum-db-4.3.29.0-rhel5-x86_64.zip
-# gpdb_major_version: 4
-# gpdb_minor_version: 3.33.4
-# gpdb_build_version:
-# gpdb_rhel_name: 'rhel5'
-# gpdb_binary_type: 'zip'
-
+#
 # files/greenplum-db-5.20.1-rhel7-x86_64
-#gpdb_major_version: 5
-##gpdb_minor_version: 16.0
-#gpdb_build_version:
-#gpdb_rhel_name: 'rhel7'
-#gpdb_binary_type: 'zip'
+# gpdb_major_version: 5
+# gpdb_minor_version: 13.0
+# gpdb_build_version:
+# gpdb_rhel_name: 'rhel7'
+# gpdb_binary_type: 'rpm'
 
-# greenplum-db-6.13.0-rhel7-x86_64.rpm 
-# greenplum-db-6.16.2-rhel7-x86_64.rpm
-gpdb_major_version: 6
-gpdb_minor_version: 13.0
-gpdb_build_version:
-gpdb_rhel_name: 'rhel7'
-gpdb_binary_type: 'rpm'
-
-smdw_hostname: "smdw6"
 seg_serialized_install: False
 gpdb_initdb_single: False
 gpdb_initdb_with_standby: True

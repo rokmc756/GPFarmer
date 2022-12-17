@@ -1,0 +1,9 @@
+---
+dspython_prefix_major_version:
+dspython_major_version: 2
+dspython_minor_version: 0
+dspython_patch_version: 4
+dspython_gpdb_version: gp6
+dspython_rhel_version: rhel8
+dspython_database_name: testdb
+dspython_schema_name: test_scheme

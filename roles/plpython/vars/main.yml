@@ -1,0 +1,9 @@
+---
+plpython_prefix_major_version:
+plpython_major_version: 2
+plpython_minor_version: 0
+plpython_patch_version: 4
+plpython_gpdb_version: gp6
+plpython_rhel_version: rhel7
+plpython_database_name: testdb
+plpython_schema_name: test_scheme

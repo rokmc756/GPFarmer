@@ -6,9 +6,10 @@
   when: ansible_os_family != 'RedHat'
 
 - name: Installation for Red Hat / CentOS
-  include: postgis-install.yml
+  include: install.yml
   tags: install
 
 - name: Installation for Red Hat / CentOS
-  include: postgis-uninstall.yml
+  include: uninstall.yml
   tags: uninstall
+

@@ -70,15 +70,15 @@
   when:
     - inventory_hostname in groups['master']
 
-#- name: Remove madlib directory still remained
-#  file:
-#    owner: gpadmin
-#    group: gpadmin
-#    path: "{{ gpdb_base_dir }}/greenplum-db/madlib"
-#    state: absent
-#  when:
-#    - inventory_hostname in groups['master']
-#    - madlib_dir_remained.stat.exists == True
+- name: Remove madlib directory still remained
+  file:
+    owner: gpadmin
+    group: gpadmin
+    path: "{{ gpdb_base_dir }}/greenplum-db/madlib"
+    state: absent
+  when:
+    - inventory_hostname in groups['master']
+    - madlib_dir_remained.stat.exists == True
 
 - name: Restart GPDB after removing MADlib extension
   become_user: gpadmin

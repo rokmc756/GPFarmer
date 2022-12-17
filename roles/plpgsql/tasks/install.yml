@@ -63,13 +63,16 @@
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plr_database_name }} )
   register: plr_database_created
-  when: "'100' not in plr_database_installed.stdout"
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' not in plr_database_installed.stdout"
 
 - name: Enabling PL/R Language Support for GPDB 4.x
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createlang plr -d {{ plr_database_name }} )
   register: plr_language_support_enabled
   when:
+    - inventory_hostname in groups['master']
     - plr_gpdb_version == "GPDB4.3"
     - "'100' not in plr_database_installed.stdout"
 
@@ -78,5 +81,6 @@
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c "CREATE EXTENSION plr;" )
   register: plr_language_support_enabled
   when:
+    - inventory_hostname in groups['master']
     - plr_gpdb_version == "gpdb6"
     - "'100' not in plr_database_installed.stdout"

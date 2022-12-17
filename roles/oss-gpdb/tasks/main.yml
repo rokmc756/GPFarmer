@@ -1,0 +1,21 @@
+---
+
+# Install Greenplum Database
+
+# for now fail if it's not a Red Hat based system
+- name: Check OS ( GPDB )
+  fail: msg="Not a Red Hat based system!"
+  when: ansible_os_family != 'RedHat'
+
+- name: Installation of gpdb for Red Hat / CentOS
+  include: gpdb-install.yml
+  tags: install
+
+- name: Uninstallation of gpdb for Red Hat / CentOS
+  include: gpdb-uninstall.yml
+  tags: uninstall
+
+- name: Upgrade of gpdb for Red Hat / CentOS
+  include: gpdb-upgrade.yml
+  tags: upgrade
+

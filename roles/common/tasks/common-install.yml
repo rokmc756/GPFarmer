@@ -37,6 +37,29 @@
   when: "item | ipaddr('{{ common_network_range }}')"
   with_items: "{{ ansible_all_ipv4_addresses }}"
 
+- name: Install firewalld
+  yum: name={{ item }} state=present
+  with_items:
+    - firewalld
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
+
+- name: Stop and disable firewalld
+  become: true
+  become_user: root
+  service:
+    name: firewalld
+    state: stopped
+    enabled: False
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 7
+
+- name: Clean rules on all chains of filter table
+  become: true
+  become_user: root
+  iptables:
+    chain: "{{ item }}"
+    flush: yes
+  with_items:  [ 'INPUT', 'FORWARD', 'OUTPUT' ]
+
 - name: basic packages
   yum: name={{ item }} state=present
   with_items:
@@ -109,12 +132,12 @@
     - { package: liblockfile }
     - { package: ccache }
     - { package: python-lockfile }
-    - { package: python-psutil }
-    - { package: python-scp }
     - { package: xml2 }
     - { package: docbook2X }
     - { package: xmlto }
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int == 7
+  #  - { package: python-psutil }
+  #  - { package: python-scp }
 
 # source: https://github.com/rpm-software-management/yum-utils/blob/master/needs-restarting.py
 #- name: install Red Hat version of 'needs-restarting'

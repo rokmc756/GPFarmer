@@ -5,14 +5,17 @@ set timeout 5
 	expect  "^Password for GPDB user gpmon:*"
 	send    "changeme\r"
 
-	expect	"^--More--*"
-	send 	"q"
+	expect  "Would you like to continue with gpcc installation*"
+	send    "Y\r"
 
-	expect	"^Do you agree to the Pivotal Greenplum Command Center End User License Agreement*"
-	send	"Y\r"
+#	expect	"^--More--*"
+#	send 	"q"
 
-        expect  "^Would you like to continue with gpcc installation*"
-        send    "Y\r"
+#	expect	"^Do you agree to the Pivotal Greenplum Command Center End User License Agreement*"
+#	send	"Y\r"
+
+#        expect  "^Would you like to continue with gpcc installation*"
+#        send    "Y\r"
 
 #	expect	"^Where would you like to install Greenplum Command Center*"
 #	send	"/usr/local\r"

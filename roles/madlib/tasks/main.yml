@@ -8,9 +8,9 @@
   when: ansible_os_family != 'RedHat'
 
 - name: Install
-  include: madlib-install.yml
+  include: install.yml
   tags: install
 
 - name: Uninstall
-  include: madlib-uninstall.yml
+  include: uninstall.yml
   tags: uninstall

@@ -1,0 +1,9 @@
+---
+pljava_prefix_major_version:
+pljava_major_version: 2
+pljava_minor_version: 0
+pljava_patch_version: 4
+pljava_gpdb_version: gp6
+pljava_rhel_version: rhel8
+pljava_database_name: testdb
+pljava_schema_name: test_scheme

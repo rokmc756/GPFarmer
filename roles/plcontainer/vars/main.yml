@@ -2,21 +2,20 @@
 plcontainer_prefix_major_version:
 plcontainer_major_version: 2
 plcontainer_minor_version: 1
-plcontainer_patch_version: 3
+plcontainer_patch_version: 5
 plcontainer_gpdb_version: gp6
-plcontainer_rhel_version: rhel7
+plcontainer_rhel_version: rhel8
 plcontainer_database_name: plcontainer_testdb
 plcontainer_schema_name: plcontainer_test_scheme
-# plcontainer-2.1.3-gp6-rhel7_x86_64.gppkg
 
+# plcontainer-2.1.5-gp6-rhel8_x86_64.gppkg
+# plcontainer-2.1.3-gp6-rhel7_x86_64.gppkg
+# plr-3.0.3-gp6-rhel7-x86_64.gppkg
 plr_prefix_major_version:
 plr_major_version: 3
 plr_minor_version: 0
-plr_patch_version: 3
+plr_patch_version: 4
 plr_gpdb_version: gp6
-plr_rhel_version: rhel7
+plr_rhel_version: rhel8
 plr_database_name: plcontainer_testdb
 plr_schema_name: plr_test_scheme
-
-# plr-3.0.3-gp6-rhel7-x86_64.gppkg
-

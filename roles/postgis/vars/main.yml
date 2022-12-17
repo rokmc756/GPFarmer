@@ -2,13 +2,16 @@
 postgis_prefix_major_version:
 postgis_major_version: 2
 postgis_minor_version: 5
-postgis_patch_version: .4+pivotal.4.build.3
+postgis_patch_version: .4+pivotal.7.build.1
 postgis_gpdb_version: gp6
-postgis_rhel_version: rhel7
+postgis_rhel_version: rhel8
 postgis_database_name: postgis_testdb
 postgis_schema_name: postgis_test_scheme
-# postgis-2.5.4+pivotal.3.build.7-gp6-rhel7-x86_64.gppkg
+postgis_mdw_hostname: rk8-master
 
+# postgis-2.5.4+pivotal.7.build.1-gp6-rhel8-x86_64.gppkg
+# postgis-2.5.4+pivotal.6.build.1-gp6-rhel8-x86_64.gppkg
+# postgis-2.5.4+pivotal.3.build.7-gp6-rhel7-x86_64.gppkg
 # postgis-2.1.5+pivotal.2-8-gp6-rhel7-x86_64.gppkg
 # postgis-2.1.5+pivotal.2-8-gp6-rhel7-x86_64.gppkg
 # postgis-2.1.5+pivotal.2-gp5-rhel7-x86_64.gppkgg
@@ -16,5 +19,3 @@ postgis_schema_name: postgis_test_scheme
 # postgis-2.1.5+pivotal.2-2-gp6-rhel7-x86_64.gppkg
 # postgis-2.5.4+pivotal.2.build.3-gp6-rhel7-x86_64.gppkg
 # postgis-2.5.4+pivotal.4.build.3-gp6-rhel7-x86_64.gppkg
-
-

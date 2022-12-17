@@ -1,0 +1,44 @@
+---
+# number of Greenplum Database segments
+rpm_install: true
+gpdb_number_segments: 2
+gpdb_mirror_enable: true
+gpdb_spread_mirrors: ""
+
+gpdb_major_version: 6
+gpdb_minor_version: 21.1
+gpdb_build_version:
+gpdb_rhel_name: 'rkl8'
+
+gp_xerces_major_version: 3
+gp_xerces_minor_version: 1.2
+
+smdw_hostname: "rk9slave"
+
+seg_serialized_install: False
+gpdb_initdb_single: False
+gpdb_initdb_with_standby: True
+gpdb_network_range: "192.168.0.0"
+gpdb_admin_password: "changeme"
+
+# kernel parameters for greenplum database
+gpdb_kernel_shmmax: "kernel.shmmax = 500000000"
+gpdb_kernel_shmmni: "kernel.shmmni = 32768"
+gpdb_kernel_shmall: "kernel.shmall = 4000000000"
+gpdb_kernel_sem: "kernel.sem = 1000 32768000 1000 32768"
+gpdb_kernel_sysrq: "kernel.sysrq = 1"
+gpdb_kernel_core_uses_pid: "kernel.core_uses_pid = 1"
+gpdb_kernel_msgmnb: "kernel.msgmnb = 1048576"
+gpdb_kernel_msgmax: "kernel.msgmax = 1048576"
+gpdb_kernel_msgmni: "kernel.msgmni = 32768"
+gpdb_net_ipv4_tcp_syncookies: "net.ipv4.tcp_syncookies = 1"
+gpdb_net_ipv4_ip_forward: "net.ipv4.ip_forward = 0"
+gpdb_net_ipv4_conf_default_accept_source_route: "net.ipv4.conf.default.accept_source_route = 0"
+gpdb_net_ipv4_tcp_tw_recycle: "#net.ipv4.tcp_tw_recycle = 1"
+gpdb_net_ipv4_tcp_max_syn_backlog: "net.ipv4.tcp_max_syn_backlog = 4096"
+gpdb_net_ipv4_conf_all_arp_filter: "net.ipv4.conf.all.arp_filter = 1"
+gpdb_net_ipv4_ip_local_port_range: "net.ipv4.ip_local_port_range = 1025 65535"
+gpdb_net_core_netdev_max_backlog: "net.core.netdev_max_backlog = 80000"
+gpdb_net_core_rmem_max: "net.core.rmem_max = 16777216"
+gpdb_net_core_wmem_max: "net.core.wmem_max = 16777216"
+gpdb_vm_overcommit_memory: "vm.overcommit_memory = 2"

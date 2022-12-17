@@ -295,7 +295,7 @@
   poll: 5
   when:
     - gpdb_install == True or gpdb_upgrade == True
-    - gpdb_initdb_single == True and seg_serialized_install == False
+    - gpdb_initdb_single == False and seg_serialized_install == False
     - gpdb_binary_type == 'zip'
 
 - name: Install Greenplum Database software in {{ gpdb_base_dir }}
@@ -303,7 +303,7 @@
     name: /home/gpadmin/{{ binary_installer_file }}.rpm
     state: present
     disable_gpg_check: yes
-  async: 60
+  async: 120
   poll: 5
   when:
     - gpdb_install == True or gpdb_upgrade == True
@@ -363,8 +363,8 @@
 
 #  become_user: root
 - name: Create hostfile file for multiple nodes
-  become_user: pivotal
-  shell: "rm -f {{ playbook_dir }}/hostfile;  tail -n +$(($( grep -n segments {{ playbook_dir }}/ansible-hosts | cut -d ':' -f 1 ) + 1)) {{ playbook_dir }}/ansible-hosts | awk '{print $1}' >> {{ playbook_dir }}/hostfile"
+  become_user: moonja    # it was pivotal previously
+  shell: "rm -f {{ playbook_dir }}/hostfile; tail -n +$(($( grep -n segments {{ playbook_dir }}/ansible-hosts | cut -d ':' -f 1 ) + 1)) {{ playbook_dir }}/ansible-hosts | awk '{print $1}' >> {{ playbook_dir }}/hostfile"
   delegate_to: 127.0.0.1
   when:
     - inventory_hostname in groups['master']
@@ -504,7 +504,7 @@
 - name: Initialize Greenplum Database cluster with standby master
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -c /home/gpadmin/gpinitsystem_config -a {{ gpdb_spread_mirrors }} -h /home/gpadmin/hostfile -s {{ smdw_hostname }} )
-  async: 1800
+  async: 600
   poll: 5
   register: init_db
   when:

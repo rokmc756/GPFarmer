@@ -6,9 +6,9 @@
   when: ansible_os_family != 'RedHat'
 
 - name: Installation for Red Hat / CentOS
-  include: plr-extension-install.yml
+  include: install.yml
   tags: install
 
 - name: Uninstallation for Red Hat / CentOS
-  include: plr-extension-uninstall.yml
+  include: uninstall.yml
   tags: uninstall

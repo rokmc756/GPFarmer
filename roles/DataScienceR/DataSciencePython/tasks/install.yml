@@ -1,0 +1,78 @@
+---
+# Install DataSciencePython extention on Greenplum database
+
+- name: Check if the GPDB software is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db
+  register: gpdb_installed
+
+- name: Stop if GPDB software is not installed
+  fail: msg="Greenplum Database software is not installed!"
+  when: gpdb_installed.stat.exists != True
+
+- name: Install dependencies package for DataSciencePython
+  become_user: root
+  yum: name={{ item }} state=present
+  with_items:
+    - tk
+
+- name: Verify that database is up and running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  register: select_version
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+- name: Verify if DataSciencePython gppkg is installed
+  become_user: gpadmin
+  command: 'rpm -q DataSciencePython --dbpath /usr/local/greenplum-db/share/packages/database'
+  ignore_errors: true
+  register: dspython_installed
+  changed_when: False
+  when: inventory_hostname in groups['master']
+
+- name: Stop if DataSciencePython gppkg package is not installed
+  fail: msg="DataSciencePython gppkg package is not installed!"
+  when:
+    - inventory_hostname in groups['master']
+    - "'package DataSciencePython is not installed' not in dspython_installed.stdout"
+
+- name: Copy DataSciencePython gppkg file
+  copy: src=DataSciencePython-{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}.{{ dspython_patch_version }}-{{ dspython_gpdb_version }}-{{ dspython_rhel_version }}_x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  when:
+    - inventory_hostname in groups['master']
+    - "'package DataSciencePython is not installed' in dspython_installed.stdout"
+
+- name: Install DataSciencePython package
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/DataSciencePython-{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}.{{ dspython_patch_version }}-{{ dspython_gpdb_version }}-{{ dspython_rhel_version }}_x86_64.gppkg )
+  when:
+    - inventory_hostname in groups['master']
+    - "'package DataSciencePython is not installed' in dspython_installed.stdout"
+
+- name: Restart GPDB and apply parameters for dspython in greenplum_path.sh
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Verify that database for DataSciencePython is installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ dspython_database_name }}'" )
+  register: dspython_database_installed
+  when: inventory_hostname in groups['master']
+
+- name: Create database for dspython
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ dspython_database_name }} )
+  register: dspython_database_created
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' not in dspython_database_installed.stdout"
+
+- name: The Greenplum Database Python Data Science Modules are installed in the following directory
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && ls -al $GPHOME/ext/DataSciencePython/lib/python2.7/site-packages/ )
+  register: dspython_modules_listed

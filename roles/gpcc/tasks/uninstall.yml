@@ -15,6 +15,8 @@
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
   register: select_version
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
+  when:
+    - inventory_hostname in groups['master']
 
 - name: Check if the Command Center version is already installed
   stat: path={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}
@@ -37,14 +39,42 @@
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_base_dir }}/greenplum-cc-web/gpcc_path.sh && gpcmdr --stop sne )
   when:
+    - inventory_hostname in groups['master']
     - gpcc_installed.stat.exists == True
     - gpcc_major_version <= 6 and gpcc_minor_version < 2
+
+- name: Verify if MetricsCollector gppkg is installed
+  become_user: gpadmin
+  command: 'rpm -q MetricsCollector --dbpath /usr/local/greenplum-db/share/packages/database'
+  ignore_errors: true
+  register: mc_installed
+  changed_when: False
+  when:
+    - inventory_hostname in groups['master']
+    - gpcc_major_version >= 6 and gpcc_minor_version >= 7
+
+- name: Stop if MetricsCollector gppkg package is not installed
+  fail: msg="MetricsCollector gppkg package is not installed!"
+  when:
+    - inventory_hostname in groups['master']
+    - gpcc_major_version >= 6 and gpcc_minor_version >= 7
+    - "'package MetricsCollector is not installed' in mc_installed.stdout"
+
+- name: Unnstall MetricsCollector extension package
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg --remove MetricsCollector-{{ gpcc_major_version }}.{{ gpcc_minor_version }}_gp_{{ gpdb_major_version }}.{{ gpdb_minor_version }}-{{ gpcc_rhel_name }}-x86_64 )
+  when:
+    - inventory_hostname in groups['master']
+    - gpcc_major_version >= 6 and gpcc_minor_version >= 7
+    - "'package MetricsCollector is not installed' not in mc_installed.stdout"
+  # . /usr/local/greenplum-db/greenplum_path.sh && gppkg --remove MetricsCollector-6.7.0_gp_6.20.3-rhel8-x86_64
 
 - name: Stop Command Center instance for and later versions
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_base_dir }}/greenplum-cc/gpcc_path.sh && gpcc stop )
   when:
+    - inventory_hostname in groups['master']
     - gpcc_installed.stat.exists == True
     - gpcc_major_version >= 6 and gpcc_minor_version >= 2
 
@@ -58,6 +88,7 @@
     - "{{ gpcc_base_dir }}/greenplum-cc-web"
     - "{{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}"
   when:
+    - inventory_hostname in groups['master']
     - gpcc_installed.stat.exists == True
     - gpcc_major_version <= 6 and gpcc_minor_version < 2
 
@@ -79,7 +110,8 @@
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_enable_gpperfmon -v off )
   register: gpperfmon_disabled
-
+  when:
+    - inventory_hostname in groups['master']
     #- name: RHEL 6 and 7 Remove existing lines in pam_ldap.conf_new
     #become: yes
     #lineinfile:
@@ -114,6 +146,8 @@
     - "table gpcc_schema.pghba_lock"
     - "function gpcc_schema.read_file(text)"
   register: gpmon_role_denpendencies_dropped
+  when:
+    - inventory_hostname in groups['master']
   #    - "table gpcc_schema.pghba_lock"
 
 - name: Drop the Command Center superuser role from the database
@@ -121,7 +155,9 @@
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d template1 -c 'DROP ROLE gpmon;' )
   ignore_errors: yes
   register: gpmon_role_dropped
-  when: gpmon_role_denpendencies_dropped.rc != 0
+  when:
+    - inventory_hostname in groups['master']
+    - gpmon_role_denpendencies_dropped.rc != 0
 
 - name: Restart GPDB
   become_user: gpadmin
@@ -129,7 +165,9 @@
   async: 180
   poll: 5
   register: gpdb_restarted
-
+  when:
+    - inventory_hostname in groups['master']
+ 
 - name: Clean up any uncommitted Command Center data and log files that reside on the master file system
   become_user: gpadmin
   shell: ( rm -rf {{ gpdb_master_data_dir }}/gpperfmon/{{ item }}/* )
@@ -143,5 +181,5 @@
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb gpperfmon )
   async: 180
   poll: 5
-
-- meta: end_play
+  when:
+    - inventory_hostname in groups['master']

@@ -8,9 +8,9 @@
   when: ansible_os_family != 'RedHat'
 
 - name: Installation for Red Hat / CentOS
-  include: gptext-install.yml
+  include: install.yml
   tags: install
 
 - name: Installation for Red Hat / CentOS
-  include: gptext-uninstall.yml
+  include: uninstall.yml
   tags: uninstall

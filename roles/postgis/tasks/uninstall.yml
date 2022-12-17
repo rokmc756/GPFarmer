@@ -47,7 +47,22 @@
   changed_when: select_postgis_version == True
   when:
     - inventory_hostname in groups['master']
+    - postgis_major_version >= 2 and postgis_minor_version < 5
     - "'package postgis is not installed' not in select_postgis_version.stdout"
+
+- name: Drop extensions of postgis
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis_database_name }} -c "{{ item }}" )
+  register: postgis_database_installed
+  with_items:
+    - "DROP EXTENSION IF EXISTS address_standardizer_data_us;"
+    - "DROP EXTENSION IF EXISTS address_standardizer;"
+    - "DROP EXTENSION IF EXISTS postgis_tiger_geocoder;"
+    - "DROP EXTENSION IF EXISTS fuzzystrmatch;"
+    - "DROP EXTENSION IF EXISTS postgis;"
+  when:
+    - inventory_hostname in groups['master']
+    - postgis_major_version >= 2 and postgis_minor_version >= 5
 
 - name: Drop database for postgis
   become_user: gpadmin
@@ -58,7 +73,7 @@
 
 - name: Uninstall the GPDB postgis Pakcage
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -r postgis-{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}{{ postgis_gpdb_version }}-{{ postgis_rhel_version }}-x86_64 )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -r postgis-{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }} )
   register: postgis_package_uninstalled
   changed_when: postgis_database_installed == True
   when:
@@ -79,6 +94,18 @@
 #  when:
 #    - inventory_hostname in groups['master']
 #    - postgis_dir_remained.stat.exists == True
+
+- name: Delete lines enabled in greenplum_path.sh for GDAL raster drivers
+  lineinfile:
+    path: "{{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh"
+    regexp: "{{ item }}"
+    state: absent
+    backup: yes
+  with_items:
+    - "^export POSTGIS_GDAL_ENABLED_DRIVERS=*"
+    - "^export GDAL_DATA=*"
+    - "^export POSTGIS_ENABLE_OUTDB_RASTERS=*"
+    - "^export POSTGIS_GDAL_ENABLED_DRIVERS=*"
 
 - name: Restart GPDB after removing postgis extension
   become_user: gpadmin

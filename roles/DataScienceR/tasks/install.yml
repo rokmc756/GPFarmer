@@ -1,0 +1,68 @@
+---
+
+# Install DataScienceR extention on Greenplum database
+
+- name: Check if the GPDB software is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db
+  register: gpdb_installed
+
+- name: Stop if GPDB software is not installed
+  fail: msg="Greenplum Database software is not installed!"
+  when: gpdb_installed.stat.exists != True
+
+- name: Verify that database is up and running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  register: select_version
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+- name: Verify if DataScienceR gppkg is installed
+  become_user: gpadmin
+  command: 'rpm -q DataScienceR --dbpath /usr/local/greenplum-db/share/packages/database'
+  ignore_errors: true
+  register: dsr_installed
+  changed_when: False
+  when: inventory_hostname in groups['master']
+
+- name: Stop if DataScienceR gppkg package is not installed
+  fail: msg="DataScienceR gppkg package is not installed!"
+  when:
+    - inventory_hostname in groups['master']
+    - "'package DataScienceR is not installed' not in dsr_installed.stdout"
+
+- name: Copy DataScienceR gppkg file
+  copy: src=DataScienceR-{{ dsr_prefix_major_version }}{{ dsr_major_version }}.{{ dsr_minor_version }}.{{ dsr_patch_version }}-{{ dsr_gpdb_version }}-{{ dsr_rhel_version }}_x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  when:
+    - inventory_hostname in groups['master']
+    - "'package DataScienceR is not installed' in dsr_installed.stdout"
+
+- name: Install DataScienceR package
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/DataScienceR-{{ dsr_prefix_major_version }}{{ dsr_major_version }}.{{ dsr_minor_version }}.{{ dsr_patch_version }}-{{ dsr_gpdb_version }}-{{ dsr_rhel_version }}_x86_64.gppkg )
+  when:
+    - inventory_hostname in groups['master']
+    - "'package DataScienceR is not installed' in dsr_installed.stdout"
+
+- name: Restart GPDB and apply parameters for DataScienceR in greenplum_path.sh
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Verify that database for DataScienceR is installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ dsr_database_name }}'" )
+  register: dsr_database_installed
+  when: inventory_hostname in groups['master']
+
+- name: Create database for DataScienceR
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ dsr_database_name }} )
+  register: dsr_database_created
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' not in dsr_database_installed.stdout"

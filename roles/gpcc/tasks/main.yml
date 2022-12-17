@@ -8,9 +8,9 @@
   when: ansible_os_family != 'RedHat'
 
 - name: Installation for Red Hat / CentOS
-  include: gpcc-install.yml
+  include: install.yml
   tags: install
 
 - name: Installation for Red Hat / CentOS
-  include: gpcc-uninstall.yml
+  include: uninstall.yml
   tags: uninstall

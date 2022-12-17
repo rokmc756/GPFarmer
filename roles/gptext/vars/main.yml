@@ -1,14 +1,13 @@
 ---
 # greenplum-text-3.3.1-rhel7_x86_64.tar.gz
+# greenplum-text-3.9.1-rhel8_x86_64.tar.gz
 gptext_major_version: 3
-gptext_minor_version: 5.0
+gptext_minor_version: 9.1
 gptext_patch_version:
 gptext_build_version:
 gptext_gpdb_version:
 gptext_java_version: 1.8.0
-gptext_rhel_name: rhel7
+gptext_rhel_name: rhel8
 gptext_database_name: gptext_testdb
-gptext_all_hosts: "mdw6 smdw6 sdw6-01 sdw6-02 sdw6-03"
+gptext_all_hosts: "rk8-master rk8-slave rk8-node01 rk8-node02 rk8-node03"
 # gptext_all_hosts: "mdw6 smdw6 sdw6-01 sdw6-02 sdw6-03"
-# greenplum-text-2.2.1-rhel6_x86_64.tar.gz
-# greenplum-text-3.4.3-rhel7_x86_64.tar.gz

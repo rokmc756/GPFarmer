@@ -1,7 +1,5 @@
 ---
-
 # Install PostsGIS extention on Greenplum database
-
 - name: Check if the GPDB software is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
@@ -55,7 +53,9 @@
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ postgis_database_name }} )
   register: postgis_database_created
-  when: "'100' not in postgis_database_installed.stdout"
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' not in postgis_database_installed.stdout"
 
 - name: Restart GPDB after installing PostGIS extension
   become_user: gpadmin
@@ -118,9 +118,11 @@
     state: present
     insertafter: BOF
   with_items:
-    - { "export POSTGIS_GDAL_ENABLED_DRIVERS='GTiff PNG JPEG GIF'"}
-    - { "export POSTGIS_ENABLE_OUTDB_RASTERS=0" }
-  when: inventory_hostname in groups['master']
+    - "export POSTGIS_GDAL_ENABLED_DRIVERS='GTiff PNG JPEG GIF'"
+    - "export GDAL_DATA=$GPHOME/share/gdal"
+    - "export POSTGIS_ENABLE_OUTDB_RASTERS=0"
+    - "export POSTGIS_GDAL_ENABLED_DRIVERS=DISABLE_ALL"
+#  when: inventory_hostname in groups['master']
 
 - name: Update settings in the greenplum_path.sh for GDAL raster drivers
   become_user: gpadmin

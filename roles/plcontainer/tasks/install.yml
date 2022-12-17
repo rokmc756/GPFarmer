@@ -27,7 +27,7 @@
     - device-mapper-persistent-data
     - lvm2
   register: dependent_packages_intalled
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" ) and ansible_distribution_major_version|int >= 5
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
 
 - name: Add the Docker repo
   get_url:
@@ -35,33 +35,37 @@
     dest: /etc/yum.repos.d/docker-ce.repo
   register: docker_repo_added
 
-- name: Copy CentOS extra repo for dependent packages of docker-ce
-  become_user: root
-  copy: src=CentOS-7-extra.repo dest=/etc/yum.repos.d/ mode=0644 owner=root group=root
-  register: centos_extra_repo_copied
-  when:
-    - inventory_hostname in groups['master']
+#- name: Copy CentOS extra repo for dependent packages of docker-ce
+#  become_user: root
+#  copy: src=CentOS-7-extra.repo dest=/etc/yum.repos.d/ mode=0644 owner=root group=root
+#  register: centos_extra_repo_copied
+#  when:
+#    - inventory_hostname in groups['master']
 
 - name: Update yum cache
   become_user: gpadmin
   changed_when: False
-  shell: sudo yum makecache fast
+  shell: sudo yum makecache
   register: yum_cache_updated
+  # shell: sudo yum makecache fast
 
 - name: Install Docker
   yum: name={{ item }} state=present
   with_items:
     - docker-ce
   register: doker_installed
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" ) and ansible_distribution_major_version|int >= 5
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
 
 - name: Start Docker daemon
   systemd:
     name: docker
     state: started
     enabled: yes
-    masked: no
-  register: docker_daemon_enabled_and_started
+  register: docker_enabled
+  until: docker_enabled is succeeded
+  retries: 10
+  delay: 10
+  #  masked: no
 
 - name: Assign the Greenplum Database administrator gpadmin to the group docker
   become_user: gpadmin
@@ -217,22 +221,24 @@
     - "'100' in plr_database_installed.stdout"
 
 - name: Copy plcontainer python docker image
-  copy: src=plcontainer-python-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.4-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   register: python_docker_image_copied
   when:
     - inventory_hostname in groups['master']
+  # copy: src=plcontainer-python-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
 
 - name: Copy plcontainer python3 docker gppkg file
-  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.4-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   register: python3_docker_image_copied
   when:
     - inventory_hostname in groups['master']
+  # copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
 
-- name: Copy plcontainer R docker image
-  copy: src=plcontainer-r-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-  register: r_docker_image_copied
-  when:
-    - inventory_hostname in groups['master']
+#- name: Copy plcontainer R docker image
+#  copy: src=plcontainer-r-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+#  register: r_docker_image_copied
+#  when:
+#    - inventory_hostname in groups['master']
 
 # - name: Copy plcontainer R beta docker image
 #  copy: src=plcontainer-r-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
