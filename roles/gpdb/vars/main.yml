@@ -7,13 +7,13 @@ gpdb_mirror_enable: true
 gpdb_spread_mirrors: ""
 
 # greenplum-db-6.20.3-rhel8-x86_64.rpm
-gpdb_major_version: 6
-gpdb_minor_version: 21.0
-gpdb_build_version:
-gpdb_rhel_name: 'rhel7'
+gpdb_major_version: 7
+gpdb_minor_version: 0
+gpdb_build_version: '0-beta.0'
+gpdb_rhel_name: 'rhel8'
 gpdb_binary_type: 'rpm'
 
-smdw_hostname: "rh7-slave"
+smdw_hostname: "rk8-slave"
 # smdw_hostname: "smdw4"
 
 # if you change the version, Ansible will attempt a database upgrade

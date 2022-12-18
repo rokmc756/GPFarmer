@@ -137,7 +137,6 @@
     - { regexp: '^net.ipv4.tcp_syncookies', line: '{{ gpdb_net_ipv4_tcp_syncookies }}', state: present }
     - { regexp: '^net.ipv4.ip_forward', line: '{{ gpdb_net_ipv4_ip_forward }}', state: present }
     - { regexp: '^net.ipv4.conf.default.accept_source_route', line: '{{ gpdb_net_ipv4_conf_default_accept_source_route }}', state: present }
-    - { regexp: '^net.ipv4.tcp_tw_recycle', line: '{{ gpdb_net_ipv4_tcp_tw_recycle }}', state: present }
     - { regexp: '^net.ipv4.tcp_max_syn_backlog', line: '{{ gpdb_net_ipv4_tcp_max_syn_backlog }}', state: present }
     - { regexp: '^net.ipv4.conf.all.arp_filter', line: '{{ gpdb_net_ipv4_conf_all_arp_filter }}', state: present }
     - { regexp: '^net.ipv4.ip_local_port_range', line: '{{ gpdb_net_ipv4_ip_local_port_range }}', state: present }
@@ -147,6 +146,19 @@
     - { regexp: '^vm.overcommit_memory', line: '{{ gpdb_vm_overcommit_memory }}', state: present }
   notify:
     - reload sysctl
+
+- name: Modify /etc/sysctl.conf in versions less than RHEL/CentOS/Rocky 8
+  lineinfile:
+    dest: /etc/sysctl.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^net.ipv4.tcp_tw_recycle', line: '{{ gpdb_net_ipv4_tcp_tw_recycle }}', state: present }
+  notify:
+    - reload sysctl
+  when: ( hostvars[inventory_hostname].ansible_distribution_major_version|int < 8 )
+
 
 - name: Modify /etc/ssh/sshd_config
   lineinfile:
@@ -465,11 +477,13 @@
 - name: Create {{ gpdb_data_dir }} segment directories
   file: path={{ gpdb_data_dir }}/primary state=directory owner=gpadmin group=gpadmin mode=0770
   when:
+   - inventory_hostname in groups['segments']
    - gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True
 
 - name: Create {{ gpdb_data_dir }} segment directories
   file: path={{ gpdb_data_dir }}/mirror state=directory owner=gpadmin group=gpadmin mode=0770
   when:
+   - inventory_hostname in groups['segments']
    - gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True
    - gpdb_mirror_enable == True
 
@@ -515,7 +529,7 @@
 # the greenplum_path.sh from the new installation does not have $MASTER_DATA_DIRECTORY
 - name: Add MASTER_DATA_DIRECTORY to greenplum_path.sh
   lineinfile:
-    dest: "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}/greenplum_path.sh"
+    dest: "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}/greenplum_path.sh"
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
     state: "{{ item.state }}"
