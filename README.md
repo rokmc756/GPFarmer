@@ -193,6 +193,8 @@ $ make install
 
 
 # Planning
+Adding Resource Group for Workload Management of GPCC
+
 Adding playbook to remove GPDB and other extensions
 
 Adding playbook to update GPDB and other extensions

@@ -1,0 +1,9 @@
+- hosts: rk8-master
+  roles:
+     - { role: keepalived, keepalived_shared_ip: "192.168.56.189", keepalived_role: "master" }
+     # - { role: keepalived, keepalived_shared_ip: "192.168.0.69", keepalived_role: "master" }
+
+- hosts: rk8-slave
+  roles:
+     - { role: keepalived, keepalived_shared_ip: "192.168.56.189", keepalived_role: "slave" }
+     # - { role: keepalived, keepalived_shared_ip: "192.168.0.69", keepalived_role: "slave" }

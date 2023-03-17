@@ -79,6 +79,8 @@
     - nc
     - java-1.8.0-openjdk
     - java-1.8.0-openjdk-devel
+    - libcgroup
+    - libcgroup-tools
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
   #  - pexpect
 
@@ -135,6 +137,8 @@
     - { package: xml2 }
     - { package: docbook2X }
     - { package: xmlto }
+    - { package: libcgroup }
+    - { package: libcgroup-tools }
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int == 7
   #  - { package: python-psutil }
   #  - { package: python-scp }

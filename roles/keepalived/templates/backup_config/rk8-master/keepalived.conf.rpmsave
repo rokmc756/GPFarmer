@@ -1,0 +1,27 @@
+ ! Configuration File for keepalived
+global_defs {
+    enable_script_security
+    script_user root
+}
+vrrp_script chk_service {           # Requires keepalived-1.1.13
+        script /etc/keepalived/check_script.sh
+        interval 2                      # check every 2 seconds
+}
+vrrp_instance VI_1 {
+    state slave
+    interface eth0
+    virtual_router_id 52
+        priority 50
+       
+    advert_int 1
+        authentication {
+        auth_type PASS
+        auth_pass changeme
+    }
+    virtual_ipaddress {
+          192.168.0.179 dev eth0
+        }
+    track_script {
+        chk_service
+    }
+                    }

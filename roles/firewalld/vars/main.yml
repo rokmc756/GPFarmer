@@ -1,0 +1,9 @@
+_login_host: localhost
+_login_user: gpadmin
+_login_password: changeme
+_dbname: postgres
+allow_ports_masters:
+  - 22              # SSH
+  - 2880            # GPCC UI
+allow_ports_segments:
+  - 22              # SSH

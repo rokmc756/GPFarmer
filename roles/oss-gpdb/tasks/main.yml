@@ -8,14 +8,14 @@
   when: ansible_os_family != 'RedHat'
 
 - name: Installation of gpdb for Red Hat / CentOS
-  include: gpdb-install.yml
+  include: install.yml
   tags: install
 
 - name: Uninstallation of gpdb for Red Hat / CentOS
-  include: gpdb-uninstall.yml
+  include: uninstall.yml
   tags: uninstall
 
 - name: Upgrade of gpdb for Red Hat / CentOS
-  include: gpdb-upgrade.yml
+  include: upgrade.yml
   tags: upgrade
 

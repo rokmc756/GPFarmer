@@ -1,0 +1,8 @@
+---
+package_name: pivotal_greenplum_backup_restore
+major_version: 1
+minor_version: 27
+patch_version: 0
+gpdb_version: gp6
+rhel_version: rhel7
+database_name: testdb

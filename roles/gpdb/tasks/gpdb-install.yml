@@ -1,5 +1,5 @@
 ---
-
+#
 # Install Greenplum Database on Red Hat / CentOS
 
 # new installation: {{ gpdb_base_dir }}/greenplum-db must not exist
@@ -20,7 +20,7 @@
   register: gpdb_installed
 
 - name: Check if the Greenplum Database version is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}
+  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}
   register: gpdb_version_installed
 
 - name: Sanity check for {{ gpdb_base_dir }}/greenplum-db
@@ -34,7 +34,7 @@
 
 - name: Set name for binary installer file (name does not include build number)
   set_fact:
-    binary_installer_file: greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}-{{ gpdb_rhel_name }}-x86_64
+    binary_installer_file: greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}-{{ gpdb_rhel_name }}-x86_64
   when: gpdb_build_version is not defined or (gpdb_build_version is defined and gpdb_build_version == None)
 
 - name: Get the specific ip addresses to be used
@@ -65,7 +65,7 @@
 - name: Identify Greenplum Database Linkchange
   set_fact:
     gpdb_linkchange: True
-  when: gpdb_installed.stat.exists == True and gpdb_version_installed.stat.exists == True and gpdb_installed.stat.lnk_source != "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}"
+  when: gpdb_installed.stat.exists == True and gpdb_version_installed.stat.exists == True and gpdb_installed.stat.lnk_source != "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}"
 
 - name: Greenplum Database Installation
   debug: msg="New Greenplum Database installation"
@@ -273,8 +273,8 @@
     - { regexp: '^agreed=', line: 'agreed=1', state: present, backrefs: yes }
     - { regexp: '^pathVerification=', line: 'pathVerification=1', state: present, backrefs: yes }
     - { regexp: '^validMigrateDecision=', line: 'validMigrateDecision=1', state: present, backrefs: yes }
-    - { regexp: '^user_specified_installPath=', line: 'user_specified_installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}', state: present, backrefs: yes }
-    - { regexp: '^installPath=', line: 'installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}', state: present, backrefs: yes }
+    - { regexp: '^user_specified_installPath=', line: 'user_specified_installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}', state: present, backrefs: yes }
+    - { regexp: '^installPath=', line: 'installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}', state: present, backrefs: yes }
     - { regexp: '^    agreed=', line: '    agreed=1', state: present, backrefs: yes }
   when:
     - gpdb_install == True or gpdb_upgrade == True
@@ -315,7 +315,7 @@
     name: /home/gpadmin/{{ binary_installer_file }}.rpm
     state: present
     disable_gpg_check: yes
-  async: 120
+  async: 360
   poll: 5
   when:
     - gpdb_install == True or gpdb_upgrade == True
@@ -324,7 +324,8 @@
     # - gpdb_initdb_single == False and seg_serialized_install == False
 
 - name: Fix ownership for {{ gpdb_base_dir }}/greenplum-db
-  file: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }} state=directory mode=0755 owner=gpadmin group=gpadmin recurse=yes
+  become: yes
+  file: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }} state=directory mode=0755 owner=gpadmin group=gpadmin recurse=yes
   #when:
   #  - gpdb_binary_type == 'rpm'
 
@@ -337,7 +338,7 @@
     # - inventory_hostname in groups['master']
 
 - name: Check again if the Greenplum Database version is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}
+  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}
   register: gpdb_version_installed_verify
   #when:
   #  - inventory_hostname in groups['master']
@@ -436,7 +437,8 @@
     - gpdb_install == True and gpdb_mirror_enable == True
 
 - name: Repoint symlink to new Greenplum Database version
-  file: path={{ gpdb_base_dir }}/greenplum-db src={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }} state=link
+  become: yes
+  file: path={{ gpdb_base_dir }}/greenplum-db src={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }} state=link owner=gpadmin group=gpadmin mode=0755
   when:
     - gpdb_linkchange == True and gpdb_install == True
       # - gpdb_upgrade == True or gpdb_linkchange == True and gpdb_install == True
@@ -563,6 +565,42 @@
     - inventory_hostname in groups['master']
     - (gpdb_install == False and gpdb_upgrade == False and gpdb_linkchange == False) and gpdb_running_nothing.stat.exists == False
 
+#
+- name: Create the cgconfig.conf for all nodes
+  become: true
+  template: src=cgconfig.conf.j2 dest=/etc/cgconfig.conf owner=root group=root mode=644 force=yes
+  register: cgconfig_created
+  # template: src=cgconfig.conf.j2 dest=/etc/cgconfig.d/gpdb.conf owner=root group=root mode=644 force=yes
+
+#
+- name: Enable and Restart cgconfig for applying config
+  become: true
+  systemd:
+    name: cgconfig
+    enabled: yes
+    state: restarted
+  register: cgconfig_restarted
+
+- name: Enabling Resource Groups by gpconfig
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_resource_manager -v "group" )
+  register: resource_group_enabled
+  when: inventory_hostname in groups['master']
+
+- name: Apply new changes for Resource Groups
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  register: rs_applied
+  when: inventory_hostname in groups['master']
+
+- name: Add the path of greenplum variable file into .bashrc
+  lineinfile:
+    dest: /home/gpadmin/.bashrc
+    line: "source /usr/local/greenplum-db/greenplum_path.sh"
+    state: present
+
 - name: Verify that Greenplum Database is up and running
   become_user: gpadmin
   changed_when: False
@@ -572,15 +610,15 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
 - name: Greenplum Database Installation
-  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }} installed"
+  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }} installed"
   when: gpdb_install == True
 
 - name: Greenplum Database Upgrade
-  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }} upgraded"
+  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }} upgraded"
   when: gpdb_upgrade == True
 
 - name: Greenplum Database Version switched
-  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }} is active"
+  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }} is active"
   when: gpdb_linkchange == True
 
 # Status: Greenplum Database up and running

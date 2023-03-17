@@ -1,0 +1,38 @@
+#- hosts: rh7-master
+#  become: yes
+#  roles:
+#    - { role: gpcc }
+#    - { role: plpython }
+#    - { role: plperl }
+#    - { role: pljava }
+#    - { role: DataSciencePython }
+#    - { role: DataScienceR }
+#    - { role: postgis }
+#    - { role: plcontainer }
+#    - { role: madlib }
+#    - { role: plr }
+
+#- hosts: co7-master
+#- hosts: rh7-slave
+#- hosts: all
+#- hosts: rh7-master
+# - hosts: rk8-master
+- hosts: all
+  roles:
+    - { role: firewalld }
+#    - { role: gpdb }
+#    - { role: gpcopy }
+
+#- hosts: rk8-master,rk8-slave
+# - hosts: co7-master,co7-slave
+#- hosts: rh7-master,rh7-slave
+#  become: yes
+#  roles:
+#    - { role: gpcc }
+
+#    - { role: pxf }
+#    - { role: gpdb }
+#    - { role: gpdb-backup-restore }
+#    - { role: gpcopy }
+#    - { role: oss-gpdb }
+#    - { role: madlib }
