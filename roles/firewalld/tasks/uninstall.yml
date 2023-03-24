@@ -1,0 +1,93 @@
+---
+- name: Stop firewalld for all nodes
+  become: true
+  become_user: root
+  systemd:
+    name: firewalld
+    state: stopped
+    enabled: no
+
+- meta: end_play
+
+#
+- name: Utility present
+  become: true
+  package:
+    name: python3-psycopg2
+    state: present
+  when: inventory_hostname in groups['master']
+
+#
+- name: Get specific tables
+  become: true
+  become_user: gpadmin
+  postgresql_query:
+    db: "{{ _dbname }}"
+    login_host: "{{ _login_host }}"
+    login_user: "{{ _login_user }}"
+    login_password: "{{ _login_password }}"
+    query: "SELECT hostname, port, address, role FROM gp_segment_configuration;"
+    login_unix_socket: /tmp
+  register: rs_gp_seg_conf
+  when: inventory_hostname in groups['master']
+
+# Test
+- name: Set array variable
+  set_fact:
+    user_array: "{{ rs_gp_seg_conf.query_result }}"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Print item value # Prints array object as is
+  debug:
+    msg: "{{ item.hostname }}"
+  with_items: "{{ rs_gp_seg_conf.query_result }}"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Allow port into corresponding hostname
+  become: true
+  become_user: root
+  firewalld:
+    permanent: yes
+    immediate: yes
+    port: "{{item.port}}/tcp"
+    state: "enabled"
+    zone: "public"
+  delegate_to: "{{ item.hostname }}"
+  with_items: "{{ rs_gp_seg_conf.query_result }}"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Allow common port for master and standby hosts
+  become: true
+  become_user: root
+  firewalld:
+    permanent: yes
+    immediate: yes
+    port: "{{item}}/tcp"
+    state: "enabled"
+    zone: "public"
+  with_items: "{{ allow_ports_masters }}"
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
+
+#
+- name: Allow common port for segment hosts
+  become: true
+  become_user: root
+  firewalld:
+    permanent: yes
+    immediate: yes
+    port: "{{item}}/tcp"
+    state: "enabled"
+    zone: "public"
+  with_items: "{{ allow_ports_segments }}"
+  when: inventory_hostname in groups['segments']
+
+#
+- name: Reload service firewalld to apply new ruleset
+  become: true
+  become_user: root
+  systemd:
+    state: reloaded
+    name: firewalld

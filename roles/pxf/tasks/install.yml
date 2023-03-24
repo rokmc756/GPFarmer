@@ -1,6 +1,6 @@
 ---
 
-# Install PXF on GPDB for Red Hat
+# Install PXF on GPDB for RHEL, CentOS, Rocky Linux
 
 - name: Check if any version of Greenplum Database is installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
@@ -11,20 +11,28 @@
   when: gpdb_installed.stat.exists == True and gpdb_installed.stat.islnk != True
 
 - name: Install JAVA rpm package for PXF
+  become: yes
+  become_user: root
   yum: name="java-1.8.0" state=present
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
 
 - name: Copy the PXF .rpm file to all hosts in your Greenplum cluster
+  become: yes
+  become_user: root
   copy: src=pxf-{{ pxf_gpdb_version }}-{{ pxf_major_version }}.{{ pxf_minor_version }}-{{ pxf_patch_version }}.{{ pxf_rhel_version }}.x86_64.rpm dest=/home/gpadmin/pxf-{{ pxf_gpdb_version }}-{{ pxf_major_version }}.{{ pxf_minor_version }}-{{ pxf_patch_version }}.{{ pxf_rhel_version }}.x86_64.rpm mode=0644 owner=gpadmin group=gpadmin
 
-- name: Install the package on each Greenplum Database host using your package management utility
+- name: Install PXF package on each Greenplum Database host using your package management utility
+  become: yes
+  become_user: root
   yum:
     name: /home/gpadmin/pxf-{{ pxf_gpdb_version }}-{{ pxf_major_version }}.{{ pxf_minor_version }}-{{ pxf_patch_version }}.{{ pxf_rhel_version }}.x86_64.rpm
     state: present
+    disable_gpg_check: true
   async: 60
   poll: 5
 
 - name: Set the ownership and permissions of the PXF installation files to enable access by the gpadmin user
+  become: yes
   become_user: root
   file:
     path: "{{ item }}"
@@ -35,16 +43,29 @@
     - "{{ gpdb_base_dir }}/pxf-{{ pxf_gpdb_version }}"
 
 - name: Add the PXF bin directory to the PXF owner’s $PATH
+  become: yes
+  become_user: gpadmin
   lineinfile:
     path: /home/gpadmin/.bashrc
-    line: "export PATH=$PATH:/usr/local/pxf-gp6/bin"
+    line: "{{ item }}"
     insertafter: EOF
-
+  with_items:
+    - "export PATH=$PATH:/usr/local/pxf-gp6/bin"
+    - "export JAVA_HOME=/usr/lib/jvm/jre-1.8.0"
+ 
 - name: Chown gpamdin for PXF dir
   become: yes
-  file: dest={{ gpdb_base_dir }}/pxf-{{ pxf_gpdb_version }} owner=gpadmin group=gpadmin recurse=yes
+  become_user: root
+  file:
+    dest: "{{ gpdb_base_dir }}/pxf-{{ pxf_gpdb_version }}"
+    owner: gpadmin
+    group: gpadmin
+    mode: u=rwX,g=rX,o=rX
+    recurse: yes
 
+#
 - name: Export the PXF JAVA_HOME setting and Run the pxf cluster init command to initialize the PXF service on all GPDB hosts
+  become: yes
   become_user: gpadmin
   shell: ( source ~/.bashrc && export JAVA_HOME=/usr/lib/jvm/jre-1.8.0 && PXF_CONF=/usr/local/pxf-{{ pxf_gpdb_version }}/conf pxf cluster register )
   register: pxf_cluster_initialized
@@ -52,14 +73,16 @@
     - inventory_hostname in groups['master']
   # pxf cluster init has been deprecated
 
+#
 - name: Print initializtion of pxf cluster
   debug: msg={{ pxf_cluster_initialized }}
   when:
     - inventory_hostname in groups['master']
 
 - name: Run the pxf cluster start command to start PXF on each segment host
+  become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && pxf cluster start )
+  shell: ( source ~/.bashrc && export JAVA_HOME=/usr/lib/jvm/jre-1.8.0 && source ~/.bashrc && pxf cluster start )
   register: pxf_cluster_started
   when:
     - inventory_hostname in groups['master']
@@ -100,6 +123,7 @@
     - "'100' not in pxf_database_installed.stdout"
 
 - debug: msg={{ pxf_extension_install_checked.stdout }}
+  become_user: gpadmin
   when:
     - inventory_hostname in groups['master']
 
@@ -134,3 +158,169 @@
   when:
     - inventory_hostname in groups['master']
     - "'100' not in pxf_database_installed.stdout"
+
+
+# Start line to configure nfs access
+# 
+- name: Stop the pxf cluster start command to start PXF on each segment host
+  become: yes
+  become_user: gpadmin
+  shell: ( source ~/.bashrc && export JAVA_HOME=/usr/lib/jvm/jre-1.8.0 && source ~/.bashrc && pxf cluster stop )
+  register: pxf_cluster_stopped
+  when:
+    - inventory_hostname in groups['master']
+
+- name: Print stopping pxf cluster
+  debug: msg={{ pxf_cluster_stopped }}
+  when:
+    - inventory_hostname in groups['master']
+
+#
+- name: Install NFS Client on all hosts
+  become: yes
+  become_user: root
+  yum: name={{ item }} state=present
+  with_items:
+    - nfs-utils
+  when: with_nfs_access
+
+# With NFS
+- name: Create PXF base directory for NFS Access and query examples directory on all master and segment hosts
+  become_user: gpadmin
+  file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
+  with_items:
+    - "{{ pxf_base_dir_with_nfs }}"
+    - "/home/gpadmin/query-examples"
+  when:
+    - with_nfs_access
+
+#
+- name: Prepare PXF on master for nfs access
+  become: yes
+  become_user: gpadmin
+  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_nfs }} pxf cluster prepare )
+  register: pxf_cluster_nfs_prepared
+  when:
+    - with_nfs_access
+    - inventory_hostname in groups['master']
+
+#
+- name: Start PXF on master for nfs access
+  become: yes
+  become_user: gpadmin
+  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_nfs }} pxf cluster start )
+  register: pxf_cluster_nfs_started
+  when:
+    - with_nfs_access
+    - inventory_hostname in groups['master']
+
+#
+#- name: Synchronize the PXF server configuration to the GPDB cluster
+#  become: yes
+#  become_user: gpadmin
+#  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_nfs }} pxf cluster sync )
+#  register: pxf_cluster_nfs_started
+#  when:
+#    - inventory_hostname in groups['master']
+#    - with_nfs_access
+
+#
+- name:  Create the $PXF_BASE/servers/nfssrvcfg directory.
+  become_user: gpadmin
+  file: path={{ pxf_base_dir_with_nfs }}/servers/nfssrvcfg state=directory mode=0755 owner=gpadmin group=gpadmin
+  when:
+    - with_nfs_access
+    - inventory_hostname in groups['master']
+
+#
+- name: Copy the PXF pxf-site.xml template file to the nfssrvcfg server configuration directory.
+  become_user: gpadmin
+  template: src=pxf-site.xml.j2 dest={{ pxf_base_dir_with_nfs}}/servers/nfssrvcfg/pxf-site.xml owner=gpadmin group=gpadmin mode=644 force=yes
+  when:
+    - with_nfs_access
+    - inventory_hostname in groups['master']
+
+#
+- name: Synchronize the PXF server configuration to the GPDB cluster
+  become: yes
+  become_user: gpadmin
+  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_nfs }} pxf cluster sync )
+  register: pxf_cluster_nfs_started
+  when:
+    - with_nfs_access
+    - inventory_hostname in groups['master']
+
+#
+- name: Mount NFS share directory on all hosts
+  become: yes
+  become_user: root
+  mount:
+    path: "{{ nfs_share_dir }}"
+    src: "{{ nfs_server_ip_addr }}:/storage/nfsshare"
+    fstype: nfs
+    state: mounted
+  when:
+    - with_nfs_access
+
+#
+- name: Create a relative directoy to the NFS share point
+  become_user: gpadmin
+  file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
+  with_items:
+    - "{{ nfs_share_dir }}/ex1"
+  when:
+    - with_nfs_access
+    - inventory_hostname in groups['master']
+
+#
+- name: Copy some data in example directory
+  become_user: gpadmin
+  template: src={{ item }} dest={{ nfs_share_dir }}/ex1/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
+  with_items:
+    - "somedata.csv"
+  when:
+    - with_nfs_access
+    - inventory_hostname in groups['master']
+
+#
+- name: Copy the query examples
+  become_user: gpadmin
+  template: src={{ item }} dest=/home/gpadmin/query-examples/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
+  with_items:
+    - "create-external-table-for-read-nfs.sql"
+    - "select_pxf_read_nfs.sql"
+    - "create-external-table-for-write-nfs.sql"
+    - "insert-data-into-pxf-write-nfs.sql"
+  when:
+    - with_nfs_access
+    - inventory_hostname in groups['master']
+
+- name: Run query examples for nfs access
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc -d {{ pxf_database_name }} -f /home/gpadmin//query-examples/{{ item }} )
+  register: run_query_examples_output
+  with_items:
+    - "create-external-table-for-read-nfs.sql"
+    - "select_pxf_read_nfs.sql"
+    - "create-external-table-for-write-nfs.sql"
+    - "insert-data-into-pxf-write-nfs.sql"
+  when:
+    - with_nfs_access
+    - inventory_hostname in groups['master']
+
+#
+- name: Print the output of running query examples
+  debug: msg={{ run_query_examples_output }}
+  when:
+    - with_nfs_access
+    - inventory_hostname in groups['master']
+
+#
+- name: Start PXF on master for nfs access
+  become: yes
+  become_user: gpadmin
+  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_nfs }} pxf cluster start )
+  register: pxf_cluster_nfs_started
+  when:
+    - with_nfs_access
+    - inventory_hostname in groups['master']

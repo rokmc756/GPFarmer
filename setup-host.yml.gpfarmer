@@ -12,16 +12,28 @@
 #    - { role: madlib }
 #    - { role: plr }
 
+#- hosts: rk8-master
+#  become: yes
+#  roles:
+#    - { role: madlib }
+
 #- hosts: co7-master
 #- hosts: rh7-slave
 #- hosts: all
 #- hosts: rh7-master
-# - hosts: rk8-master
-- hosts: all
+# - hosts: all
+
+- hosts: rk8-master
+  become: yes
   roles:
-    - { role: firewalld }
+    - { role: pgbouncer }
+
 #    - { role: gpdb }
+#    - { role: pxf }
+#    - { role: firewalld }
+#    - { role: firewalld }
 #    - { role: gpcopy }
+
 
 #- hosts: rk8-master,rk8-slave
 # - hosts: co7-master,co7-slave

@@ -3,7 +3,39 @@ _login_user: gpadmin
 _login_password: changeme
 _dbname: postgres
 allow_ports_masters:
-  - 22              # SSH
-  - 2880            # GPCC UI
+  - "22"              # SSH
+  - "25"              # SMTP
+  - "111"             # NFS Portmapper
+  - "587"             # SMTPs
+  - "2049"            # NFS Server port
+  - "2051"            # DD Replication port
+  - "2052"            # NFS mounted
+  - "2188"            # GPText ( Zookeeper client ports )
+  - "2880"            # GPCC UI
+  - "5888"            # PXF
+  - "6543"            # PGbouncer
+  - "8080"            # GPFDIST
+  - "8888"            # GPPERFMON AGENT
+  - "8899"            # GPCC agent
+  - "6163"            # GPCC agent in 6.8
+  - "9000"            # GPLOAD
+  - "1025-65535"      # Interconnect transports database tuples
+# - "18983"           # GPText nodes ( Apache Solr )
 allow_ports_segments:
-  - 22              # SSH
+  - "22"              # SSH
+  - "25"              # SMTP
+  - "111"             # NFS Portmapper
+  - "587"             # SMTPs
+  - "2049"            # NFS Server port
+  - "2051"            # DD Replication port
+  - "2052"            # NFS mounted
+  - "2188"            # GPText ( Zookeeper client ports )
+  - "2880"            # GPCC UI
+  - "5888"            # PXF
+  - "8080"            # GPFDIST
+  - "8888"            # GPPERFMON AGENT
+  - "8899"            # GPCC agent
+  - "6163"            # GPCC agent in 6.8
+  - "9000"            # GPLOAD
+  - "1025-65535"      # Interconnect transports database tuples
+# - "18983"           # GPText nodes ( Apache Solr )

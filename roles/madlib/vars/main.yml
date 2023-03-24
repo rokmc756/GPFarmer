@@ -3,9 +3,9 @@ madlib_major_version: 1
 madlib_minor_version: 20
 madlib_patch_version:
 madlib_gpdb_version: .0+1-gp6
-madlib_rhel_version: rhel7
+madlib_rhel_version: rhel8
 madlib_database_name: madlib_testdb
-madlib_mdw_hostname: rh7-master
+madlib_mdw_hostname: rk8-master
 
 # madlib-1.19.0+1-gp6-rhel8-x86_64.tar.gz
 # madlib-1.15.1-gp5-rhel7-x86_64.tar.gza

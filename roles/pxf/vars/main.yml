@@ -1,11 +1,15 @@
 ---
 pxf_major_version: 6
-pxf_minor_version: 1.0
+pxf_minor_version: 5.0
 pxf_patch_version: 2
 pxf_gpdb_version: gp6
-pxf_rhel_version: el7
+pxf_rhel_version: el8
 pxf_database_name: pxf_testdb
-pxf_mdw_hostname: rh7-master
+pxf_mdw_hostname: rk8-master
 pxf_username: pxf_user
 pxf_setup_action: "{{ setup_action }}"
 # pxf-gp6-5.15.1-2.el7.x86_64.rpm
+with_nfs_access: true
+pxf_base_dir_with_nfs: /home/gpadmin/pxf-test-base
+nfs_share_dir: /home/gpadmin/nfsshare
+nfs_server_ip_addr: 192.168.0.2

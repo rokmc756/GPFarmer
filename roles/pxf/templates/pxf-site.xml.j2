@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property>
+        <name>pxf.service.kerberos.principal</name>
+        <value>gpadmin/_HOST@EXAMPLE.COM</value>
+        <description>Kerberos principal pxf service should use. _HOST is replaced automatically with hostnames FQDN</description>
+    </property>
+    <property>
+        <name>pxf.service.kerberos.keytab</name>
+        <value>${pxf.base}/keytabs/pxf.service.keytab</value>
+        <description>Kerberos path to keytab file owned by pxf service with permissions 0400</description>
+    </property>
+    <property>
+        <name>pxf.service.user.impersonation</name>
+        <value>true</value>
+        <description>End-user identity impersonation, set to true to enable, false to disable</description>
+    </property>
+    <property>
+        <name>pxf.service.kerberos.constrained-delegation</name>
+        <value>false</value>
+        <description>
+            Makes user impersonation work via Kerberos constrained delegation based on S4U2Self/Proxy Kerberos extension.
+            This method does not require the PXF principal to be a Hadoop proxy user, but requires the S4U2 feature
+            to be enabled in an Active Directory / IPA Server. Additional configuration is needed in the
+            Active Directory / IPA Server to enable the PXF principal to impersonate end users.
+            Set to true to enable, false to disable.
+        </description>
+    </property>
+
+    <!--
+    <property>
+        <name>pxf.service.user.name</name>
+        <value>${user.name}</value>
+        <description>
+
+            Uncomment and set the proper value only if:
+
+            - user impersonation is enabled and you want to use the specified
+              user as a proxy on the unsecured Hadoop clusters. This is useful
+              when a proxy user has already been configured on the Hadoop side,
+              and you don't want to add gpadmin (the default) as a proxy user.
+
+            - user impersonation is disabled and you want queries from all
+              Greenplum users to appear on the Hadoop side as coming from the
+              specified user.
+
+        </description>
+    </property>
+    -->
+
+    <!--
+    <property>
+        <name>pxf.fs.basePath</name>
+        <value></value>
+        <description>
+            Sets the base path when constructing a file URI for read and write
+            operations. This property MUST be configured for any server that
+            accesses a file using a file:* profile.
+        </description>
+    </property>
+    !-->
+
+    <!-- Configure NFS mount directory -->
+    <property>
+        <name>pxf.fs.basePath</name>
+        <value>{{ nfs_share_dir }}</value>
+    </property>
+
+    <property>
+        <name>pxf.ppd.hive</name>
+        <value>true</value>
+        <description>Specifies whether Predicate Pushdown feature is enabled for Hive profiles.</description>
+    </property>
+
+    <property>
+        <name>pxf.sasl.connection.retries</name>
+        <value>5</value>
+        <description>
+            Specifies the number of retries to perform when a SASL connection is refused by a Namenode
+            due to 'GSS initiate failed' error.
+        </description>
+    </property>
+
+    <property>
+        <name>pxf.orc.write.timezone.utc</name>
+        <value>true</value>
+        <description>
+            Specifies whether the PXF ORC writer should use UTC timezone when writing timestamp values.
+            If set to false, the PXF ORC writer will use the local timezone of the PXF JVM instead.
+        </description>
+    </property>
+
+</configuration>

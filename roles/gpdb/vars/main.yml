@@ -17,8 +17,8 @@ gpdb_spread_mirrors: ""
 # smdw_hostname: "smdw4"
 
 gpdb_major_version: 6
-gpdb_minor_version: 19
-gpdb_build_version: 2
+gpdb_minor_version: 21
+gpdb_build_version: 0
 gpdb_rhel_name: 'rhel7'
 gpdb_binary_type: 'rpm'
 

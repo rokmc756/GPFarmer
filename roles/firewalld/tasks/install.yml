@@ -81,3 +81,11 @@
     zone: "public"
   with_items: "{{ allow_ports_segments }}"
   when: inventory_hostname in groups['segments']
+
+#
+- name: Reload service firewalld to apply new ruleset
+  become: true
+  become_user: root
+  systemd:
+    state: reloaded
+    name: firewalld
