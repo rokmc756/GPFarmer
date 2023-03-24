@@ -7,7 +7,6 @@ import psycopg2
 
 config = {
   'connection_string': 'dbname=pgbouncer user=stats host=127.0.0.1 port=6432'
-  # 'connection_string': 'dbname=db1 user=testuser host=127.0.0.1 port=6432 password=changeme'
 }
 
 def get_stats():
@@ -31,7 +30,6 @@ def _get_stats(cur):
   print ("hit")
   cur.execute("SHOW STATS;")
   stats = defaultdict(dict)
-  # for database, total, _, _, _, req, recv, sent, query in cur.fetchall():
   for database, total, req, recv, sent, _, query, _, _, _, _, _, _, _, _  in cur.fetchall(): # for GPDB 6.23
     stats[database] = {
       'total_requests': total,
@@ -42,7 +40,6 @@ def _get_stats(cur):
     }
 
   cur.execute("SHOW POOLS;")
-  # for database, _, cl_active, cl_waiting, sv_active, sv_idle, sv_used, sv_tested, sv_login, maxwait, _ in cur.fetchall():
   for database, _, cl_active, cl_waiting, _, sv_active, sv_idle, sv_used, sv_tested, sv_login, maxwait, _, _ in cur.fetchall(): # for GPDB 6.22.x
     values = {
       'cl_active': cl_active,
@@ -57,7 +54,6 @@ def _get_stats(cur):
     if database not in stats:
       stats[database] = dict()
     # there can be many lines for one database, one for each user
-    # for (metric, value) in values.iteritems():
     for (metric, value) in values.items():
       if metric in stats[database]:
         stats[database][metric] += value
@@ -78,8 +74,6 @@ def pgbouncer_read(data=None):
     collectd.error('pgbouncer plugin: No info received')
     return
 
-#  for database, metrics in stats.iteritems():
-#    for metric, value in metrics.iteritems():
   for database, metrics in stats.items():
     for metric, value in metrics.items():
       type_instance = '%s.%s' % (database, metric)

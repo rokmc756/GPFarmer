@@ -1,8 +1,8 @@
-[ Rocky 8 ]
-[1] With python2
-alternatives --set python /usr/bin/python2
-systemctl start collectd
+
+The following error occurs when staring collected in case Interactive true is set in pgbouncer_gpdb_info.conf
+To fix it remove Interactive true in pgbouncer_gpdb_info.conf under /etc/collectd.d directory
 ~~~
+$ tail -f /var/log/messages
 Mar 23 16:30:40 rk8-master collectd[153600]: plugin_load: plugin "python" successfully loaded.
 Mar 23 16:30:40 rk8-master collectd[153600]: Systemd detected, trying to signal readiness.
 Mar 23 16:30:40 rk8-master collectd[153600]: set_thread_name("python interpreter"): name too long
@@ -11,42 +11,24 @@ Mar 23 16:30:40 rk8-master collectd[153600]: python: Interactive interpreter exi
 Mar 23 16:30:40 rk8-master collectd[153600]: Initialization complete, entering read-loop.
 Mar 23 16:30:40 rk8-master collectd[153600]: Exiting normally.
 ~~~
-pip3 install collectd
-systemctl restart collect
 
-# alternatives --set python /usr/bin/python2
-# pip2 install collectd
+
+~~~
+$ pip2 install collectd
 WARNING: Running pip install with root privileges is generally not a good idea. Try `pip2 install --user` instead.
 Collecting collectd
   Using cached https://files.pythonhosted.org/packages/3c/54/518fe5d323218badc3f7512234cf1dab251c1c591e6650cca29db1c13e9e/collectd-1.0.tar.gz
 Installing collected packages: collectd
   Running setup.py install for collectd ... done
 Successfully installed collectd-1.0
+
 [root@rk8-master collectd.d]# python
 Python 2.7.18 (default, Nov  8 2022, 17:12:04)
 [GCC 8.5.0 20210514 (Red Hat 8.5.0-15)] on linux2
 Type "help", "copyright", "credits" or "license" for more information.
 >>> import collectd
---> No error
-
-
-moonjaYMD6T:collectd moonja$ less src/daemon/plugin.c
-~~~
-  /* glibc limits the length of the name and fails if the passed string
-   * is too long, so we truncate it here. */
-  char n[THREAD_NAME_MAX];
-  if (strlen(name) >= THREAD_NAME_MAX)
-    WARNING("set_thread_name(\"%s\"): name too long", name);
-  sstrncpy(n, name, sizeof(n));
 ~~~
 
-The following error occurs when staring collected in case Interactive true is set in pgbouncer_info.conf
-To fix it remove Interactive true in pgbouncer_info.conf under /etc/collectd.d directory
-~~~
-Mar 24 01:48:09 rk8-master collectd[8546]: set_thread_name("python interpreter"): name too long
-Mar 24 01:48:09 rk8-master systemd[1]: Started Collectd statistics daemon.
-Mar 24 01:48:09 rk8-master collectd[8546]: python: Interactive interpreter exited, stopping collectd ...
-~~~
 
 The following error can be firxed after configuring connection_string in pgbouncer_info.py as below
 'connection_string': 'dbname=pgbouncer user=stats host=127.0.0.1 port=6432'
@@ -75,8 +57,7 @@ Mar 24 02:48:48 rk8-master collectd[11188]: read-function of plugin `python.pgbo
 
 
 
-
-Fixed after changing function name from iteritems to items in pgbouncer_info.py
+Fixed after changing function name from iteritems to items in pgbouncer_gpdb_info.py
 ~~~
 #  for database, metrics in stats.iteritems():
 #    for metric, value in metrics.iteritems():
@@ -84,6 +65,7 @@ Fixed after changing function name from iteritems to items in pgbouncer_info.py
     for metric, value in metrics.items():
 ~~~
 https://stackoverflow.com/questions/30418481/error-dict-object-has-no-attribute-iteritems
+
 ~~~
 Mar 24 03:05:12 rk8-master collectd[11817]: Unhandled python exception in read callback: AttributeError: 'dict' object has no attribute 'iteritems'
 Mar 24 03:05:12 rk8-master collectd[11817]: Traceback (most recent call last):
@@ -95,28 +77,71 @@ Mar 24 03:05:12 rk8-master collectd[11817]: AttributeError: 'dict' object has no
 
 
 
-[2] With python3
-alternatives --set python /usr/bin/python3
-systemctl start collectd
 ~~~
-Mar 23 16:34:17 rk8-master collectd[153751]: plugin_load: plugin "python" successfully loaded.
-Mar 23 16:34:17 rk8-master collectd[153751]: Systemd detected, trying to signal readiness.
-Mar 23 16:34:17 rk8-master collectd[153751]: set_thread_name("python interpreter"): name too long
-Mar 23 16:34:17 rk8-master systemd[1]: Started Collectd statistics daemon.
-Mar 23 16:34:17 rk8-master collectd[153751]: python: Interactive interpreter exited, stopping collectd ...
-Mar 23 16:34:17 rk8-master collectd[153751]: Initialization complete, entering read-loop.
-Mar 23 16:34:17 rk8-master collectd[153751]: Exiting normally.
-~~~
+moonjaYMD6T:files moonja$ diff -Nur pgbouncer_info.py pgbouncer_gpdb_info.py
+--- pgbouncer_info.py	2023-03-23 04:25:31.000000000 +0900
++++ pgbouncer_gpdb_info.py	2023-03-25 01:53:04.000000000 +0900
+@@ -10,7 +10,7 @@
+ }
 
-# pip3 install collectd
-# python
-Python 3.6.8 (default, Feb 21 2023, 16:57:46)
-[GCC 8.5.0 20210514 (Red Hat 8.5.0-16)] on linux
-Type "help", "copyright", "credits" or "license" for more information.
->>> import collectd
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-  File "/usr/local/lib/python3.6/site-packages/collectd.py", line 8, in <module>
-    from Queue import Queue, Empty
-ModuleNotFoundError: No module named 'Queue'
->>> \q
+ def get_stats():
+-  print "hit1"
++  print ("hit1")
+   conn, cur = None, None
+   stats = {}
+   try:
+@@ -27,10 +27,10 @@
+   return stats
+
+ def _get_stats(cur):
+-  print "hit"
++  print ("hit")
+   cur.execute("SHOW STATS;")
+   stats = defaultdict(dict)
+-  for database, total, _, _, _, req, recv, sent, query in cur.fetchall():
++  for database, total, req, recv, sent, _, query, _, _, _, _, _, _, _, _  in cur.fetchall(): # for GPDB 6.23
+     stats[database] = {
+       'total_requests': total,
+       'req_per_sec': req,
+@@ -40,7 +40,7 @@
+     }
+
+   cur.execute("SHOW POOLS;")
+-  for database, _, cl_active, cl_waiting, sv_active, sv_idle, sv_used, sv_tested, sv_login, maxwait, _ in cur.fetchall():
++  for database, _, cl_active, cl_waiting, _, sv_active, sv_idle, sv_used, sv_tested, sv_login, maxwait, _, _ in cur.fetchall(): # for GPDB 6.22.x
+     values = {
+       'cl_active': cl_active,
+       'cl_waiting': cl_waiting,
+@@ -54,17 +54,17 @@
+     if database not in stats:
+       stats[database] = dict()
+     # there can be many lines for one database, one for each user
+-    for (metric, value) in values.iteritems():
++    for (metric, value) in values.items():
+       if metric in stats[database]:
+         stats[database][metric] += value
+       else:
+         stats[database][metric] = value
+
+   cur.execute("SHOW DATABASES")
+-  for name, _, _, database, _, pool_size, reserve_pool, _, _, _ in cur.fetchall():
++  for name, _, _, database, _, pool_size, _, reserve_pool, _, _, _, _, _  in cur.fetchall(): # For GPDB 6.22
+     stats[name]['pool_size'] = pool_size
+     stats[name]['reserve_pool'] = reserve_pool
+-  print stats
++  print (stats)
+
+   return stats
+
+@@ -74,8 +74,8 @@
+     collectd.error('pgbouncer plugin: No info received')
+     return
+
+-  for database, metrics in stats.iteritems():
+-    for metric, value in metrics.iteritems():
++  for database, metrics in stats.items():
++    for metric, value in metrics.items():
+       type_instance = '%s.%s' % (database, metric)
+       val = collectd.Values(plugin='pgbouncer_info')
+       val.type = 'gauge'
+~~~
