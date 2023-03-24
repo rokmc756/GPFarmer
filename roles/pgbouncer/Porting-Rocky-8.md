@@ -14,7 +14,7 @@ Mar 23 16:30:40 rk8-master collectd[153600]: Initialization complete, entering r
 Mar 23 16:30:40 rk8-master collectd[153600]: Exiting normally.
 ~~~
 
-
+[2] Install pip2 collectd module
 ~~~
 $ pip2 install collectd
 WARNING: Running pip install with root privileges is generally not a good idea. Try `pip2 install --user` instead.
@@ -31,8 +31,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> import collectd
 ~~~
 
-
-The following error can be firxed after configuring connection_string in pgbouncer_info.py as below
+[3] The following error can be firxed after configuring connection_string in pgbouncer_info.py as below
 'connection_string': 'dbname=pgbouncer user=stats host=127.0.0.1 port=6432'
 Because only pgbouncer database provide SHOW STATS and SHOW POOLS and SHOW DATABASE and so on
 ~~~
@@ -45,8 +44,7 @@ Mar 24 02:21:26 rk8-master collectd[9939]: psycopg2.ProgrammingError: unrecogniz
 Mar 24 02:21:26 rk8-master collectd[9939]: read-function of plugin `python.pgbouncer_info' failed. Will suspend it for 40.000 seconds.
 ~~~
 
-
-Fixed the following errors after collecting number of columns from output of SHOW STATS and SHOW POOLS in pgbouncer_info.conf
+[4] The following error occurs when getting number of columns from return output of SHOW STATS and SHOW POOLS in pgbouncer_gpdb_info.py
 ~~~
 Mar 24 02:48:48 rk8-master collectd[11188]: Unhandled python exception in read callback: ValueError: too many values to unpack (expected 9)
 Mar 24 02:48:48 rk8-master collectd[11188]: Traceback (most recent call last):
@@ -58,29 +56,10 @@ Mar 24 02:48:48 rk8-master collectd[11188]: read-function of plugin `python.pgbo
 ~~~
 
 
-
-Fixed after changing function name from iteritems to items in pgbouncer_gpdb_info.py
+The below patch fixes above error after changing the number of columns in the return output of SHOW STATS, SHOW POOLS, SHOW DATABASES pgbouncer command in pgbouncer_gpdb_info.py\
+Because these commands on pgbouncer of greenplum returns much more columns than postgresql's one.
 ~~~
-#  for database, metrics in stats.iteritems():
-#    for metric, value in metrics.iteritems():
-  for database, metrics in stats.items():
-    for metric, value in metrics.items():
-~~~
-https://stackoverflow.com/questions/30418481/error-dict-object-has-no-attribute-iteritems
-
-~~~
-Mar 24 03:05:12 rk8-master collectd[11817]: Unhandled python exception in read callback: AttributeError: 'dict' object has no attribute 'iteritems'
-Mar 24 03:05:12 rk8-master collectd[11817]: Traceback (most recent call last):
-Mar 24 03:05:12 rk8-master collectd[11817]:  File "/var/lib/collectd/python/pgbouncer_info.py", line 75, in pgbouncer_read#012    stats = get_stats()
-Mar 24 03:05:12 rk8-master collectd[11817]:  File "/var/lib/collectd/python/pgbouncer_info.py", line 21, in get_stats#012    stats = _get_stats(cur)
-Mar 24 03:05:12 rk8-master collectd[11817]:  File "/var/lib/collectd/python/pgbouncer_info.py", line 60, in _get_stats#012    for (metric, value) in values.iteritems():
-Mar 24 03:05:12 rk8-master collectd[11817]: AttributeError: 'dict' object has no attribute 'iteritems'
-~~~
-
-
-
-~~~
-moonjaYMD6T:files moonja$ diff -Nur pgbouncer_info.py pgbouncer_gpdb_info.py
+$ diff -Nur pgbouncer_info.py pgbouncer_gpdb_info.py
 --- pgbouncer_info.py	2023-03-23 04:25:31.000000000 +0900
 +++ pgbouncer_gpdb_info.py	2023-03-25 01:53:04.000000000 +0900
 @@ -10,7 +10,7 @@
@@ -147,3 +126,24 @@ moonjaYMD6T:files moonja$ diff -Nur pgbouncer_info.py pgbouncer_gpdb_info.py
        val = collectd.Values(plugin='pgbouncer_info')
        val.type = 'gauge'
 ~~~
+
+
+[5] This error is fixed after changing function name from iteritems to items in pgbouncer_gpdb_info.py
+~~~
+Mar 24 03:05:12 rk8-master collectd[11817]: Unhandled python exception in read callback: AttributeError: 'dict' object has no attribute 'iteritems'
+Mar 24 03:05:12 rk8-master collectd[11817]: Traceback (most recent call last):
+Mar 24 03:05:12 rk8-master collectd[11817]:  File "/var/lib/collectd/python/pgbouncer_info.py", line 75, in pgbouncer_read#012    stats = get_stats()
+Mar 24 03:05:12 rk8-master collectd[11817]:  File "/var/lib/collectd/python/pgbouncer_info.py", line 21, in get_stats#012    stats = _get_stats(cur)
+Mar 24 03:05:12 rk8-master collectd[11817]:  File "/var/lib/collectd/python/pgbouncer_info.py", line 60, in _get_stats#012    for (metric, value) in values.iteritems():
+Mar 24 03:05:12 rk8-master collectd[11817]: AttributeError: 'dict' object has no attribute 'iteritems'
+~~~
+
+See the patch since it's included in it.
+~~~
+#  for database, metrics in stats.iteritems():
+#    for metric, value in metrics.iteritems():
+  for database, metrics in stats.items():
+    for metric, value in metrics.items():
+~~~
+
+This solution was found out at this link - https://stackoverflow.com/questions/30418481/error-dict-object-has-no-attribute-iteritems
