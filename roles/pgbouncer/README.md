@@ -1,4 +1,4 @@
-Pgbouncer for Greenplum database
+PGBouncer for Greenplum Database
 =========
 
 This role configures PgBouncer for Greenplum database connection mux utility.
