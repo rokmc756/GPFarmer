@@ -95,6 +95,12 @@ Key config changes such as pool sizing do not require a full restart
 $ sysemctl reload pgbouncer
 
 
+What are changed and fixed compare to original ansible role
+----------------------
+
+See [Porting-Rocky-8.md](https://github.com/rokmc756/gpfarmer/blob/main/roles/pgbouncer/Porting-Rocky-8.md)
+
+
 License
 -------
 
