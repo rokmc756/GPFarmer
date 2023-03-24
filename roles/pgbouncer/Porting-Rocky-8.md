@@ -1,4 +1,4 @@
-What are fixed and changed when porting pgbouncer ansible role for Greenplum Database and Rocky 8
+What are fixed and changed when porting pgbouncer ansible role for GPDBe and Rocky 8
 ---------
 
 - The following error occurs when staring collected in case Interactive true is set in pgbouncer_gpdb_info.conf
