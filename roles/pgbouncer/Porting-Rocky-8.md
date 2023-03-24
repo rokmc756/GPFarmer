@@ -1,7 +1,7 @@
 What are fixed and changed when porting pgbouncer ansible role for GPDBe and Rocky 8
 ---------
 
-- The following error occurs when staring collected in case Interactive true is set in pgbouncer_gpdb_info.conf
+[1] The following error occurs when staring collected in case Interactive true is set in pgbouncer_gpdb_info.conf
 To fix it remove Interactive true in pgbouncer_gpdb_info.conf under /etc/collectd.d directory
 ~~~
 $ tail -f /var/log/messages
