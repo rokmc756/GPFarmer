@@ -5,7 +5,7 @@ This role configures PgBouncer for Greenplum database connection mux utility.
 
 Greenplum database's performance degrades when handling a high number of connection due to a 1:1 mapping of connection to Greenplum backend processes. PgBouncer is a threaded pooler which can reduce the number of backend processes and the handshaking involved in setting up a new connection.
 
-This role is cloned from the following github site[1] which is created for Postgres and Ubuntu.\
+This role is cloned from the following github site[1] which is created for Postgres and Ubuntu. Thanks for sharing it. Alexey!!.\
 [1] https://github.com/alexey-medvedchikov/ansible-pgbouncer
 
 In this role there are ansible playbooks modified for RHEL, CentOS and Rocky 8 and Greenplum database as well as configuration of monit and pgbouncer python script for collectd python module.
