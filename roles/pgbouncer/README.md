@@ -10,6 +10,7 @@ This role is cloned from the following github site[1] which is created for Postg
 
 In this role there are several ansible playbooks modified for RHEL, CentOS and Rocky 8 and Greenplum database as well as configuration of monit and pgbouncer python script for collectd python module.
 
+
 Example pgbouncer/vars/main.yml
 ---------------------------------
 
@@ -38,6 +39,7 @@ Ansible handles the templating of userlist.txt, including the md5 hashing.
     collectd_monitoring: true
 ~~~
 
+
 Requirements
 ------------
 
@@ -51,6 +53,7 @@ Example playbook on ansible control node
 ~~~
 $ pwd
 /Users/moonja/gpfarmer
+
 $ vi setup-host.yml
 - hosts: rk8-master        # Greenplum master hostname
   become: yes
@@ -105,6 +108,7 @@ License
 -------
 
 LGPL
+
 
 Author Information
 ------------------
