@@ -46,7 +46,7 @@ Requirements
 Module is modified and tested with pgbouncer in greenplum 6.22.x.
 
 
-Example playbook on ansible control node
+Example playbook to install collectd and monit and configure pgbouncer on ansible control node
 ----------------
 
 ---
@@ -59,6 +59,12 @@ $ vi setup-host.yml
   become: yes
   roles:
     - { role: pgbouncer }
+
+$ make install
+
+# To uninstall them, run
+$ make uninstall
+
 ~~~
 
 
