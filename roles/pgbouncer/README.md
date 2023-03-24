@@ -14,7 +14,7 @@ Example pgbouncer/vars/main.yml
 ---------------------------------
 
 Ansible handles the templating of userlist.txt, including the md5 hashing.
-
+~~~
     pgbouncer_users:
       - name: testuser
         pass: changeme
@@ -36,7 +36,7 @@ Ansible handles the templating of userlist.txt, including the md5 hashing.
 
     monit_protection: true
     collectd_monitoring: true
-
+~~~
 
 Requirements
 ------------
@@ -48,6 +48,7 @@ Example playbook on ansible control node
 ----------------
 
 ---
+~~~
 $ pwd
 /Users/moonja/gpfarmer
 $ vi setup-host.yml
@@ -55,6 +56,7 @@ $ vi setup-host.yml
   become: yes
   roles:
     - { role: pgbouncer }
+~~~
 
 
 Debugging
@@ -62,11 +64,15 @@ Debugging
 
 If pgbouncer fails to start:-
 
+~~~
 [gpadmin@rk8-master ~]$ pgbouncer -d /usr/local/greenplum-db/etc/pgbouncer/pgbouncer.ini -vvvv
+~~~
 
 Testing a connection to a remote database
 
+~~~
 [gpadmin@rk8-master ~]$ psql -h localhost -p 6432 -U username databasename
+~~~
 
 
 Stats
@@ -75,8 +81,10 @@ Stats
 The default 1.7.2 configuration provides peer authentication of the pgbouncer database to show stats.
 NOTE: this still requires a userlist.txt entry for the postgres user.
 
+~~~
 [gpadmin@rk8-master ~]$ psql -p 6432 pgbouncer -c 'show pool;'
 [gpadmin@rk8-master ~]$ psql -p 6432 pgbouncer -c 'show stats;'
+~~~
 
 
 Reloading / restarting
