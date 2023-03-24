@@ -1,0 +1,42 @@
+---
+#
+- name: Uninstall rpm packages for pgbouncer_info
+  become: true
+  package:
+    name: "{{ item }}"
+    state: "{{ pgbouncer_package_state }}"
+  with_items: "{{ pgbouncer_packages }}"
+
+#
+- name: Install collectd and monit package
+  become: true
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - python2
+    - python2-psycopg2
+    - monit
+    - collectd
+    - collectd-python
+    - collectd-web
+
+#
+- name: Install python collectd modules for pgbouncer monitoring
+  become: true
+  become_user: root
+  shell: ( pip2 install {{ item }} )
+  async: 60
+  poll: 5
+  register: pip3_python_collectd_modules_for_pgbouncer
+  with_items:
+    - "collectd"
+
+#
+- name: Alternative python version to python2 for installing collectd and jevent rpm packages
+  become: true
+  become_user: root
+  command: alternatives --set python /usr/bin/python2
+  ignore_errors: yes
+  register: python_version_alternative
+  when: hostvars[inventory_hostname].ansible_distribution_major_version|int <= 8

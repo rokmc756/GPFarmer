@@ -1,0 +1,23 @@
+---
+
+- include: install.yml
+  tags: install
+  # tags: [pgbouncer, pgbouncer-install]
+
+- include: configure.yml
+  tags: install
+  # tags: [pgbouncer, pgbouncer-configure]
+
+- include: monit.yml
+  when: monit_protection is defined and monit_protection == true
+  tags: install
+  # tags: [pgbouncer, pgbouncer-monit]
+
+- include: collectd.yml
+  when: collectd_monitoring is defined and collectd_monitoring == true
+  tags: install
+  # tags: [pgbouncer, pgbouncer-collectd]
+
+- include: uninstall.yml
+  tags: uninstall
+  # tags: [pgbouncer, pgbouncer-install]

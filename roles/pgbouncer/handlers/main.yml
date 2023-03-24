@@ -1,0 +1,37 @@
+---
+
+- name: start pgbouncer
+  become: yes
+  service:
+    name: pgbouncer
+    state: started
+
+- name: stop pgbouncer
+  become: yes
+  service:
+    name: pgbouncer
+    state: stopped
+
+- name: restart pgbouncer
+  become: yes
+  service:
+    name: pgbouncer
+    state: restarted
+
+- name: reload pgbouncer
+  become: yes
+  service:
+    name: pgbouncer
+    state: reloaded
+
+- name: restart monit
+  become: yes
+  service:
+    name: monit
+    state: restarted
+
+- name: restart collectd
+  become: yes
+  service:
+    name: collectd
+    state: restarted

@@ -1,0 +1,37 @@
+- name: Alternative python version to python2 for collectd pythom module
+  become: true
+  become_user: root
+  command: alternatives --set python /usr/bin/python2
+  ignore_errors: yes
+  register: python_version_alternative
+  when: hostvars[inventory_hostname].ansible_distribution_major_version|int <= 8
+
+- name: Ensure collectd is running
+  service:
+    name: collectd
+    state: started
+
+- name: Make "/var/lib/collectd/python"
+  file:
+    path: /var/lib/collectd/python
+    state: directory
+
+- name: Copy pgbouncer_info plugin up
+  copy:
+    dest: /var/lib/collectd/python/pgbouncer_gpdb_info.py
+    src: files/pgbouncer_gpdb_info.py
+
+- name: Setup collectd monitoring file
+  copy:
+    dest: /etc/collectd.d/pgbouncer_gpdb_info.conf
+    content: |
+      LoadPlugin python
+      <Plugin python>
+        ModulePath "/var/lib/collectd/python"
+        LogTraces true
+        Import "pgbouncer_gpdb_info"
+
+        <Module pgbouncer_gpdb_info>
+        </Module>
+      </Plugin>
+  notify: restart collectd
