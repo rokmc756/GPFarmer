@@ -8,7 +8,7 @@ Greenplum database's performance degrades when handling a high number of connect
 This role is cloned from the following github site[1] which is created for Postgres and Ubuntu. Thanks for sharing it. Alexey!!.\
 [1] https://github.com/alexey-medvedchikov/ansible-pgbouncer
 
-In this role there are ansible playbooks modified for RHEL, CentOS and Rocky 8 and Greenplum database as well as configuration of monit and pgbouncer python script for collectd python module.
+In this role there are several ansible playbooks modified for RHEL, CentOS and Rocky 8 and Greenplum database as well as configuration of monit and pgbouncer python script for collectd python module.
 
 Example pgbouncer/vars/main.yml
 ---------------------------------
