@@ -6,14 +6,14 @@
 # greenplum-cc-web-4.14.0-gp5-rhel7-x86_64.zip
 
 gpdb_major_version: 6
-gpdb_minor_version: 19.2
+gpdb_minor_version: 22.2
 gpdb_build_version:
 gpcc_major_version: 6
-gpcc_minor_version: 8.3
+gpcc_minor_version: 8.4
 # gpcc_build_version:
 # gpcc_rhel_name: LINUX-
 # gpcc_rhel_name: gp6-rhel8-
-gpcc_rhel_name: rhel7
+gpcc_rhel_name: rhel8
 gpdb_initdb_only_single: false
 gpdb_initdb_with_standby: true
 # gpcc_network_range: "192.168.56.0/24"

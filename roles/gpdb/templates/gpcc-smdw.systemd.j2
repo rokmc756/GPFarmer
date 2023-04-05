@@ -1,0 +1,21 @@
+[Unit]
+Description=Greenplum Command Center Runners
+After=network.target sshd.service
+Requires=sshd.service
+Requisite=sshd.service
+
+[Service]
+Type=forking
+User=gpadmin
+Group=gpadmin
+Environment=GPDB_BASE_DIR=/usr/local/greenplum-db GPCC_BASE_DIR=/usr/local/greenplum-cc
+ExecCondition=/bin/bash -c "source $GPDB_BASE_DIR/greenplum_path.sh && psql -h rk8-master -U gpadmin -c 'select version()' > /dev/null 2>&1"
+ExecCondition=/bin/bash -c "touch /tmp/check_ssh_alive && source $GPDB_BASE_DIR/greenplum_path.sh && gpscp -f /home/gpadmin/hostfile /tmp/check_ssh_alive =:/tmp"
+ExecStart=/bin/bash -c "source $GPDB_BASE_DIR/greenplum_path.sh && source $GPCC_BASE_DIR/gpcc_path.sh && gpcc start"
+ExecStop=/bin/bash -c "source $GPDB_BASE_DIR/greenplum_path.sh && source $GPCC_BASE_DIR/gpcc_path.sh && gpcc stop"
+Restart=on-failure
+TimeoutSec=60
+
+[Install]
+WantedBy=multi-user.target
+# WantedBy=default.target

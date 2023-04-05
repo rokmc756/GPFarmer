@@ -119,7 +119,12 @@ gpcc_start() {
 
 gpcc_stop() {
     # gpcc_monitor
-    su - gpadmin -c "source /usr/local/greenplum-db/greenplum_path.sh && source /usr/local/greenplum-cc/gpcc_path.sh && gpcc stop"
+    su - gpadmin -c "source /usr/local/greenplum-db/greenplum_path.sh && source /usr/local/greenplum-cc/gpcc_path.sh && timeout -s 9 10s gpcc stop"
+    if [ $? != 0 ]; then
+        kill -9 $(ps -ef | grep -v grep | grep gpccws | awk '{print $2}')
+        return  0
+    fi
+
     if [ $? =  $OCF_SUCCESS ]; then
 	rm ${OCF_RESKEY_state}
     fi
@@ -130,8 +135,12 @@ gpcc_monitor() {
 	# Monitor _MUST!_ differentiate correctly between running
 	# (SUCCESS), failed (ERROR) or _cleanly_ stopped (NOT RUNNING).
 	# That is THREE states, not just yes/no.
+        ( su - gpadmin -c "source /usr/local/greenplum-db/greenplum_path.sh && source /usr/local/greenplum-cc/gpcc_path.sh && gpcc
+status | grep -E 'webserver: running' > /dev/null 2>&1" ) && \
+        ( su - gpadmin -c "source /usr/local/greenplum-db/greenplum_path.sh && source /usr/local/greenplum-cc/gpcc_path.sh && gpcc
+status | grep -E 'agents running' > /dev/null 2>&1" ) && \
+        ( curl -I --insecure --connect-timeout 5 https://localhost:28080 > /dev/null 2>&1 )
 
-	su - gpadmin -c "source /usr/local/greenplum-db/greenplum_path.sh && source /usr/local/greenplum-cc/gpcc_path.sh && gpcc status | grep 'webserver: running'"	
 	# if [ -f ${OCF_RESKEY_state} ]; then
     	if [ $? =  $OCF_SUCCESS ]; then
 	    return $OCF_SUCCESS
