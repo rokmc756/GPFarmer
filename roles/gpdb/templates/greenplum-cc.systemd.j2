@@ -1,0 +1,27 @@
+[Unit]
+Description=Greenplum Command Center Runners
+After=NetworkManager.service sshd.service greenplum.service
+Before=shutdown.target reboot.target halt.target
+Requisite=NetworkManager.service sshd.service greenplum.service
+# Requires=NetworkManager.service sshd.service greenplum.service
+BindsTo=greenplum.service
+
+[Service]
+Type=forking
+User=gpadmin
+Group=gpadmin
+Environment=GPDB_BASE_DIR=/usr/local/greenplum-db GPCC_BASE_DIR=/usr/local/greenplum-cc
+WorkingDirectory=/home/gpadmin
+ExecStartPre=/bin/bash -l -c 'gpssh -f hostfile -e "echo \$(hostname)"'
+ExecCondition=/bin/bash -l -c "touch /tmp/check_ssh_alive && source $GPDB_BASE_DIR/greenplum_path.sh && gpscp -f /home/gpadmin/hostfile /tmp/check_ssh_alive =:/tmp"
+# RemainAfterExit=yes
+ExecStart=/bin/bash -l -c "source $GPDB_BASE_DIR/greenplum_path.sh && source $GPCC_BASE_DIR/gpcc_path.sh && gpcc start"
+ExecStop=/bin/bash -l -c "source $GPDB_BASE_DIR/greenplum_path.sh && source $GPCC_BASE_DIR/gpcc_path.sh && gpcc stop"
+Restart=on-failure
+TimeoutSec=60
+TimeoutStopSec=120
+# RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+# WantedBy=default.target

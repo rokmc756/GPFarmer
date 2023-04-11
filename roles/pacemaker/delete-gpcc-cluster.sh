@@ -4,6 +4,8 @@ pcs resource delete gpdb-vip
 pcs resource delete gpdb
 
 pcs cluster disable --all
+
+kill -9 $(pidof pacemakerd)
 pcs cluster stop --all
 
 pcs cluster destroy

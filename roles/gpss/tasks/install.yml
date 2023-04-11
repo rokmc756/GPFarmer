@@ -1,15 +1,19 @@
 ---
 
-# Install gpss extention on Greenplum database
+# Install Greenplum Streaming Server on both GPDB Master and Kafka Broker
+# Configure data loading with sample data between them
 
+#
 - name: Check if the GPDB software is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
 
+#
 - name: Stop if GPDB software is not installed
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_installed.stat.exists != True
 
+#
 - name: Verify that database is up and running
   become_user: gpadmin
   changed_when: False
@@ -18,26 +22,27 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
+#
 - name: Copy GPSS tarball file
   become_user: gpadmin
   copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-  when:
-    - inventory_hostname in groups['master']
+  when:  inventory_hostname in groups['master'] and install_gpss_tar
 
+#
 - name: Untar GPSS tarball archive
   become_user: gpadmin
   unarchive: src={{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} copy=no owner=gpadmin group=gpadmin
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master'] and install_gpss_tar
 
+#
 - name: Install GPSS tarball in {{ gpdb_base_dir }}
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && cd {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64/ ; ./install_gpdb_component )
   async: 120
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master'] and install_gpss_tar
 
+#
 - name: Verify if GPSS gppkg is installed
   become_user: gpadmin
   command: 'rpm -q gpss --dbpath /usr/local/greenplum-db/share/packages/database'
@@ -48,31 +53,36 @@
     - select_gpss_version.rc != 1
 #  #ignore_warnings: True
 #  ## command: '/usr/bin/rpm -qa custom-rpm --queryformat %{VERSION}'
- 
+
+#
 - name: Stop if GPSS gppkg package is installed
   fail: msg="GPSS gppkg package is alredy installed!"
   when:
     - inventory_hostname in groups['master']
     - "'package gpss is not installed' not in select_gpss_version.stdout"
 
+#
 - name: Copy GPSS gppkg file
   become_user: gpadmin
   copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
-    - inventory_hostname in groups['master']  # etl host
+    - inventory_hostname in groups['master']  # At GPDB Master
 
+#
 - name: Install GPSS gppkg package
   become_user: gpadmin
   shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.gppkg )
   when:
-    - inventory_hostname in groups['master']  # etl host
+    - inventory_hostname in groups['master']  # At GPDB Master
 
+#
 - name: Verify that database for GPSS extention is installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ gpss_database_name }}'" )
   register: gpss_database_installed
   when: inventory_hostname in groups['master']
 
+#
 - name: Create database for GPSS
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ gpss_database_name }} )
@@ -81,6 +91,7 @@
     - inventory_hostname in groups['master']
     - "'100' not in gpss_database_installed.stdout"
 
+#
 - name: Create extension for GPSS
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ gpss_database_name }} -tAc "CREATE extension gpss" )
@@ -89,36 +100,103 @@
     - inventory_hostname in groups['master']
     - "'100' not in gpss_database_installed.stdout"
 
+#
 - name: "Check if GPSS rpm package is installed"
   package_facts:
     manager: "auto"
   when:
-    - inventory_hostname in groups['master']  # etl host
+    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
 
+#
 - name: Stop if GPSS rpm package is installed
   fail: msg="GPSS rpm package is already installed!"
   when:
-   - inventory_hostname in groups['master']  # etl host
+   - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
    - "'gpss' in ansible_facts.packages"
 
+#
 - name: Copy GPSS rpm package
-  become_user: root # etl user
+  become_user: gpadmin                              # ETL user
   copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.rpm dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
-    - inventory_hostname in groups['master']  # etl host
+    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
 
+#
 - name: Install GPSS rpm package in {{ gpdb_base_dir }}
-  become_user: root # etl user
+  become: yes
+  become_user: gpadmin
   yum:
     name: /home/gpadmin/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.rpm
     state: present
   async: 60
   poll: 5
   when:
-    - inventory_hostname in groups['master']  # etl host
+    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
 
-- name: Before using the GPSS ETL tools
-  become_user: root # etl user
-  shell: ( . /usr/local/gpss/gpss_path.sh )
+- name: Chown gpamdin for GPSS install directory
+  become: yes
+  become_user: root
+  file:
+    dest: "{{ gpdb_base_dir }}/gpss"
+    owner: gpadmin
+    group: gpadmin
+    mode: u=rwX,g=rX,o=rX
+    recurse: yes
+  when: inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+
+- name: Create Kafka Topic
+  become: yes
+  become: gpadmin
+  shell:
+    "{{ kafka_install_dir }}//bin/kafka-topics.sh --create --bootstrap-server {{ kafka_broker_hostname }}:9092 --replication-factor {{ kafka_replication_factor }} --partitions {{ kafka_partitions }} --topic {{ kafka_topic_name }}"
   when:
-    - inventory_hostname in groups['master']  # etl host
+    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+
+- name: List Kafka Topics
+  become: yes
+  become: gpadmin
+  shell:
+    "{{ kafka_install_dir }}//bin/kafka-topics.sh --list --bootstrap-server {{ kafka_broker_hostname }}:9092"
+  when:
+    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+
+# kafka-verifiable로 시작하는 2개의 스크립트를 사용하면 String 타입 메시지 값을 코드 없이 주고받을 수 있다. 카프카 클러스터 설치가 완료된 이후에 토픽에 데이터를 전송하여 간단한 네트워크 통신 테스트를 할 대 유용하다.
+#kafka-verifiable-producer.sh --bootstrap-server localhost:9092 \
+#--max-messages 10 \
+#--topic verify-test
+
+#
+- name: Stream data into Kafka Topci
+  become: yes
+  become: gpadmin
+  shell:
+    "{{ kafka_install_dir }}//bin/kafka-console-producer.sh --broker-list {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }} < /home/gpadmin/sample_data.json"
+  when:
+    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+
+#
+- name: Check Replication factors
+  become: yes
+  become: gpadmin
+  shell:
+    "{{ kafka_install_dir }}//bin/kafka-topics.sh --bootstrap-server {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }}"
+  when:
+    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+
+#
+- name: Check if data is inserting into Kafka Topic
+  become: yes
+  become: gpadmin
+  shell:
+    "{{ kafka_install_dir }}//bin/kafka-console-consumer.sh --bootstrap-server {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }} --from-beginning"
+  when:
+    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+
+
+#- name: Before using the GPSS ETL tools
+#  become: yes
+#  become: gpadmin
+#  shell: ( source /usr/local/gpss/gpss_path.sh )
+#  when:
+#    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+

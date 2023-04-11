@@ -81,6 +81,7 @@
     - java-1.8.0-openjdk-devel
     - libcgroup
     - libcgroup-tools
+    - nmap
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
   #  - pexpect
 
@@ -139,6 +140,7 @@
     - { package: xmlto }
     - { package: libcgroup }
     - { package: libcgroup-tools }
+    - { package: nmap }
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int == 7
   #  - { package: python-psutil }
   #  - { package: python-scp }

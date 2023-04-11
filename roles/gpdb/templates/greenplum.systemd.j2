@@ -1,0 +1,27 @@
+[Unit]
+Description=Greenplum Database Runners
+After=sockets.target network.target sshd.socket sshd@.service systemd-user-sessions.service network-online.target NetworkManager.service
+Before=gpcc.service shutdown.target reboot.target halt.target
+Requisite=network-online.target network.target NetworkManager.service sshd.service
+#Requires=network-online.target network.target NetworkManager.service sshd.service
+#OnFailure=gpcc.service
+
+[Service]
+Type=forking
+User=gpadmin
+Group=gpadmin
+Environment=GPDB_BASE_DIR=/usr/local/greenplum-db
+WorkingDirectory=/home/gpadmin
+ExecStartPre=/bin/bash -l -c 'source $GPDB_BASE_DIR/greenplum_path.sh && gpssh -f /home/gpadmin/hostfile -e "echo \$(hostname)" > /dev/null 2>&1' 
+ExecCondition=/bin/bash -l -c 'touch /tmp/check_ssh_alive && source $GPDB_BASE_DIR/greenplum_path.sh && gpscp -f /home/gpadmin/hostfile /tmp/check_ssh_alive =:/tmp'
+# RemainAfterExit=yes
+ExecStart=/bin/bash -l -c 'source $GPDB_BASE_DIR/greenplum_path.sh && gpstart -a'
+ExecReload=/bin/bash -l -c 'source $GPDB_BASE_DIR/greenplum_path.sh && gpstop -ra'
+ExecStop=/bin/bash -l -c 'source $GPDB_BASE_DIR/greenplum_path.sh && gpstop -a'
+Restart=on-failure
+TimeoutSec=300
+TimeoutStopSec=180
+
+[Install]
+WantedBy=multi-user.target
+# WantedBy=default.target

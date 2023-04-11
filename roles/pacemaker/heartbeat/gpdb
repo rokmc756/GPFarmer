@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 #
-#	gpdb OCF RA. Does nothing except track its own state.
+#	GPDB OCF RA. Does nothing except track its own state.
 #	Use it only as a testing tool or example for how to write
 #	a resource agent.
 #
@@ -109,44 +109,86 @@ END
 }
 
 gpdb_start() {
-    gpdb_monitor
-    if [ $? =  $OCF_SUCCESS ]; then
-	return $OCF_SUCCESS
+
+    if [ -z "$(ps -ef | grep postgres | grep 'wal receiver' | grep -v grep)" ] && [ -z "$(pidof postgres)" ]; then
+        su - gpadmin -c "source /usr/local/greenplum-db/greenplum_path.sh && timeout -s 9 20s gpstart -a"
+    	if [ $? =  $OCF_SUCCESS ]; then
+            touch ${OCF_RESKEY_state}
+            return $OCF_SUCCESS
+	else
+	    return $OCF_ERR_GENERIC
+	fi
     else
-    	su - gpadmin -c "source /usr/local/greenplum-db/greenplum_path.sh && export PGPORT=5432 && gpactivatestandby -a -d /data/master/gpseg-1"
-	return $OCF_SUCCESS
+        su - gpadmin -c "source /usr/local/greenplum-db/greenplum_path.sh && export PGPORT=5432 && gpactivatestandby -f -a -d /data/master/gpseg-1"
+        if [ $? =  $OCF_SUCCESS ]; then
+            touch ${OCF_RESKEY_state}
+            return $OCF_SUCCESS
+	else
+	    return $OCF_ERR_GENERIC
+	fi
     fi
-    touch ${OCF_RESKEY_state}
+
 }
 
 gpdb_stop() {
-    # gpdb_monitor
-    su - gpadmin -c "source /usr/local/greenplum-db/greenplum_path.sh && source /usr/local/greenplum-db/greenplum_path.sh && gpstop -a"
-    if [ $? =  $OCF_SUCCESS ]; then
-	rm ${OCF_RESKEY_state}
+
+    if [ -z "$(ps -ef | grep postgres | grep 'wal receiver' | grep -v grep)" ]; then
+        su - gpadmin -c "source /usr/local/greenplum-db/greenplum_path.sh && timeout -s 9 10s gpstop -a"
+        if [ $? =  $OCF_SUCCESS ]; then
+	    rm ${OCF_RESKEY_state}
+            return $OCF_SUCCESS
+        else
+	    if [ ! -z "$(pidof postgres)" ]; then
+      	        kill -9 $(pidof postgres)
+                rm -rf /tmp/.s.PGSQL.*
+	        rm ${OCF_RESKEY_state}
+                return $OCF_SUCCESS
+	    else
+                return $OCF_SUCCESS
+	    fi
+        fi
     fi
-    return $OCF_SUCCESS
+
 }
 
 gpdb_monitor() {
-	# Monitor _MUST!_ differentiate correctly between running
-	# (SUCCESS), failed (ERROR) or _cleanly_ stopped (NOT RUNNING).
-	# That is THREE states, not just yes/no.
+    # Monitor _MUST!_ differentiate correctly between running
+    # (SUCCESS), failed (ERROR) or _cleanly_ stopped (NOT RUNNING).
+    # That is THREE states, not just yes/no.
+	
+    if [ -f ${OCF_RESKEY_state} ]; then
+        su - gpadmin -c "source /usr/local/greenplum-db/greenplum_path.sh && timeout -s 9 5s gpstate -Q > /dev/null 2>&1"
+        if [ $? =  $OCF_SUCCESS ]; then
+            return $OCF_SUCCESS
+        else
+            su - gpadmin -c "timeout -s 9 5s psql -h localhost -c \"select 100 from pg_database where datname='gpadmin'\"" \
+            > /dev/null 2>&1
+            if [ $? =  $OCF_SUCCESS ]; then
+                return $OCF_SUCCESS
+            else
+                if [ -z "$(ps -ef | grep postgres | grep 'wal sender')" ]; then
+                    kill -9 $(pidof postgres)
+                    rm -rf /tmp/.s.PGSQL.*
+	            rm ${OCF_RESKEY_state}
+                else
+                    kill -9 $(pidof postgres)
+                    rm -rf /tmp/.s.PGSQL.*
+	            rm ${OCF_RESKEY_state}
+                fi
+	    fi
+    	fi
+    fi
 
-	su - gpadmin -c "source /usr/local/greenplum-db/greenplum_path.sh && gpstate -e"
-	# if [ -f ${OCF_RESKEY_state} ]; then
-    	if [ $? =  $OCF_SUCCESS ]; then
-	    return $OCF_SUCCESS
-	fi
-	if false ; then
-		return $OCF_ERR_GENERIC
-	fi
+    if false ; then
+        return $OCF_ERR_GENERIC
+    fi
 
-	if ! ocf_is_probe && [ "$__OCF_ACTION" = "monitor" ]; then
-		# set exit string only when NOT_RUNNING occurs during an actual monitor operation.
-		ocf_exit_reason "No process state file found"
-	fi
-	return $OCF_NOT_RUNNING
+    if ! ocf_is_probe && [ "$__OCF_ACTION" = "monitor" ]; then
+        # set exit string only when NOT_RUNNING occurs during an actual monitor operation.
+        ocf_exit_reason "No process state file found"
+    fi
+    return $OCF_NOT_RUNNING
+
 }
 
 gpdb_validate() {
@@ -170,6 +212,8 @@ meta-data)	meta_data
 start)		gpdb_start;;
 stop)		gpdb_stop;;
 monitor)	gpdb_monitor;;
+#promote)  	gpdb_promote;;
+#demote)   	gpdb_demote;;
 migrate_to)	ocf_log info "Migrating ${OCF_RESOURCE_INSTANCE} to ${OCF_RESKEY_CRM_meta_migrate_target}."
 	        gpdb_stop
 		;;

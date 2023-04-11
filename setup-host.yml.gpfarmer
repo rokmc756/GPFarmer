@@ -29,22 +29,23 @@
 #    - { role: pgbouncer }
 #    - { role: pxf }
 #    - { role: firewalld }
-#    - { role: firewalld }
 #    - { role: gpcopy }
 
 #- hosts: rk8-master,rk8-slave
 #- hosts: co7-master,co7-slave
 # - hosts: rh7-master,rh7-slave
 # - hosts: rk8-master,rk8-slave
+
 - hosts: all
   become: yes
   roles:
-    - { role: gpdb }
+    - { role: gpss }
 
 #    - { role: gpcc }
+#    - { role: firewalld }
+#    - { role: gpdb }
 #    - { role: pxf }
 #    - { role: gpdb-backup-restore }
 #    - { role: gpcopy }
 #    - { role: oss-gpdb }
 #    - { role: madlib }
-

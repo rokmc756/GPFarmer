@@ -3,8 +3,8 @@
 # RANGE="81 85"
 # RANGE="51 55"
 # RANGE="41 45"
-RANGE="61 65"
-# RANGE="171 175"
+# RANGE="61 65"
+RANGE="171 175"
 # RANGE="181 185"
 USER="gpadmin"
 

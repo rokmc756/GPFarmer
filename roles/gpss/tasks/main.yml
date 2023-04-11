@@ -8,9 +8,9 @@
   when: ansible_os_family != 'RedHat'
 
 - name: Install
-  include: gpss-install.yml
+  include: install.yml
   tags: install
 
 - name: Uninstall
-  include: gpss-uninstall.yml
+  include: uninstall.yml
   tags: uninstall

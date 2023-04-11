@@ -6,25 +6,27 @@ gpdb_number_segments: 4
 gpdb_mirror_enable: true
 gpdb_spread_mirrors: ""
 
-# greenplum-db-6.20.3-rhel8-x86_64.rpm
-# gpdb_major_version: 7
-# gpdb_minor_version: 0
-# gpdb_build_version: '0-beta.0'
+# greenplum-db-7.0.0-beta.2-el8-x86_64.rpm
+#gpdb_major_version: 7
+#gpdb_minor_version: 0
+#gpdb_build_version: '0-beta.2'
 # gpdb_rhel_name: 'rhel8'
-# gpdb_binary_type: 'rpm'
+#gpdb_rhel_name: 'el8'
+#gpdb_binary_type: 'rpm'
 
 # smdw_hostname: "rk8-slave"
 # smdw_hostname: "smdw4"
 
 gpdb_major_version: 6
-gpdb_minor_version: 21
-gpdb_build_version: 0
-gpdb_rhel_name: 'rhel7'
+gpdb_minor_version: 23
+gpdb_build_version: 1
+gpdb_rhel_name: 'rhel8'
 gpdb_binary_type: 'rpm'
 
 # smdw_hostname: "co7-slave"
 # smdw_hostname: "rh7-slave"
-smdw_hostname: "rh7-slave"
+# smdw_hostname: "rh7-slave"
+smdw_hostname: "rk8-slave"
 # smdw_hostname: "smdw4"
 
 # if you change the version, Ansible will attempt a database upgrade
@@ -72,6 +74,7 @@ gpdb_net_ipv4_tcp_tw_recycle: "net.ipv4.tcp_tw_recycle = 1"
 gpdb_net_ipv4_tcp_max_syn_backlog: "net.ipv4.tcp_max_syn_backlog = 4096"
 gpdb_net_ipv4_conf_all_arp_filter: "net.ipv4.conf.all.arp_filter = 1"
 gpdb_net_ipv4_ip_local_port_range: "net.ipv4.ip_local_port_range = 1025 65535"
+gpdb_net_ipv6_conf_all_disable_ipv6: "net.ipv6.conf.all.disable_ipv6 = 0"
 gpdb_net_core_netdev_max_backlog: "net.core.netdev_max_backlog = 10000"
 gpdb_net_core_rmem_max: "net.core.rmem_max = 2097152"
 gpdb_net_core_wmem_max: "net.core.wmem_max = 2097152"

@@ -6,7 +6,7 @@
 # greenplum-cc-web-4.14.0-gp5-rhel7-x86_64.zip
 
 gpdb_major_version: 6
-gpdb_minor_version: 22.2
+gpdb_minor_version: 23.1
 gpdb_build_version:
 gpcc_major_version: 6
 gpcc_minor_version: 8.4
