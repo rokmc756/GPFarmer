@@ -21,8 +21,9 @@ gpss_job_name: kafkajson2gp
 install_gpss_tar: false
 kafka_install_dir: /usr/local/kafka
 kafka_replication_factor: 1
-kafka_partitions: 3
+kafka_partitions: 1
 kafka_broker_hostname: co7-node01
+print_debug: true
 
 gpss_file_vars:
   - bin/gpkafka

@@ -29,6 +29,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli stop {{ gpss_job_name }} --gpss-port {{ gpss_port }} )
   register: gpss_job_stopped
+  ignore_errors: yes
   when:
     - inventory_hostname in groups['master']
 
@@ -37,6 +38,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli remove {{ gpss_job_name }} --gpss-port {{ gpss_port }} )
   register: gpss_job_removed
+  ignore_errors: yes
   when:
     - inventory_hostname in groups['master']
 
@@ -45,6 +47,7 @@
   become_user: gpadmin
   shell: kill -9 $(pidof gpss)
   register: gpss_daemon_killed
+  ignore_errors: yes
   when:
     - inventory_hostname in groups['master']
 
@@ -75,24 +78,23 @@
     - "'100' not in gpss_database_installed.stdout"
 
 #
-#- name: Verify if GPSS gppkg is installed
-#  become_user: gpadmin
-#  command: 'rpm -q gpss --dbpath /usr/local/greenplum-db/share/packages/database'
-#  register: select_gpss_version
-#  when:
-#    - inventory_hostname in groups['master']
-#  failed_when:
-#    - select_gpss_version.rc != 1
-
-#
 - name: Verify if GPSS gppkg is installed
   become_user: gpadmin
   command: 'rpm -q gpss --dbpath /usr/local/greenplum-db/share/packages/database'
-  ignore_errors: true
   register: select_gpss_version
-  changed_when: False
-  when: inventory_hostname in groups['master']
-  # command: '/usr/bin/rpm -qa custom-rpm --queryformat %{VERSION}'
+  ignore_errors: yes
+  when:  inventory_hostname in groups['master']
+  # failed_when:  select_gpss_version.rc != 1
+
+#
+#- name: Verify if GPSS gppkg is installed
+#  become_user: gpadmin
+#  command: 'rpm -q gpss --dbpath /usr/local/greenplum-db/share/packages/database'
+#  ignore_errors: true
+#  register: select_gpss_version
+#  changed_when: False
+#  when: inventory_hostname in groups['master']
+#  # command: '/usr/bin/rpm -qa custom-rpm --queryformat %{VERSION}'
 
 #
 - name: Stop if GPSS gppkg package is not installed
@@ -155,4 +157,12 @@
   loop: "{{ gpss_tarball_stat_var.results }}"
   when:
     - inventory_hostname in groups['master']  # At GPDB Master
+
+#
+- name: Delete Kafka Topic
+  become: yes
+  shell:
+    "/usr/local/kafka/bin/kafka-topics.sh --bootstrap-server co7-node01:9092 --topic {{ kafka_topic_name }} --delete"
+  ignore_errors: yes
+  when: inventory_hostname in groups['kafka-brokers']
 

@@ -7,11 +7,14 @@
 - name: Check if the GPDB software is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
+  when: inventory_hostname in groups['master']
 
 #
 - name: Stop if GPDB software is not installed
   fail: msg="Greenplum Database software is not installed!"
-  when: gpdb_installed.stat.exists != True
+  when:
+    - inventory_hostname in groups['master']
+    - gpdb_installed.stat.exists != True
 
 #
 - name: Verify that database is up and running
@@ -23,21 +26,29 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
 #
+- name: yum install daemonize
+  become: yes
+  yum:
+    name: daemonize
+    state: latest
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['kafka-brokers']
+
+#
 - name: Copy GPSS tarball file
   become_user: gpadmin
-  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:  inventory_hostname in groups['master'] and install_gpss_tar
 
 #
 - name: Untar GPSS tarball archive
   become_user: gpadmin
-  unarchive: src={{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} copy=no owner=gpadmin group=gpadmin
+  unarchive: src={{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} copy=no owner=gpadmin group=gpadmin
   when: inventory_hostname in groups['master'] and install_gpss_tar
 
 #
 - name: Install GPSS tarball in {{ gpdb_base_dir }}
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && cd {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64/ ; ./install_gpdb_component )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && cd {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64/ ; ./install_gpdb_component )
   async: 120
   poll: 5
   when: inventory_hostname in groups['master'] and install_gpss_tar
@@ -64,14 +75,14 @@
 #
 - name: Copy GPSS gppkg file
   become_user: gpadmin
-  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_gpdb }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
     - inventory_hostname in groups['master']  # At GPDB Master
 
 #
 - name: Install GPSS gppkg package
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.gppkg )
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_gpdb }}-x86_64.gppkg )
   when:
     - inventory_hostname in groups['master']  # At GPDB Master
 
@@ -117,16 +128,15 @@
 #
 - name: Copy GPSS rpm package
   become_user: gpadmin                              # ETL user
-  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.rpm dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.rpm dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
     - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
 
 #
 - name: Install GPSS rpm package in {{ gpdb_base_dir }}
   become: yes
-  become_user: gpadmin
   yum:
-    name: /home/gpadmin/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version }}-x86_64.rpm
+    name: /home/gpadmin/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.rpm
     state: present
   async: 60
   poll: 5
@@ -135,18 +145,17 @@
 
 - name: Chown gpamdin for GPSS install directory
   become: yes
-  become_user: root
   file:
     dest: "{{ gpdb_base_dir }}/gpss"
     owner: gpadmin
     group: gpadmin
     mode: u=rwX,g=rX,o=rX
+    state: directory
     recurse: yes
   when: inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
 
 - name: Create Kafka Topic
   become: yes
-  become: gpadmin
   shell:
     "{{ kafka_install_dir }}//bin/kafka-topics.sh --create --bootstrap-server {{ kafka_broker_hostname }}:9092 --replication-factor {{ kafka_replication_factor }} --partitions {{ kafka_partitions }} --topic {{ kafka_topic_name }}"
   when:
@@ -154,7 +163,6 @@
 
 - name: List Kafka Topics
   become: yes
-  become: gpadmin
   shell:
     "{{ kafka_install_dir }}//bin/kafka-topics.sh --list --bootstrap-server {{ kafka_broker_hostname }}:9092"
   when:
@@ -166,37 +174,128 @@
 #--topic verify-test
 
 #
+- name: Copy json sammple data
+  template: src=sample_data.json dest=/home/gpadmin/sample_data.json owner=gpadmin group=gpadmin mode=644 force=yes
+  register: json_sample_data_copied
+  when: inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+
+#
 - name: Stream data into Kafka Topci
   become: yes
-  become: gpadmin
   shell:
     "{{ kafka_install_dir }}//bin/kafka-console-producer.sh --broker-list {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }} < /home/gpadmin/sample_data.json"
-  when:
-    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+  when: inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
 
 #
 - name: Check Replication factors
   become: yes
-  become: gpadmin
   shell:
-    "{{ kafka_install_dir }}//bin/kafka-topics.sh --bootstrap-server {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }}"
+    "{{ kafka_install_dir }}//bin/kafka-topics.sh --describe --bootstrap-server {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }}"
   when:
     - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
 
 #
-- name: Check if data is inserting into Kafka Topic
-  become: yes
-  become: gpadmin
-  shell:
-    "{{ kafka_install_dir }}//bin/kafka-console-consumer.sh --bootstrap-server {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }} --from-beginning"
-  when:
-    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
-
+#- name: Check if data is inserting into Kafka Topic
+#  become: yes
+#  shell:
+#    "{{ kafka_install_dir }}//bin/kafka-console-consumer.sh --bootstrap-server {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }} --from-beginning"
+#  when: inventory_hostname in groups['kafka-brokers']
 
 #- name: Before using the GPSS ETL tools
 #  become: yes
-#  become: gpadmin
 #  shell: ( source /usr/local/gpss/gpss_path.sh )
 #  when:
 #    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
 
+- name: Copy create table query file and gpss config file and json loadcfg yml file
+  template: src={{ item }} dest=/home/gpadmin/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
+  register: create_table_query_copied
+  with_items:
+    - "create_table.sql"
+    - "gpss_config.json"
+    - "jsonload_cfg.yaml"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Create table
+  become: yes
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -f /home/gpadmin/create_table.sql )
+  register: gpss_table_created
+  when: inventory_hostname in groups['master']
+
+#
+- debug: msg={{ gpss_table_created }}
+  when: inventory_hostname in groups['master'] and print_debug
+
+#
+- name: Start GPSS daemon
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && nohup gpss /home/gpadmin/gpss_config.json --verbose --log-dir /home/gpadmin > /dev/null 2>&1 & )
+  register: gpss_daemon_started
+  when: inventory_hostname in groups['master']
+
+#
+- debug: msg={{ gpss_daemon_started }}
+  when: inventory_hostname in groups['master'] and print_debug
+
+#
+- name: Sumit Job
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli submit --verbose --name {{ gpss_job_name }} --gpss-port {{ gpss_port }} /home/gpadmin/jsonload_cfg.yaml )
+  register: gpss_job_submitted
+  when: inventory_hostname in groups['master']
+
+#
+- debug: msg={{ gpss_job_submitted }}
+  when: inventory_hostname in groups['master'] and print_debug
+
+#
+- name: List all jobs
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli list --verbose --all --gpss-port {{ gpss_port }} )
+  register: gpss_all_jobs_listed
+  when: inventory_hostname in groups['master']
+
+#
+- debug: msg={{ gpss_all_jobs_listed }}
+  when: inventory_hostname in groups['master'] and print_debug
+
+#
+- name: Start GPSS job
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli start {{ gpss_job_name }} --verbose --gpss-port {{ gpss_port }} )
+  register: gpss_job_started
+  when: inventory_hostname in groups['master']
+
+#
+- debug: msg={{ gpss_job_started }}
+  when: inventory_hostname in groups['master'] and print_debug
+
+#
+- name: Print new contents
+  become: yes
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -c "SELECT * FROM public.json_from_kafka;" )
+  register: gpss_new_contents_printed
+  when: inventory_hostname in groups['master']
+
+#
+- debug: msg={{ gpss_new_contents_printed }}
+  when: inventory_hostname in groups['master'] and print_debug
+
+#
+- name: Print the status of GPSS job
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli status {{ gpss_job_name }} --gpss-port {{ gpss_port }}
+  register: gpss_job_status_printed
+  when: inventory_hostname in groups['master']
+
+#
+- debug: msg={{ gpss_job_status_printed }}
+  when: inventory_hostname in groups['master'] and print_debug
+
+#
+- name: Print the progress of GPSS job
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli progress {{ gpss_job_name }} --gpss-port {{ gpss_port }} )
+  register: gpss_job_progress_printed
+  when: inventory_hostname in groups['master']
+
+#
+- debug: msg={{ gpss_job_progress_printed }}
+  when: inventory_hostname in groups['master'] and print_debug

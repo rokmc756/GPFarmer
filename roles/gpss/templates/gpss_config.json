@@ -1,0 +1,11 @@
+{
+  "ListenAddress": {
+    "Host": "",
+    "Port": 50007,
+    "SSL": false
+},
+    "Gpfdist": {
+      "Host": "",
+      "Port": 8319
+    }
+}
