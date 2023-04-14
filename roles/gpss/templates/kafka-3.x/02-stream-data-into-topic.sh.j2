@@ -1,0 +1,2 @@
+/usr/local/kafka/bin/kafka-console-producer.sh --broker-list {{ kafka_broker_hosts }} \
+--topic {{ kafka_topic_name }} < {{ kafka_base_dir }}/sample_data.json

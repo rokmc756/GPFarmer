@@ -7,22 +7,24 @@ gpss_rhel_version_kafka: rhel7
 gpss_rhel_version_gpdb: rhel8
 gpss_database_name: testdb
 gpss_mdw_hostname: rk8-master
-gpss_broker_hostname: co7-master
 gpss_setup_action: "{{ setup_action }}"
 #  gpss-gpdb6-1.6.0-rhel7-x86_64.tar.gz
 
+gpss_port: 50007
+gpss_base_dir: /home/gpadmin/gpss-base
+gpss_log_dir: /home/gpadmin/gpss-base/logs
+gpss_job_name: kafkajson2gp
+install_gpss_tar: false
+
+kafka_base_dir: /home/gpadmin/kafka-base
+kafka_major_verion: 2
 kafka_topic_name: topic-json-gpkafka
 kafka_table_name: json_from_kafka
-gpss_port: 50007
-gpss_base_dir: /home/gpadmin/gpssAdmin
-gpss_log_dir: /home/gpadmin/gpssAdmin/logs
-gpss_job_name: kafkajson2gp
-
-install_gpss_tar: false
 kafka_install_dir: /usr/local/kafka
-kafka_replication_factor: 1
-kafka_partitions: 1
-kafka_broker_hostname: co7-node01
+kafka_replication_factor: 3
+kafka_partitions: 3
+zookeeper_hosts: "co7-node01:2181,co7-node02:2181,co7-node03:2181"
+kafka_broker_hosts: "co7-node01:9020,co7-node02:2181,co7-node03:2181"
 print_debug: true
 
 gpss_file_vars:

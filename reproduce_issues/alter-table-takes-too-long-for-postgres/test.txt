@@ -1,0 +1,7 @@
+# test ! -f /pgarch/titanotc/archivelog/%f && cp %p /pgarch/titanotc/archivelog/%f
+
+alter system set archive_mode=on;
+
+alter system set archive_command='test ! -f /var/lib/pgsql/ha/archive/%f && cp %p /var/lib/pgsql/ha/archive/%f';
+
+alter system set wal_level=replica;

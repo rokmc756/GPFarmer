@@ -1,0 +1,3 @@
+/usr/local/kafka/bin/kafka-topics.sh --create --bootstrap-server {{ kafka_broker_hosts }} \
+--replication-factor {{ kafka_replication_factor }} --partitions {{ kafka_partitions }} \
+--topic {{ kafka_topic_name }}
