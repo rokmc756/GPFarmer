@@ -36,13 +36,13 @@
 - name: Copy GPSS tarball file
   become_user: gpadmin
   copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-  when:  inventory_hostname in groups['master'] and install_gpss_tar
+  when:  inventory_hostname in groups['master'] and gpss_install_tar
 
 #
 - name: Untar GPSS tarball archive
   become_user: gpadmin
   unarchive: src={{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} copy=no owner=gpadmin group=gpadmin
-  when: inventory_hostname in groups['master'] and install_gpss_tar
+  when: inventory_hostname in groups['master'] and gpss_install_tar
 
 #
 - name: Install GPSS tarball in {{ gpdb_base_dir }}
@@ -50,7 +50,7 @@
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && cd {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64/ ; ./install_gpdb_component )
   async: 120
   poll: 5
-  when: inventory_hostname in groups['master'] and install_gpss_tar
+  when: inventory_hostname in groups['master'] and gpss_install_tar
 
 #
 - name: Verify if GPSS gppkg is installed
@@ -110,7 +110,7 @@
     - inventory_hostname in groups['master']
     - "'100' not in gpss_database_installed.stdout"
 
-
+#
 - name: Chown gpamdin for GPSS install directory
   become: yes
   file:
@@ -125,7 +125,7 @@
 #
 - name: Creates working base directory for kafka and gpss
   file:
-    path: "{{ items }}"
+    path: "{{ item }}"
     state: directory
     owner: gpadmin
     group: gpadmin
@@ -135,8 +135,9 @@
     - "{{ gpss_log_dir }}"
   when: inventory_hostname in groups['master']
 
+#
 - name: Copy create table query file and gpss config file and json loadcfg yml file
-  template: src=gpss/{{ item }} dest={{ gpss_base_dir }}/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
+  template: src=gpss/{{ item }}.j2 dest={{ gpss_base_dir }}/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
   register: create_table_query_copied
   with_items:
     - "create_table.sql"
@@ -152,15 +153,17 @@
   register: gpss_table_created
   when: inventory_hostname in groups['master']
 
-#
 - debug: msg={{ gpss_table_created }}
   when: inventory_hostname in groups['master'] and print_debug
 
 #
 - name: Start GPSS daemon
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && daemonize $GPHOME/bin/gpss {{ gpss_base_dir }}/gpss_config.json --verbose --log-dir {{ gpss_log_dir }} )
+  become: yes
+  become_user: gpadmin
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && daemonize $GPHOME/bin/gpss {{ gpss_base_dir }}/gpss_config.json --verbose --log-dir {{ gpss_log_dir }} )
   register: gpss_daemon_started
   when: inventory_hostname in groups['master']
+  # command: "daemonize /usr/local/greenplum-db/bin/gpss {{ gpss_base_dir }}/gpss_config.json --verbose --log-dir {{ gpss_log_dir }}"
 
 #
 - debug: msg={{ gpss_daemon_started }}
@@ -168,6 +171,8 @@
 
 #
 - name: Sumit Job
+  become: yes
+  become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli submit --verbose --name {{ gpss_job_name }} --gpss-port {{ gpss_port }} {{ gpss_base_dir }}/jsonload_cfg.yaml )
   register: gpss_job_submitted
   when: inventory_hostname in groups['master']
@@ -178,6 +183,8 @@
 
 #
 - name: List all jobs
+  become: yes
+  become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli list --verbose --all --gpss-port {{ gpss_port }} )
   register: gpss_all_jobs_listed
   when: inventory_hostname in groups['master']
@@ -188,6 +195,8 @@
 
 #
 - name: Start GPSS job
+  become: yes
+  become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli start {{ gpss_job_name }} --verbose --gpss-port {{ gpss_port }} )
   register: gpss_job_started
   when: inventory_hostname in groups['master']
@@ -210,7 +219,9 @@
 
 #
 - name: Print the status of GPSS job
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli status {{ gpss_job_name }} --gpss-port {{ gpss_port }}
+  become: yes
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli status {{ gpss_job_name }} --gpss-port {{ gpss_port }} )
   register: gpss_job_status_printed
   when: inventory_hostname in groups['master']
 
@@ -219,11 +230,13 @@
   when: inventory_hostname in groups['master'] and print_debug
 
 #
-- name: Print the progress of GPSS job
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli progress {{ gpss_job_name }} --gpss-port {{ gpss_port }} )
-  register: gpss_job_progress_printed
-  when: inventory_hostname in groups['master']
-
+#- name: Print the progress of GPSS job
+#  become: yes
+#  become_user: gpadmin
+#  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli progress {{ gpss_job_name }} --gpss-port {{ gpss_port }} )
+#  register: gpss_job_progress_printed
+#  when: inventory_hostname in groups['master']
 #
-- debug: msg={{ gpss_job_progress_printed }}
-  when: inventory_hostname in groups['master'] and print_debug
+#
+#- debug: msg={{ gpss_job_progress_printed }}
+#  when: inventory_hostname in groups['master'] and print_debug

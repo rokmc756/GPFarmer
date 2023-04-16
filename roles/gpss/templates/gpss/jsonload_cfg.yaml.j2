@@ -1,14 +1,13 @@
-DATABASE: testdb
+DATABASE: {{ gpss_database_name }}
 USER: gpadmin
-HOST: rk8-master
+HOST: {{ gpss_mdw_hostname }}
 PORT: 5432
 VERSION: 2
 KAFKA:
    INPUT:
       SOURCE:
-         # BROKERS: co7-node01:9092,co7-node02:9092,co7-node03:9092 - Not OK
-         BROKERS: co7-node01:9092
-         TOPIC: topic-json-gpkafka
+         BROKERS: {{ kafka_broker_hosts }}
+         TOPIC: {{ kafka_topic_name }}
       VALUE:
          COLUMNS:
            - NAME: jdata
@@ -22,7 +21,7 @@ KAFKA:
       ERROR_LIMIT: 25
    OUTPUT:
       SCHEMA: public
-      TABLE: json_from_kafka
+      TABLE: {{ kafka_table_name }}
       MAPPING:
         - NAME: customer_id
           EXPRESSION: (jdata->>'cust_id')::int

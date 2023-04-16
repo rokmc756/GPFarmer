@@ -64,6 +64,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ gpss_database_name }} -tAc "drop extension gpss" )
   register: gpss_extension_dropped
+  ignore_errors: yes
   when:
     - inventory_hostname in groups['master']
     - "'100' not in gpss_database_installed.stdout"
@@ -73,6 +74,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ gpss_database_name }} )
   register: gpss_database_dropped
+  ignore_errors: yes
   when:
     - inventory_hostname in groups['master']
     - "'100' not in gpss_database_installed.stdout"
@@ -97,11 +99,11 @@
 #  # command: '/usr/bin/rpm -qa custom-rpm --queryformat %{VERSION}'
 
 #
-- name: Stop if GPSS gppkg package is not installed
-  fail: msg="GPSS gppkg package is not installed!"
-  when:
-    - inventory_hostname in groups['master']
-    - "'package gpss is not installed' in select_gpss_version.stdout"
+#- name: Stop if GPSS gppkg package is not installed
+#  fail: msg="GPSS gppkg package is not installed!"
+#  when:
+#    - inventory_hostname in groups['master']
+#    - "'package gpss is not installed' in select_gpss_version.stdout"
 
 #
 - name: Uninstall GPSS gppkg package
@@ -119,11 +121,11 @@
     - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
 
 #
-- name: Stop if GPSS rpm package is not installed
-  fail: msg="GPSS rpm package is not installed!"
-  when:
-    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
-    - "'gpss' not in ansible_facts.packages"
+#- name: Stop if GPSS rpm package is not installed
+#  fail: msg="GPSS rpm package is not installed!"
+#  when:
+#    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+#    - "'gpss' not in ansible_facts.packages"
 
 #
 - name: Uninstall GPSS rpm package
@@ -166,3 +168,23 @@
   ignore_errors: yes
   when: inventory_hostname in groups['kafka-brokers']
 
+
+#
+- name: Delete Kafka working base directory
+  become: yes
+  file:
+    owner: root
+    group: root
+    path: "{{ kafka_base_dir }}"
+    state: absent
+  when: inventory_hostname in groups['kafka-brokers']
+
+#
+- name: Delete GPSS working base directory
+  become: yes
+  file:
+    owner: gpadmin
+    group: gpadmin
+    path: "{{ gpss_base_dir }}"
+    state: absent
+  when: inventory_hostname in groups['master']

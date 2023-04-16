@@ -1,6 +1,5 @@
 ---
-# Install Greenplum Streaming Server on both GPDB Master and Kafka Broker
-# Configure data loading with sample data between them
+# Install Greenplum Streaming Server on Kafka Broker and load sample data onto it
 - name: "Check if GPSS rpm package is installed"
   package_facts:
     manager: "auto"
@@ -46,8 +45,9 @@
 
 #
 - name: Creates working base directory for kafka
+  become: yes
   file:
-    path: "{{ items }}"
+    path: "{{ item }}"
     state: directory
     owner: gpadmin
     group: gpadmin
@@ -59,7 +59,7 @@
 #
 - name: Copy scripts to manage kafka topics
   become: yes
-  template: src=kafka-{{ kafka_major_verion}}.x/{{ item }}.j2 dest={{ gpss_base_dir }}/{{ item }} owner=root group=root mode=755 force=yes
+  template: src=kafka-{{ kafka_major_version}}.x/{{ item }}.j2 dest={{ kafka_base_dir }}/{{ item }} owner=root group=root mode=755 force=yes
   register: create_table_query_copied
   with_items:
     - "01-create-topic.sh"
@@ -78,10 +78,10 @@
     - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
   #  "{{ kafka_install_dir }}//bin/kafka-topics.sh --create --bootstrap-server {{ kafka_broker_hostname }}:9092 --replication-factor {{ kafka_replication_factor }} --partitions {{ kafka_partitions }} --topic {{ kafka_topic_name }}"
 
-#
 - debug: msg={{ topic_created }}
   when: inventory_hostname in groups['kafka-brokers'] and print_debug
 
+#
 - name: List Kafka Topics
   become: yes
   shell: ( /bin/bash {{ kafka_base_dir }}/04-list-topics.sh )
@@ -90,10 +90,8 @@
     - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
   #  "{{ kafka_install_dir }}//bin/kafka-topics.sh --list --bootstrap-server {{ kafka_broker_hostname }}:9092"
 
-#
 - debug: msg={{ topic_listed }}
   when: inventory_hostname in groups['kafka-brokers'] and print_debug
-
 
 # kafka-verifiable로 시작하는 2개의 스크립트를 사용하면 String 타입 메시지 값을 코드 없이 주고받을 수 있다. 카프카 클러스터 설치가 완료된 이후에 토픽에 데이터를 전송하여 간단한 네트워크 통신 테스트를 할 대 유용하다.
 #kafka-verifiable-producer.sh --bootstrap-server localhost:9092 \
@@ -106,7 +104,6 @@
   register: json_sample_data_copied
   when: inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
 
-#
 - debug: msg={{ json_sample_data_copied }}
   when: inventory_hostname in groups['kafka-brokers'] and print_debug
 
@@ -118,8 +115,7 @@
   when: inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
   # "{{ kafka_install_dir }}//bin/kafka-console-producer.sh --broker-list {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }} < /home/gpadmin/sample_data.json"
 
-#
-- debug: msg={{ topic_data-streamd }}
+- debug: msg={{ topic_data_streamed }}
   when: inventory_hostname in groups['kafka-brokers'] and print_debug
 
 #
@@ -131,10 +127,8 @@
     - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
   # "{{ kafka_install_dir }}//bin/kafka-topics.sh --describe --bootstrap-server {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }}"
 
-#
 - debug: msg={{ replica_factors_checked }}
   when: inventory_hostname in groups['kafka-brokers'] and print_debug
-
 
 #- name: Check if data is inserting into Kafka Topic
 #  become: yes
@@ -147,4 +141,3 @@
 #  shell: ( source /usr/local/gpss/gpss_path.sh )
 #  when:
 #    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
-
