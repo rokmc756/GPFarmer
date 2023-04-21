@@ -9,7 +9,13 @@ pxf_mdw_hostname: rk8-master
 pxf_username: pxf_user
 pxf_setup_action: "{{ setup_action }}"
 # pxf-gp6-5.15.1-2.el7.x86_64.rpm
-with_nfs_access: true
+
+with_nfs_access: false
 pxf_base_dir_with_nfs: /home/gpadmin/pxf-test-base
 nfs_share_dir: /home/gpadmin/nfsshare
 nfs_server_ip_addr: 192.168.0.2
+
+with_hadoop_access: true
+pxf_base_dir_with_hadoop: /home/gpadmin/pxf-hadoop-base
+
+hadoop_version: "3.3.5"

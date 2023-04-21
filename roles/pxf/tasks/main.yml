@@ -10,6 +10,10 @@
   include: install.yml
   tags: install
 
+- name: Setup NFS Access
+  include: setup-hadoop-access.yml
+  tags: install
+
 - name: Uninstall PXF
   include: uninstall.yml
   tags: uninstall
@@ -17,4 +21,3 @@
 - name: Upgrade PXF
   include: upgrade.yml
   tags: upgrade.yml
-

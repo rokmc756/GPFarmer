@@ -1,0 +1,46 @@
+version: v3
+targets:
+- gpdb:
+    host: rk8-master
+    port: 5432
+    user: gpadmin
+    database: testdb
+    work_schema: public
+    error_limit: 25
+    tables:
+      - table: json_from_kafka
+        schema: public
+        mode:
+          insert: {}
+        mapping:
+          customer_id: (value->>'cust_id')::int
+          month: (value->>'_month')::int
+          amount_paid: (value->>'expenses')::decimal
+
+sources:
+- kafka:
+    topic: topic-json-gpkafka
+    brokers: co7-node01:9092,co7-node02:9092,co7-node03:9092
+    key_content:
+      binary:
+        source_column_name: key
+    value_content:
+      json:
+        column:
+          name: value
+          type: JSON
+    meta:
+      json:
+        column:
+          name: meta
+          type: JSON
+    task:
+      batch_size:
+        interval_ms: 5000
+        max_count: 1
+      window_size: 5
+option:
+  schedule:
+    running_duration: 2s
+    auto_stop_restart_interval : 2s
+    max_restart_times : 1

@@ -1,13 +1,22 @@
 ---
 # Uninstall PXF on GPDB for Red Hat
 
-- name: Check if the pxf cluster is runnong on each segment host
+- name: Check if the pxf cluster is runnong on each segment host for NFS
   become_user: gpadmin
   shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_nfs }} pxf cluster status )
   ignore_errors: yes
-  register: pxf_running_checked_nfs
+  register: pxf_running_checked
   when:
     - with_nfs_access
+    - inventory_hostname in groups['master']
+
+- name: Check if the pxf cluster is runnong on each segment host for Hadoop
+  become_user: gpadmin
+  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_hadoop }} pxf cluster status )
+  ignore_errors: yes
+  register: pxf_running_checked
+  when:
+    - with_hadoop_access
     - inventory_hostname in groups['master']
 
 - name: Check if the pxf cluster is runnong on each segment host
@@ -16,7 +25,7 @@
   ignore_errors: yes
   register: pxf_running_checked
   when:
-    - with_nfs_access != True
+    - with_nfs_access != True or  with_hadoop_access != True
     - inventory_hostname in groups['master']
 
 - name: Stop pxf cluster runnong on each segment host
@@ -30,12 +39,26 @@
 
 - name: Stop pxf cluster runnong on each segment host
   become_user: gpadmin
+  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_hadoop }} pxf cluster stop )
+  ignore_errors: yes
+  when:
+    - with_hadoop_access
+    - inventory_hostname in groups['master']
+    - "'PXF is running on' in pxf_running_checked_nfs.stdout"
+
+- name: Stop pxf cluster runnong on each segment host
+  become_user: gpadmin
   shell: ( source ~/.bashrc && pxf cluster stop )
   ignore_errors: yes
   when:
-    - with_nfs_access != True
+    - with_nfs_access != True or  with_hadoop_access != True
     - inventory_hostname in groups['master']
     - "'PXF is running on' in pxf_running_checked.stdout"
+
+- name: Killall java processes running for PXF
+  become_user: gpadmin
+  shell: ( killall java )
+  ignore_errors: yes
 
 - name: Remove the PXF library
   become_user: gpadmin
@@ -127,9 +150,10 @@
     state: absent
   with_items:
     - "{{ pxf_base_dir_with_nfs }}"
+    - "{{ pxf_base_dir_with_hadoop }}"
     - "/home/gpadmin/query-examples"
   when:
-    - with_nfs_access
+    - with_nfs_access or with_hadoop_access
 
 #
 - name: Unmount NFS share directory on all hosts

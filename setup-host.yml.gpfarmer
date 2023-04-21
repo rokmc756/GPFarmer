@@ -39,12 +39,11 @@
 - hosts: all
   become: yes
   roles:
-    - { role: gpss }
-
+    - { role: pxf }
+#    - { role: gpdb }
+#    - { role: gpss }
 #    - { role: gpcc }
 #    - { role: firewalld }
-#    - { role: gpdb }
-#    - { role: pxf }
 #    - { role: gpdb-backup-restore }
 #    - { role: gpcopy }
 #    - { role: oss-gpdb }

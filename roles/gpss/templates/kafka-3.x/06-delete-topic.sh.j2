@@ -1,1 +1,1 @@
-/usr/local/kafka/bin/kafka-topics.sh --bootstrap-server {{ kafka_boroker_hosts }} --topic topic_json_gpkafka --delete
+/usr/local/kafka/bin/kafka-topics.sh --bootstrap-server {{ kafka_broker_hosts }} --topic {{ kafka_topic_name }} --delete

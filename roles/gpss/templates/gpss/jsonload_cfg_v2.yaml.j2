@@ -1,0 +1,36 @@
+DATABASE: {{ gpss_database_name }}
+USER: gpadmin
+HOST: {{ gpss_mdw_hostname }}
+PORT: 5432
+VERSION: 2
+KAFKA:
+   INPUT:
+      SOURCE:
+         BROKERS: {{ kafka_broker_hosts }}
+         TOPIC: {{ kafka_topic_name }}
+      VALUE:
+         COLUMNS:
+           - NAME: jdata
+             TYPE: json
+         FORMAT: json
+      KEY:
+         COLUMNS:
+           - NAME: key
+             TYPE: json
+         FORMAT: json
+      ERROR_LIMIT: 25
+   OUTPUT:
+      SCHEMA: public
+      TABLE: {{ kafka_table_name }}
+      MAPPING:
+        - NAME: customer_id
+          EXPRESSION: (jdata->>'cust_id')::int
+        - NAME: month
+          EXPRESSION: (jdata->>'month')::int
+        - NAME: amount_paid
+          EXPRESSION: (jdata->>'expenses')::decimal
+   METADATA:
+      SCHEMA: public
+   COMMIT:
+      MAX_ROW: 1000
+      MINIMAL_INTERVAL: 30000

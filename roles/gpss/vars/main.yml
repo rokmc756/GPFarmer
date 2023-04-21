@@ -18,7 +18,7 @@ gpss_job_name: kafkajson2gp
 gpss_install_tar: false
 
 kafka_base_dir: /home/gpadmin/kafka-base
-kafka_major_version: 2
+# kafka_major_version: 2
 kafka_topic_name: topic-json-gpkafka
 kafka_table_name: json_from_kafka
 kafka_install_dir: /usr/local/kafka
