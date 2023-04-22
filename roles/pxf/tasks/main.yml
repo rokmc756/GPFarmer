@@ -10,9 +10,15 @@
   include: install.yml
   tags: install
 
-- name: Setup NFS Access
+- name: Setup HDFS Access
   include: setup-hadoop-access.yml
   tags: install
+  when: with_hadoop_access == true
+
+- name: Test HDFS Access
+  include: test-pxf-hadoop-data.yml
+  tags: install
+  when: with_hadoop_access == true
 
 - name: Uninstall PXF
   include: uninstall.yml

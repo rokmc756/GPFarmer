@@ -1,6 +1,7 @@
+DROP EXTERNAL TABLE IF EXISTS pxf_hdfs_writabletbl_1;
 CREATE WRITABLE EXTERNAL TABLE pxf_hdfs_writabletbl_1(location text, month text, num_orders int, total_sales float8)
-            LOCATION ('pxf://data/pxf_examples/pxfwritable_hdfs_textsimple1?PROFILE=hdfs:text')
-          FORMAT 'TEXT' (delimiter=',');
+LOCATION ('pxf://data/pxf_examples/pxfwritable_hdfs_textsimple1?PROFILE=hdfs:text')
+FORMAT 'TEXT' (delimiter=',');
 -- CREATE EXTERNAL TABLE
 
 INSERT INTO pxf_hdfs_writabletbl_1 VALUES ( 'Frankfurt', 'Mar', 777, 3956.98 );

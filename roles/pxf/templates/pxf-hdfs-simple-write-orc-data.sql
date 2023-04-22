@@ -1,3 +1,4 @@
+DROP EXTERNAL TABLE IF EXISTS write_to_sample_orc;
 CREATE WRITABLE EXTERNAL TABLE write_to_sample_orc (location text, month text, num_orders int, total_sales numeric(10,2), items_sold text[] )
     LOCATION ('pxf://data/pxf_examples/orc_example?PROFILE=hdfs:orc')
   FORMAT 'CUSTOM' (FORMATTER='pxfwritable_export');

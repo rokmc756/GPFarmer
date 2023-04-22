@@ -8,17 +8,18 @@
   when:
     - inventory_hostname in groups['master']
 
+#
 - name: Print stopping pxf cluster
   debug: msg={{ pxf_cluster_stopped }}
   when:
     - inventory_hostname in groups['master']
 
+#
 - name: Create PXF base directory for Hadoop Access and query examples directory on all master and segment hosts
   become_user: gpadmin
   file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
   with_items:
     - "{{ pxf_base_dir_with_hadoop }}"
-    - "/home/gpadmin/query-examples"
   when:
     - with_hadoop_access
     - inventory_hostname in groups['master']
@@ -91,6 +92,7 @@
 #    - with_hadoop_access
 #    - inventory_hostname in groups['master']
 
+
 # With Hadoop
 #- name: Create PXF base directory for Hadoop Access with hostname of Hadoop Master
 #  become_user: gpadmin
@@ -161,16 +163,6 @@
 # gpadmin@gpmaster$ scp mapruser@maprhost:/opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/common/lib/hadoop-auth-2.7.0-mapr-1707.jar .
 # gpadmin@gpmaster$ scp mapruser@maprhost:/opt/mapr/hadoop/hadoop-2.7.0/share/hadoop/common/hadoop-common-2.7.0-mapr-1707.jar .
 
-
-- meta: end_play
-
-# sshpass -p "changeme" ssh hadoop@co7-master
-# sshpass -p "changeme" scp hadoop@co7-master:/home/hadoop/hadoop-3.3.5/etc/hadoop/core-site.xml .
-# gpadmin@gpmaster$ scp hadoop@co7-master:/home/hadoop/hadoop-3.3.5/etc/hadoop/core-site.xml .
-# gpadmin@gpmaster$ scp hadoop@co7-master:/home/hadoop/hadoop-3.3.5/etc/hadoop/hdfs-site.xml .
-# gpadmin@gpmaster$ scp hadoop@co7-master:/home/hadoop/hadoop-3.3.5/etc/hadoop/mapred-site.xml .
-# gpadmin@gpmaster$ scp hadoop@co7-master:/home/hadoop/hadoop-3.3.5/etc/hadoop/yarn-site.xml .
-
 # testdb=# grant select on protocol pxf to gpadmin;
 # testdb=# grant insert on protocol pxf to gpadmin;
 
@@ -182,126 +174,3 @@
 #gpadmin@gpmaster$ pxf cluster sync
 
 # https://stackoverflow.com/questions/17564074/accessing-files-in-hdfs-using-java
-
-
-
-#
-- name: Start PXF on master for nfs access
-  become: yes
-  become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_nfs }} pxf cluster start )
-  register: pxf_cluster_nfs_started
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
-
-#
-#- name: Synchronize the PXF server configuration to the GPDB cluster
-#  become: yes
-#  become_user: gpadmin
-#  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_nfs }} pxf cluster sync )
-#  register: pxf_cluster_nfs_started
-#  when:
-#    - inventory_hostname in groups['master']
-#    - with_nfs_access
-
-#
-- name:  Create the $PXF_BASE/servers/nfssrvcfg directory.
-  become_user: gpadmin
-  file: path={{ pxf_base_dir_with_nfs }}/servers/nfssrvcfg state=directory mode=0755 owner=gpadmin group=gpadmin
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
-
-#
-- name: Copy the PXF pxf-site.xml template file to the nfssrvcfg server configuration directory.
-  become_user: gpadmin
-  template: src=pxf-site.xml.j2 dest={{ pxf_base_dir_with_nfs}}/servers/nfssrvcfg/pxf-site.xml owner=gpadmin group=gpadmin mode=644 force=yes
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
-
-#
-- name: Synchronize the PXF server configuration to the GPDB cluster
-  become: yes
-  become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_nfs }} pxf cluster sync )
-  register: pxf_cluster_nfs_started
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
-
-#
-- name: Mount NFS share directory on all hosts
-  become: yes
-  become_user: root
-  mount:
-    path: "{{ nfs_share_dir }}"
-    src: "{{ nfs_server_ip_addr }}:/storage/nfsshare"
-    fstype: nfs
-    state: mounted
-  when:
-    - with_nfs_access
-
-#
-- name: Create a relative directoy to the NFS share point
-  become_user: gpadmin
-  file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
-  with_items:
-    - "{{ nfs_share_dir }}/ex1"
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
-
-#
-- name: Copy some data in example directory
-  become_user: gpadmin
-  template: src={{ item }} dest={{ nfs_share_dir }}/ex1/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
-  with_items:
-    - "somedata.csv"
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
-
-#
-- name: Copy the query examples
-  become_user: gpadmin
-  template: src={{ item }} dest=/home/gpadmin/query-examples/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
-  with_items:
-    - "create-external-table-for-read-nfs.sql"
-    - "select_pxf_read_nfs.sql"
-    - "create-external-table-for-write-nfs.sql"
-    - "insert-data-into-pxf-write-nfs.sql"
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
-
-- name: Run query examples for nfs access
-  become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc -d {{ pxf_database_name }} -f /home/gpadmin//query-examples/{{ item }} )
-  register: run_query_examples_output
-  with_items:
-    - "create-external-table-for-read-nfs.sql"
-    - "select_pxf_read_nfs.sql"
-    - "create-external-table-for-write-nfs.sql"
-    - "insert-data-into-pxf-write-nfs.sql"
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
-
-#
-- name: Print the output of running query examples
-  debug: msg={{ run_query_examples_output }}
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
-
-#
-- name: Start PXF on master for nfs access
-  become: yes
-  become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_nfs }} pxf cluster start )
-  register: pxf_cluster_nfs_started
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']

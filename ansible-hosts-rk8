@@ -13,3 +13,9 @@ rk8-slave ansible_ssh_host=192.168.0.172
 rk8-node01 ansible_ssh_host=192.168.0.173
 rk8-node02 ansible_ssh_host=192.168.0.174
 rk8-node03 ansible_ssh_host=192.168.0.175
+
+[hdfs-master]
+co7-master ansible_ssh_host=192.168.0.81
+
+[hdfs-slave]
+co7-slave ansible_ssh_host=192.168.0.82

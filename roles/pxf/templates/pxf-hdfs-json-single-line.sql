@@ -1,3 +1,4 @@
+DROP EXTERNAL TABLE IF EXISTS singleline_json_tbl;
 CREATE EXTERNAL TABLE singleline_json_tbl(
   created_at TEXT,
   id_str TEXT,
@@ -5,7 +6,7 @@ CREATE EXTERNAL TABLE singleline_json_tbl(
   "user.location" TEXT,
   "coordinates.values" TEXT[]
 )
-LOCATION('pxf://data/pxf_examples/singleline.json?PROFILE=hdfs:json')
+LOCATION('pxf://data/pxf_examples/pxf-hdfs-json-single-line.json?PROFILE=hdfs:json')
 FORMAT 'CUSTOM' (FORMATTER='pxfwritable_import');
 
 -- To query the JSON data in the external table:

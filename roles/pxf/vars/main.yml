@@ -19,3 +19,56 @@ with_hadoop_access: true
 pxf_base_dir_with_hadoop: /home/gpadmin/pxf-hadoop-base
 
 hadoop_version: "3.3.5"
+
+hadoop_access_jar_files:
+  - "avro-tools-1.11.1.jar"
+  - "orc-tools-1.7.3-uber.jar"
+  - "orc-tools-1.8.3-uber.jar"
+  - "orc-tools-1.8.3.jar"
+
+hadoop_access_sample_data:
+  - "pxf-hdfs-file1.txt"
+  - "pxf-hdfs-file2.txt"
+  - "pxf-hdfs-file3.txt"
+  - "pxf-hdfs-fixedwidth.txt"
+  - "pxf-hdfs-multi.txt"
+  - "pxf-hdfs-simple-data.txt"
+  - "pxf-hdfs-simple.txt"
+  - "pxf-hdfs-json-single-line.json"
+  - "pxf-hdfs-json-multi-line.json"
+  - "pxf-hdfs-sample-data-orc.json"
+
+hadoop_access_test_queries:
+  - "pxf-hdfs-insert-multi-data.sql"
+  - "pxf-hdfs-json-single-line-table-aep.sql"
+  - "pxf-hdfs-json-single-line.sql"
+  - "pxf-hdfs-json-multi-line.sql"
+  - "pxf-hdfs-json-single-line-table-stc.sql"
+  - "pxf-hdfs-parquet-table.sql"
+  - "pxf-hdfs-read-simple-text-1.sql"
+  - "pxf-hdfs-read-simple-text-2.sql"
+  - "pxf-hdfs-select-multi-data.sql"
+  - "pxf-hdfs-fixedwidth-read.sql"
+  # - "pxf-hdfs-avro-read.sql"
+  # - "pxf-hdfs-avro-write.sql"
+  # - "pxf-hdfs-fixedwidth-write.sql"               # Need to test manually
+  # - "pxf-hdfs-read-table-seqfile-record-key.sql"  # Need to test manually
+  # - "pxf-hdfs-custom-writable-example.sql"        # Need to test manually
+  # - "pxf-hdfs-read-file-row.sql"                  # Need to test with tdir
+  # - "pxf-hdfs-read-orc-sample-data.sql"           # Need to test manually
+  # - "pxf-hdfs-simple-write-orc-data.sql"          # Need to test manually
+
+hadoop_access_test_scripts:
+  - "pxf-hdfs-create-simple-data.sh"
+  - "pxf-hdfs-custom-writable-example-hdfs.sh"
+  - "pxf-hdfs-get-multi-data.sh"
+  - "pxf-hdfs-json-line.sh"
+  - "pxf-hdfs-read-sample-data-2.sh"
+  - "pxf-hdfs-read-simple-text-2.sh"
+  - "pxf-hdfs-fixedwidth-read.sh"
+  # - "pxf-hdfs-fixedwidth-write.sh"
+  # - "pxf-hdfs-avro.sh"
+  # - "pxf-hdfs-tdir.sh"                            # Need to test manually
+
+gpdb_access_test_scripts:
+  - "pxf-hdfs-custom-writable-example-gpdb.sh"

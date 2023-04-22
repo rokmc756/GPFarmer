@@ -1,3 +1,4 @@
+DROP EXTERNAL TABLE IF EXISTS singleline_json_tbl_aep;
 CREATE EXTERNAL TABLE singleline_json_tbl_aep(
   created_at TEXT,
   id_str TEXT,
