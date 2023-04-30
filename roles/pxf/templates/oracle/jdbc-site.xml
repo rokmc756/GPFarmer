@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property>
+        <name>jdbc.driver</name>
+        <value>oracle.jdbc.driver.OracleDriver</value>
+        <description>Class name of the JDBC driver</description>
+    </property>
+    <property>
+        <name>jdbc.url</name>
+        <value>jdbc:oracle:thin:@192.168.0.153:1521/cdb1</value>
+        <description>The URL that the JDBC driver can use to connect to the database</description>
+    </property>
+    <property>
+        <name>jdbc.user</name>
+        <value>oracleuser</value>
+        <description>User name for connecting to the database</description>
+    </property>
+    <property>
+        <name>jdbc.password</name>
+        <value>changeme</value>
+        <description>Password for connecting to the database</description>
+    </property>
+</configuration>

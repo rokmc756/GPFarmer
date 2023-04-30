@@ -1,0 +1,24 @@
+explain analyze insert into gp_pxf_parquet_s3 select * from read_pxf_parquet_s3;
+--testdb=# explain analyze insert into gp_pxf_parquet_s3 select * from read_pxf_parquet_s3;
+--                                                                        QUERY PLAN
+--
+--------------------------------------------------------------------------------------------------------------------------------------
+------------------------
+-- Insert  (cost=0.00..46079.75 rows=83334 width=136) (actual time=165.925..971.208 rows=8447 loops=1)
+--   ->  Result  (cost=0.00..506.83 rows=83334 width=140) (actual time=158.858..946.061 rows=8447 loops=1)
+--         ->  Redistribute Motion 12:12  (slice1; segments: 12)  (cost=0.00..495.16 rows=83334 width=136) (actual time=158.855..943.8
+--40 rows=8447 loops=1)
+--               Hash Key: read_pxf_parquet_s3.customer_id
+--               ->  External Scan on read_pxf_parquet_s3  (cost=0.00..438.61 rows=83334 width=136) (actual time=143.335..930.699 rows
+-- =100000 loops=1)
+-- Planning time: 27.807 ms
+--   (slice0)    Executor memory: 318K bytes avg x 12 workers, 318K bytes max (seg0).
+--   (slice1)    Executor memory: 180K bytes avg x 12 workers, 290K bytes max (seg6).
+-- Memory used:  128000kB
+-- Optimizer: Pivotal Optimizer (GPORCA)
+-- Execution time: 1026.057 ms
+--(11 rows)
+--
+insert into gp_pxf_parquet_s3 select * from read_pxf_parquet_s3;
+--testdb=# insert into gp_pxf_parquet_s3 select * from read_pxf_parquet_s3;
+--INSERT 0 100000

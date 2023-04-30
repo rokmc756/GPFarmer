@@ -72,3 +72,6 @@ hadoop_access_test_scripts:
 
 gpdb_access_test_scripts:
   - "pxf-hdfs-custom-writable-example-gpdb.sh"
+
+with_s3_access: true
+
