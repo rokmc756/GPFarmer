@@ -57,55 +57,29 @@
   when: inventory_hostname in groups['master']
 
 #
-- name: Allow tcp common port for master and standby hosts
+- name: Allow ports for master and standby hosts
   become: true
   become_user: root
   firewalld:
     permanent: yes
     immediate: yes
-    port: "{{item}}/tcp"
+    port: "{{ item.port }}/{{ item.proto}}"
     state: "enabled"
     zone: "public"
-  with_items: "{{ allow_tcp_ports_masters }}"
+  with_items: "{{ allow_ports_masters }}"
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
 #
-- name: Allow tcp common port for segment hosts
+- name: Allow ports for segment hosts
   become: true
   become_user: root
   firewalld:
     permanent: yes
     immediate: yes
-    port: "{{item}}/tcp"
+    port: "{{ item.port }}/{{ item.proto }}"
     state: "enabled"
     zone: "public"
-  with_items: "{{ allow_tcp_ports_segments }}"
-  when: inventory_hostname in groups['segments']
-
-#
-- name: Allow udp common port for master and standby hosts
-  become: true
-  become_user: root
-  firewalld:
-    permanent: yes
-    immediate: yes
-    port: "{{item}}/tcp"
-    state: "enabled"
-    zone: "public"
-  with_items: "{{ allow_udp_ports_masters }}"
-  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
-
-#
-- name: Allow udp common port for segment hosts
-  become: true
-  become_user: root
-  firewalld:
-    permanent: yes
-    immediate: yes
-    port: "{{item}}/udp"
-    state: "enabled"
-    zone: "public"
-  with_items: "{{ allow_udp_ports_segments }}"
+  with_items: "{{ allow_ports_segments }}"
   when: inventory_hostname in groups['segments']
 
 #

@@ -41,8 +41,8 @@
 - hosts: all
   become: yes
   roles:
-    - { role: pxf }
-
+    - { role: firewalld }
+#    - { role: pxf }
 #    - { role: gpcc }
 #    - { role: gpdb }
 #    - { role: gpss }
