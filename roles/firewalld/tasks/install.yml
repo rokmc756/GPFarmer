@@ -1,4 +1,16 @@
 ---
+#
+- name: Install firewalld rpm packages
+  become: true
+  become_user: root
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - firewalld
+    - firewalld-filesystem
+    - iptables-services
+
 - name: Start firewalld for all nodes
   become: true
   become_user: root
@@ -6,10 +18,26 @@
     name: firewalld
     state: started
     enabled: yes
+  with_items:
+    - firewalld
+    - iptables
+
+#
+#- name: Reset ruleset for public zone in firewalld
+#  become: true
+#  become_user: root
+#  shell: |
+#    firewall-cmd --load-zone-defaults=public --permanent
+#    firewall-cmd --reload
+
+# Set public as default policy
+# $ firewall-cmd --set-default-zone=public
+# $ firewall-cmd --reload
 
 #
 - name: Utility present
   become: true
+  become_user: root
   package:
     name: python3-psycopg2
     state: present
@@ -43,43 +71,68 @@
   when: inventory_hostname in groups['master']
 
 #
-- name: Allow tcp port into corresponding hostname
+- name: Allow tcp ports into corresponding hostname
   become: true
   become_user: root
   firewalld:
     permanent: yes
     immediate: yes
+    zone: "public"
     port: "{{item.port}}/tcp"
     state: "enabled"
-    zone: "public"
   delegate_to: "{{ item.hostname }}"
   with_items: "{{ rs_gp_seg_conf.query_result }}"
   when: inventory_hostname in groups['master']
 
 #
-- name: Allow ports for master and standby hosts
+- name: Allow common ports for all hosts
   become: true
   become_user: root
   firewalld:
     permanent: yes
     immediate: yes
     port: "{{ item.port }}/{{ item.proto}}"
-    state: "enabled"
     zone: "public"
-  with_items: "{{ allow_ports_masters }}"
-  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
+    state: "enabled"
+  with_items: "{{ common_ports }}"
 
 #
-- name: Allow ports for segment hosts
+- name: Allow ports for master hosts
+  become: true
+  become_user: root
+  firewalld:
+    permanent: yes
+    immediate: yes
+    port: "{{ item.port }}/{{ item.proto}}"
+    zone: "public"
+    state: "enabled"
+  with_items: "{{ master_ports }}"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Allow ports for standby host
+  become: true
+  become_user: root
+  firewalld:
+    permanent: yes
+    immediate: yes
+    port: "{{ item.port }}/{{ item.proto}}"
+    zone: "public"
+    state: "enabled"
+  with_items: "{{ standby_ports }}"
+  when: inventory_hostname in groups['standby']
+
+#
+- name: Allow ports for segments
   become: true
   become_user: root
   firewalld:
     permanent: yes
     immediate: yes
     port: "{{ item.port }}/{{ item.proto }}"
-    state: "enabled"
     zone: "public"
-  with_items: "{{ allow_ports_segments }}"
+    state: "enabled"
+  with_items: "{{ segment_ports }}"
   when: inventory_hostname in groups['segments']
 
 #

@@ -1,0 +1,69 @@
+_login_host: localhost
+_login_user: gpadmin
+_login_password: changeme
+_dbname: postgres
+
+master_ports:
+  - { "port" : "22", "proto" : "tcp" }             # SSH
+  - { "port" : "25", "proto" : "tcp" }             # SMTP
+  - { "port" : "111", "proto" : "tcp" }            # NFS Portmapper
+  - { "port" : "53", "proto" : "tcp" }             #
+  - { "port" : "80", "proto" : "tcp" }             #
+  - { "port" : "443", "proto" : "tcp" }            #
+  - { "port" : "587", "proto" : "tcp" }            # SMTPs
+  - { "port" : "2049", "proto" : "tcp" }           # NFS Server port
+  - { "port" : "2051", "proto" : "tcp" }           # DD Replication port
+  - { "port" : "2052", "proto" : "tcp" }           # NFS mounted
+  - { "port" : "2188", "proto" : "tcp" }           # GPText ( Zookeeper client ports )
+  - { "port" : "2224", "proto" : "tcp" }
+  - { "port" : "2812", "proto" : "tcp" }
+  - { "port" : "2880", "proto" : "tcp" }           # GPCC UI
+  - { "port" : "5888", "proto" : "tcp" }           # PXF
+  - { "port" : "6162", "proto" : "tcp" }
+  - { "port" : "6163", "proto" : "tcp" }
+  - { "port" : "6543", "proto" : "tcp" }           # PGbouncer
+  - { "port" : "8080", "proto" : "tcp" }           # GPFDIST
+  - { "port" : "8888", "proto" : "tcp" }           # GPPERFMON AGENT
+  - { "port" : "9898", "proto" : "tcp" }           # GPCC agent
+  - { "port" : "8899", "proto" : "tcp" }           # GPCC agent
+  - { "port" : "9000", "proto" : "tcp" }           # GPLOAD
+  - { "port" : "28080", "proto" : "tcp" }
+  - { "port" : "1025-65535", "proto" : "tcp" }     # Interconnect transports database tuples
+  - { "port" : "53", "proto" : "udp" }
+  - { "port" : "111", "proto" : "udp" }
+  - { "port" : "9898", "proto" : "udp" }
+  - { "port" : "8899", "proto" : "udp" }
+  - { "port" : "1025-65535", "proto" : "udp" }     # Interconnect transports database tuples
+# - "18983", "proto": "tcp" }                      # GPText nodes ( Apache Solr )
+
+segment_ports:
+  - { "port" : "22", "proto" : "tcp" }             # SSH
+  - { "port" : "25", "proto" : "tcp" }             # SMTP
+  - { "port" : "53", "proto" : "tcp" }             #
+  - { "port" : "80", "proto" : "tcp" }             #
+  - { "port" : "111", "proto" : "tcp" }            # NFS Portmapper
+  - { "port" : "443", "proto" : "tcp" }            #
+  - { "port" : "587", "proto" : "tcp" }            # SMTPs
+  - { "port" : "2049", "proto" : "tcp" }           # NFS Server port
+  - { "port" : "2051", "proto" : "tcp" }           # DD Replication port
+  - { "port" : "2052", "proto" : "tcp" }           # NFS mounted
+  - { "port" : "2188", "proto" : "tcp" }           # GPText ( Zookeeper client ports )
+  - { "port" : "2880", "proto" : "tcp" }           # GPCC UI
+  - { "port" : "2224", "proto" : "tcp" }
+  - { "port" : "2812", "proto" : "tcp" }
+  - { "port" : "5888", "proto" : "tcp" }           # PXF
+  - { "port" : "8080", "proto" : "tcp" }           # GPFDIST
+  - { "port" : "8888", "proto" : "tcp" }           # GPPERFMON AGENT
+  - { "port" : "9898", "proto" : "tcp" }           # GPCC agent
+  - { "port" : "8899", "proto" : "tcp" }           # GPCC agent
+  - { "port" : "6162", "proto" : "tcp" }
+  - { "port" : "6163", "proto" : "tcp" }           # GPCC agent in 6.8
+  - { "port" : "28080", "proto" : "tcp" }
+  - { "port" : "9000", "proto" : "tcp" }           # GPLOAD
+  - { "port" : "1025-65535", "proto" : "tcp" }     # Interconnect transports database tuples
+  - { "port" : "53", "proto" : "udp" }
+  - { "port" : "111", "proto" : "udp" }
+  - { "port" : "9898", "proto" : "udp" }
+  - { "port" : "8899", "proto" : "udp" }
+  - { "port" : "1025-65535", "proto" : "udp" }     # Interconnect transports database tuples
+# - "18983"                                        # GPText nodes ( Apache Solr )

@@ -1,21 +1,13 @@
 ---
-- name: Stop firewalld for all nodes
-  become: true
-  become_user: root
-  systemd:
-    name: firewalld
-    state: stopped
-    enabled: no
-
-- meta: end_play
-
+#- name: Stop firewalld for all nodes
+#  become: true
+#  become_user: root
+#  systemd:
+#    name: firewalld
+#    state: stopped
+#    enabled: no
 #
-- name: Utility present
-  become: true
-  package:
-    name: python3-psycopg2
-    state: present
-  when: inventory_hostname in groups['master']
+#- meta: end_play
 
 #
 - name: Get specific tables
@@ -45,43 +37,68 @@
   when: inventory_hostname in groups['master']
 
 #
-- name: Allow port into corresponding hostname
+- name: Disable port into corresponding hostname
   become: true
   become_user: root
   firewalld:
     permanent: yes
     immediate: yes
-    port: "{{item.port}}/tcp"
-    state: "enabled"
+    port: "{{ item.port }}/tcp"
+    state: "disabled"
     zone: "public"
   delegate_to: "{{ item.hostname }}"
   with_items: "{{ rs_gp_seg_conf.query_result }}"
   when: inventory_hostname in groups['master']
 
 #
-- name: Allow common port for master and standby hosts
+- name: Disable to allow common ports for all hosts
   become: true
   become_user: root
   firewalld:
     permanent: yes
     immediate: yes
-    port: "{{item}}/tcp"
-    state: "enabled"
+    port: "{{ item.port }}/{{ item.proto }}"
+    state: "disabled"
     zone: "public"
-  with_items: "{{ allow_ports_masters }}"
-  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
+  with_items: "{{ common_ports }}"
 
 #
-- name: Allow common port for segment hosts
+- name: Disable to allow ports for master
   become: true
   become_user: root
   firewalld:
     permanent: yes
     immediate: yes
-    port: "{{item}}/tcp"
-    state: "enabled"
+    port: "{{ item.port }}/{{ item.proto }}"
+    state: "disabled"
     zone: "public"
-  with_items: "{{ allow_ports_segments }}"
+  with_items: "{{ master_ports }}"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Disable to allow ports for standby hosts
+  become: true
+  become_user: root
+  firewalld:
+    permanent: yes
+    immediate: yes
+    port: "{{ item.port }}/{{ item.proto }}"
+    zone: "public"
+    state: "disabled"
+  with_items: "{{ standby_ports }}"
+  when: inventory_hostname in groups['standby']
+
+#
+- name: Disable to allow ports for segment hosts
+  become: true
+  become_user: root
+  firewalld:
+    permanent: yes
+    immediate: yes
+    port: "{{ item.port }}/{{ item.proto }}"
+    state: "disabled"
+    zone: "public"
+  with_items: "{{ segment_ports }}"
   when: inventory_hostname in groups['segments']
 
 #
@@ -90,4 +107,27 @@
   become_user: root
   systemd:
     state: reloaded
-    name: firewalld
+    name: "{{ item }}"
+  with_items:
+    - firewalld
+    - iptables
+
+#
+- name: Uninstall utility present
+  become: true
+  package:
+    name: python3-psycopg2
+    state: absent
+  when: inventory_hostname in groups['master']
+
+#
+- name: Uninstall firewalld rpm packages
+  become: true
+  become_user: root
+  yum:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - firewalld
+    - firewalld-filesystem
+    - iptables
