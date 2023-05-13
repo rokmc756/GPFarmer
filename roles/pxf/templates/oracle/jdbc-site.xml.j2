@@ -7,17 +7,17 @@
     </property>
     <property>
         <name>jdbc.url</name>
-        <value>jdbc:oracle:thin:@192.168.0.153:1521/cdb1</value>
+        <value>jdbc:oracle:thin:@{{ hostvars[groups['database'][0]]['ansible_eth0']['ipv4']['address'] }}:1521/{{ oracle_dbname }}</value>
         <description>The URL that the JDBC driver can use to connect to the database</description>
     </property>
     <property>
         <name>jdbc.user</name>
-        <value>oracleuser</value>
+        <value>{{ oracle_user }}</value>
         <description>User name for connecting to the database</description>
     </property>
     <property>
         <name>jdbc.password</name>
-        <value>changeme</value>
+        <value>{{ oracle_user_pass}}</value>
         <description>Password for connecting to the database</description>
     </property>
 </configuration>

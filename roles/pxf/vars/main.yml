@@ -15,7 +15,7 @@ pxf_base_dir_with_nfs: /home/gpadmin/pxf-test-base
 nfs_share_dir: /home/gpadmin/nfsshare
 nfs_server_ip_addr: 192.168.0.2
 
-with_hadoop_access: true
+with_hadoop_access: false
 pxf_base_dir_with_hadoop: /home/gpadmin/pxf-hadoop-base
 
 hadoop_version: "3.3.5"
@@ -73,5 +73,23 @@ hadoop_access_test_scripts:
 gpdb_access_test_scripts:
   - "pxf-hdfs-custom-writable-example-gpdb.sh"
 
-with_s3_access: true
+#
+with_oracle_access: false
+pxf_base_dir_with_oracle: /home/gpadmin/pxf-oracle-base
+oracle_dbname: cdb1
+oracle_user: oracleuser
+oracle_user_pass: changeme
 
+#
+with_mssql_access: false
+pxf_base_dir_with_mssql: /home/gpadmin/pxf-mssql-base
+mssql_dbname: testdb
+mssql_user: mssqluser
+mssql_user_pass: "Changeme!@#$"
+
+with_minio_access: true
+pxf_base_dir_with_minio: /home/gpadmin/pxf-minio-base
+s3_access_key: minioadmin
+s3_secret_key: changeme
+
+install_pxf: false

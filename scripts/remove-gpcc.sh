@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# MASTER_HOST=61
-# HOSTS_RANGE="61 62 63 64 65"
+MASTER_HOST=61
+HOSTS_RANGE="61 62 63 64 65"
 # MASTER_HOST=81
 # HOSTS_RANGE="81 82 83 84 85"
-MASTER_HOST=171
-HOSTS_RANGE="171 172 173 174 175"
+# MASTER_HOST=171
+# HOSTS_RANGE="171 172 173 174 175"
 MASTER_HOST_IP=192.168.0.$MASTER_HOST
 
 ssh gpadmin@$MASTER_HOST_IP "source /usr/local/greenplum-db/greenplum_path.sh && source /usr/local/greenplum-cc/gpcc_path.sh && gpcc stop;"

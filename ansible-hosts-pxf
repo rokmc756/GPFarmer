@@ -14,17 +14,20 @@ rk8-node01 ansible_ssh_host=192.168.0.173
 rk8-node02 ansible_ssh_host=192.168.0.174
 rk8-node03 ansible_ssh_host=192.168.0.175
 
+#[database]
+#oracle21c  ansible_ssh_host=192.168.0.153
+#mssql16    ansible_ssh_host=192.168.0.154
+
+#[hadoop]
+#co7-master ansible_ssh_host=192.168.0.81
+#co7-slave  ansible_ssh_host=192.168.0.82
+
 #[hdfs-master]
 #co7-master ansible_ssh_host=192.168.0.81
 
 #[hdfs-slave]
 #co7-slave  ansible_ssh_host=192.168.0.82
 
-#[oracle]
-#oracle21c  ansible_ssh_host=192.168.0.153
-
-[mssql]
-mssql16    ansible_ssh_host=192.168.0.154
-
-#[minio]
-#rk9-minio  ansible_ssh_host=192.168.0.198
+[storage]
+rk9-minio  ansible_ssh_host=192.168.0.198  # minio s3
+# co7-master ansible_ssh_host=192.168.0.81   # hadoop

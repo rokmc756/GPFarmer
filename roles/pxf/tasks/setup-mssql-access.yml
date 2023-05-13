@@ -1,4 +1,4 @@
-# Start line to configure Oracle Access
+# Start line to configure MS-SQL Access
 #
 - name: Stop the pxf cluster start command to start PXF on each segment host
   become: yes
@@ -20,21 +20,20 @@
   ignore_errors: yes
   register: pxf_java_processes_killed
   when:
-    - with_oracle_access
-    - inventory_hostname in groups['master']
+    - with_mssql_access
 
 #
 - debug: msg={{  pxf_java_processes_killed }}
-  when: inventory_hostname in groups['master']
+  # when: inventory_hostname in groups['master']
 
 #
-- name: Create PXF base directory for Oracle Access and query examples directory on all master and segment hosts
+- name: Create PXF base directory for MS-SQL Access and query examples directory on all master and segment hosts
   become_user: gpadmin
   file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
   register: pxf_base_dir_created
-  with_items:  "{{ pxf_base_dir_with_oracle }}"
+  with_items:  "{{ pxf_base_dir_with_mssql }}"
   when:
-    - with_oracle_access
+    - with_mssql_access
     - inventory_hostname in groups['master']
 
 #
@@ -42,36 +41,36 @@
   when: inventory_hostname in groups['master']
 
 #
-- name: Prepare PXF on master for Oracle Access
+- name: Prepare PXF on master for MS-SQL Access
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_oracle }} pxf cluster prepare )
-  register: pxf_cluster_oracle_prepared
+  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_mssql }} pxf cluster prepare )
+  register: pxf_cluster_mssql_prepared
   when:
-    - with_oracle_access
+    - with_mssql_access
     - inventory_hostname in groups['master']
 
 #
-- debug: msg={{ pxf_cluster_oracle_prepared }}
+- debug: msg={{ pxf_cluster_mssql_prepared }}
   when: inventory_hostname in groups['master']
 
 #
-- name: Copy Oracle OJDBC Driver to PXF_BASE/lib
-  copy: src=oracle/ojdbc8.jar dest={{ pxf_base_dir_with_oracle }}/lib/ojdbc8.jar owner=gpadmin group=gpadmin mode=0644
-  register: ojdbc_copied
+- name: Copy MS-SQL JDBC Driver to PXF_BASE/lib
+  copy: src=mssql/mssql-jdbc-12.2.0.jre8.jar dest={{ pxf_base_dir_with_mssql }}/lib/mssql-jdbc-12.2.0.jre8.jar owner=gpadmin group=gpadmin mode=0644
+  register: mssql_jdbc_copied
   when: inventory_hostname in groups['master']
 
 #
-- debug: msg={{ ojdbc_copied }}
+- debug: msg={{ mssql_jdbc_copied }}
   when: inventory_hostname in groups['master']
 
 #
 - name: Copy the jdbc-site.xml file to the default configuration directory.
   become_user: gpadmin
-  template: src=oracle/jdbc-site.xml.j2 dest={{ pxf_base_dir_with_oracle}}/servers/default/jdbc-site.xml owner=gpadmin group=gpadmin mode=644 force=yes
+  template: src=mssql/jdbc-site.xml.j2 dest={{ pxf_base_dir_with_mssql }}/servers/default/jdbc-site.xml owner=gpadmin group=gpadmin mode=644 force=yes
   register: jdbc_site_copied
   when:
-    - with_oracle_access
+    - with_mssql_access
     - inventory_hostname in groups['master']
 
 #
@@ -81,13 +80,12 @@
 #
 - name: Copy the query files to the base directory
   become_user: gpadmin
-  template: src=oracle/{{ item }} dest={{ pxf_base_dir_with_oracle}}/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
+  template: src=mssql/{{ item }} dest={{ pxf_base_dir_with_mssql}}/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
   register: query_files_copied
   with_items:
     - "create-external-table.sql"
-    - "create-writable-external-table.sql"
   when:
-    - with_oracle_access
+    - with_mssql_access
     - inventory_hostname in groups['master']
 
 #
@@ -98,62 +96,50 @@
 - name: Synchronize the PXF server configuration to the GPDB cluster
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_oracle }} pxf cluster sync )
-  register: pxf_cluster_oracle__synced
+  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_mssql }} pxf cluster sync )
+  register: pxf_cluster_mssql_synced
   when:
-    - with_oracle_access
+    - with_mssql_access
     - inventory_hostname in groups['master']
 
 #
-- debug: msg={{ pxf_cluster_oracle__synced }}
+- debug: msg={{ pxf_cluster_mssql_synced }}
   when: inventory_hostname in groups['master']
 
 #
-- name: Start PXF on master for Oracle Access
+- name: Start PXF on master for MS-SQL Access
   become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_oracle }} pxf cluster start )
-  register: pxf_cluster_oracle_started
+  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_mssql }} pxf cluster start )
+  register: pxf_cluster_mssql_started
   when:
-    - with_oracle_access
+    - with_mssql_access
     - inventory_hostname in groups['master']
 
 #
-- debug: msg={{ pxf_cluster_oracle_started }}
+- debug: msg={{ pxf_cluster_mssql_started }}
   when: inventory_hostname in groups['master']
 
 #
-- name: Create External Table for Oracle
+- name: Create External Table for MS-SQL
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -f {{ pxf_base_dir_with_oracle }}/create-external-table.sql )
-  register: oracle_external_table_created
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -f {{ pxf_base_dir_with_mssql }}/create-external-table.sql )
+  register: mssql_external_table_created
   when:
     - inventory_hostname in groups['master']
 #
-- debug: msg={{ oracle_external_table_created }}
+- debug: msg={{ mssql_external_table_created }}
   when: inventory_hostname in groups['master']
 
 #
-- name: Create Writable External Table for Oracle
-  become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -f {{ pxf_base_dir_with_oracle }}/create-writable-external-table.sql )
-  register: oracle_writable_external_table_created
-  when:
-    - inventory_hostname in groups['master']
-
-#
-- debug: msg={{ oracle_writable_external_table_created }}
-  when: inventory_hostname in groups['master']
-
-#
-- name: Select data from Oracle Database
+- name: Select data from MS-SQL Server
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -c 'select * from countries' )
-  register: oracle_data_selected
+  register: mssql_data_selected
   when:
     - inventory_hostname in groups['master']
 
 #
-- name: Print select data from Oracle Database
-  debug: msg={{ oracle_data_selected }}
+- name: Print select data from MS-SQL Server
+  debug: msg={{ mssql_data_selected }}
   when:
     - inventory_hostname in groups['master']

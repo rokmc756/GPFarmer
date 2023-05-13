@@ -1,0 +1,142 @@
+# Start line to configure Minio Access
+#
+- name: Stop the pxf cluster start command to start PXF on each segment host
+  become: yes
+  become_user: gpadmin
+  shell: ( source ~/.bashrc && export JAVA_HOME=/usr/lib/jvm/jre-1.8.0 && source ~/.bashrc && pxf cluster stop )
+  register: pxf_cluster_stopped
+  ignore_errors: yes
+  when: inventory_hostname in groups['master']
+
+#
+- debug: msg={{ pxf_cluster_stopped }}
+  when: inventory_hostname in groups['master']
+
+#
+- name: Killall java process for PXF Server
+  become: yes
+  become_user: gpadmin
+  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && gpssh -f /home/gpadmin/hostfile -e 'killall java' )
+  ignore_errors: yes
+  register: pxf_java_processes_killed
+  when:
+    - with_minio_access
+
+#
+- debug: msg={{  pxf_java_processes_killed }}
+  # when: inventory_hostname in groups['master']
+
+#
+- name: Create PXF base directory for Minio Access and query examples directory on all master and segment hosts
+  become_user: gpadmin
+  file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
+  register: pxf_base_dir_created
+  with_items:  "{{ pxf_base_dir_with_minio }}"
+  when:
+    - with_minio_access
+    - inventory_hostname in groups['master']
+
+#
+- debug: msg={{ pxf_base_dir_created }}
+  when: inventory_hostname in groups['master']
+
+#
+- name: Prepare PXF on master for Minio Access
+  become: yes
+  become_user: gpadmin
+  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_minio }} pxf cluster prepare )
+  register: pxf_cluster_minio_prepared
+  when:
+    - with_minio_access
+    - inventory_hostname in groups['master']
+
+#
+- debug: msg={{ pxf_cluster_minio_prepared }}
+  when: inventory_hostname in groups['master']
+
+#
+- name: Copy the s3-site.xml file to the default configuration directory.
+  become_user: gpadmin
+  template: src=minio/s3-site.xml.j2 dest={{ pxf_base_dir_with_minio }}/servers/default/s3-site.xml owner=gpadmin group=gpadmin mode=644 force=yes
+  register: jdbc_site_copied
+  when:
+    - with_minio_access
+    - inventory_hostname in groups['master']
+
+#
+- debug: msg={{ jdbc_site_copied }}
+  when: inventory_hostname in groups['master']
+
+#
+- name: Copy the query files to the base directory
+  become_user: gpadmin
+  template: src=minio/{{ item }}.j2 dest={{ pxf_base_dir_with_minio}}/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
+  register: query_files_copied
+  with_items:
+    - "create-external-table.sql"
+    - "create-normal-table.sql"
+    - "create-writable-external-table.sql"
+  when:
+    - with_minio_access
+    - inventory_hostname in groups['master']
+
+#
+- debug: msg={{ query_files_copied }}
+  when: inventory_hostname in groups['master']
+
+#
+- name: Synchronize the PXF server configuration to the GPDB cluster
+  become: yes
+  become_user: gpadmin
+  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_minio }} pxf cluster sync )
+  register: pxf_cluster_minio_synced
+  when:
+    - with_minio_access
+    - inventory_hostname in groups['master']
+
+#
+- debug: msg={{ pxf_cluster_minio_synced }}
+  when: inventory_hostname in groups['master']
+
+#
+- name: Start PXF on master for Minio Access
+  become_user: gpadmin
+  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_minio }} pxf cluster start )
+  register: pxf_cluster_minio_started
+  when:
+    - with_minio_access
+    - inventory_hostname in groups['master']
+
+#
+- debug: msg={{ pxf_cluster_minio_started }}
+  when: inventory_hostname in groups['master']
+
+#
+- name: Create Normal and External Tables for Minio S3
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -f {{ pxf_base_dir_with_minio }}/{{ item }} )
+  register: minio_external_table_created
+  with_items:
+    - "create-external-table.sql"
+    - "create-normal-table.sql"
+    - "create-writable-external-table.sql"
+  when:
+    - inventory_hostname in groups['master']
+
+#
+- debug: msg={{ minio_external_table_created }}
+  when: inventory_hostname in groups['master']
+
+#
+- name: Select data from Minio Server
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -P pager=off -d testdb -c 'select * from read_pxf_parquet_s3 limit 10' )
+  register: minio_data_selected
+  when:
+    - inventory_hostname in groups['master']
+
+#
+- name: Print select data from Minio Server
+  debug: msg={{ minio_data_selected }}
+  when:
+    - inventory_hostname in groups['master']
