@@ -1,6 +1,6 @@
 [1] From client on first terminal
 $ psql -h mdw -p 5432
-# create table test_table(a int);
+# create table test_table(a int) distributed by (a);
 # insert into test_table values (generate_series(1,100000000));
 
 [2] From other client on second terminal

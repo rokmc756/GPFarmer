@@ -18,14 +18,14 @@ gpdb_spread_mirrors: ""
 # smdw_hostname: "smdw4"
 
 gpdb_major_version: 6
-gpdb_minor_version: 15
+gpdb_minor_version: 17
 gpdb_build_version: 0
 gpdb_rhel_name: 'rhel7'
 gpdb_binary_type: 'rpm'
 
-# smdw_hostname: "co7-slave"
+smdw_hostname: "co7-slave"
 # smdw_hostname: "rh7-slave"
-smdw_hostname: "rh7-slave"
+# smdw_hostname: "rh7-slave"
 # smdw_hostname: "rk8-slave"
 # smdw_hostname: "smdw4"
 

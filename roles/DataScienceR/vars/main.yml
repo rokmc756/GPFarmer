@@ -4,6 +4,6 @@ dsr_major_version: 2
 dsr_minor_version: 0
 dsr_patch_version: 2
 dsr_gpdb_version: gp6
-dsr_rhel_version: rhel8
+dsr_rhel_version: rhel7
 dsr_database_name: testdb
 dsr_schema_name: test_scheme

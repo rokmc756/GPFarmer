@@ -1,0 +1,39 @@
+---
+#
+- name: Install EPEL repo.
+  become: true
+  yum:
+    name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
+    state: present
+    disable_gpg_check: true
+
+- name: Install R
+  become: true
+  yum:
+    name:  https://cdn.rstudio.com/r/{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}/pkgs/R-{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}-1-1.x86_64.rpm
+    state: present
+  #   disable_gpg_check: yes
+
+#
+- name: Verify R version
+  become: true
+  command: /opt/R/{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}/bin/R --version
+  register: r_version_verified
+
+- name: Print R version
+  become: true
+  debug: msg={{ r_version_verified }}
+
+- name: Create symbolic links to the version of R
+  become: true
+  file:
+    src: /opt/R/{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}/bin/{{ item }}
+    dest: /usr/local/bin/{{ item }}
+    state: link
+  with_items:
+    - "R"
+    - "Rscript"
+
+  # rspm list requirements --help
+  # rspm list requirements --repo=cran --packages=ggplot2,plumber --distribution=ubuntu --release=18.04
+  # rspm list requirements --repo=validated-subset --packages=* --distribution=ubuntu --release=18.04
