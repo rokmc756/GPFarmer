@@ -1,4 +1,12 @@
-r_major_version: 4
-r_minor_version: 2
-r_patch_version: 3
-os_kind: centos
+r_major_version: 3
+r_minor_version: 6
+r_patch_version: 0
+
+rspm_server_version: "2023.04.0-6"
+  # RSPM_SERVER_VERSION=2023.04.0-6
+
+# curl -o rspm -f https://cdn.posit.co/package-manager/linux/amd64/rspm-cli-linux-${RSPM_SERVER_VERSION}
+# chmod +x rspm
+use_r: true
+use_r_studio: false
+with_gpdb: true

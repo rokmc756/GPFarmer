@@ -1,0 +1,16 @@
+
+#
+- name: Delete lines of R variables in "$GPHOME"/greenplum_path.sh
+  become: true
+  lineinfile:
+    dest: /usr/local/greenplum-db/greenplum_path.sh
+    regexp: '^(export )(?!#)(.*R_HOME.*)'
+    state: absent
+
+#
+- name: Uncomment the lines of R variables commented by ansible playbook of R
+  become: true
+  replace:
+    path: /usr/local/greenplum-db/greenplum_path.sh
+    regexp: '^#(?!#)(.*GPHOME/ext/R-.*)'
+    replace: '\1'

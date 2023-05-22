@@ -1,0 +1,89 @@
+---
+#
+- name: Delete config and binary files of SPM
+  become: true
+  file:
+    path: "/usr/local/bin/{{ item }}"
+    state: absent
+  with_items:
+    - "rspm"
+    - "rspm-offline-downloader"
+
+#$ sudo groupdel foobar 
+#groupdel: cannot remove the primary group of user 'foobar'
+#$ sudo usermod -g foo foobar  ## Change the primary group of user "foobar" from "foobar" to "foo"
+#$ sudo groupdel foobar  ## Done
+
+#
+- name: Stop and disable the Package Manager service
+  become: true
+  systemd:
+    name: rstudio-pm
+    state: stopped
+    enabled: no
+  register: rstudio_pm_systemd_stop
+
+#
+- name: Killall rstudio-pm if systemctl did not stop it
+  become: true
+  shell: killall rstudio-pm
+  register: rstudio_pm_killed
+  ignore_errors: true
+
+#
+- name: Change primary group for gpadmin user to delete rstudio-pm group
+  become: true
+  command: usermod -g wheel gpadmin
+  register: rstudio_pm_user_added
+
+
+- name: Remove the user rstudio-pm
+  become: true
+  user:
+    name: rstudio-pm
+    state: absent
+    remove: yes
+
+#
+- name: Remove group rstudio-pm
+  become: true
+  group:
+    name: rstudio-pm
+    state: absent
+
+#
+- name: Uninstall R Studio
+  become: true
+  yum:
+    name: rstudio-pm
+    state: present
+  register: r_studio_uninstalled
+
+#
+#- name: Delete gpg key
+# [root@co7-master ~]# gpg --list-keys
+#/root/.gnupg/pubring.gpg
+#------------------------
+#pub   4096R/E331692F 2017-10-18
+#uid                  RStudio, Inc. (code signing) <info@rstudio.com>
+#sub   4096R/5AE3E4A2 2017-10-18
+#
+#This will list all your keys in your keyring. Below is an example of a key:
+#
+#pub 2048R/C5DB61BC 2015-04-21
+#uid Your Name (Optional Comment)
+#sub 2048R/18C601D3 2015-04-21
+#
+#Note: They key-ID in above key example is C5DB61BC.
+#
+# You can delete multiple keys with the following command:
+# gpg --delete-key keyID1 keyID2 keyID3
+#
+#
+
+- name: Delete public key from downloaded from website
+  become: true
+  shell: rm -f /tmp/posit-code-signing.key
+  register: public_key_deleted
+
+

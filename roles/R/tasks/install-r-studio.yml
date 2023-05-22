@@ -1,0 +1,149 @@
+---
+#
+# The Package Manager installer is signed with a key belonging to Posit. If  verify this signature, then do one of the following:
+- name: Obtain the key from a GnuPG keyserver
+  become: true
+  shell:  gpg --keyserver keyserver.ubuntu.com --recv-keys 3F32EE77E331692F
+  register: gpg_key_obtained
+
+#
+- name: Print the key obtained from a GnuPG keyserver
+  become: true
+  debug: msg={{ gpg_key_obtained }}
+
+#
+- name: Obtain the public key from website and save it into a file
+  become: true
+  shell: gpg --armor --export 3F32EE77E331692F > /tmp/posit-code-signing.key
+  register: public_key_optained
+
+#
+- name: Print public key from website
+  become: true
+  debug: msg={{ public_key_optained }}
+
+#
+- name: Import the key into the set of keys RPM uses to validate package signatures
+  become: true
+  shell: rpm --import /tmp/posit-code-signing.key
+  register: gpg_key_imported
+
+#
+- name: Print key of RPMS for validating imported
+  become: true
+  debug: msg={{ gpg_key_imported }}
+
+#
+- name: Install R Studio
+  become: true
+  yum:
+    name: "{{ item }}"
+    state: present
+  register: r_studio_installed
+  with_items:
+    - "https://cdn.posit.co/package-manager/{{ ansible_distribution | lower }}/x86_64/rstudio-pm-{{ rspm_server_version }}.x86_64.rpm"
+
+#
+- name: Print R Studio installed
+  become: true
+  debug: msg={{ r_studio_installed }}
+
+# By default, the Package Manager settings are controlled by a configuration file located at /etc/rstudio-pm/rstudio-pm.gcfg.
+# At a minimum, complete the Address property within the Server section.
+# Do this by specifying the URL used to access Package Manager:
+# ; /etc/rstudio-pm/rstudio-pm.gcfg
+# [Server]
+# Address = http://r-packages.example.com
+# Replace http://r-packages.example.com with the value appropriate for your organization.
+
+# There are many other options that you may want to configure now or at a later point, such as:
+
+# The on-disk location where data will be stored, default: /var/lib/rstudio-pm
+# The database where essential metadata should be stored, default: built-in SQLite.
+# Important security settings settings such as HTTPS certificates and ports; the default is HTTP on port 4242.
+
+#
+- name: Verify the status of your license
+  become: true
+  command: /opt/rstudio-pm/bin/license-manager status
+  register: license_status_verified
+
+#
+- name: Print license status
+  become: true
+  debug: msg={{ license_status_verified }}
+
+# If you have a license key, then activate the license by replacing LICENSE_KEY with the value of your license key:
+# /opt/rstudio-pm/bin/license-manager activate LICENSE_KEY
+
+#
+- name: Start the Package Manager service
+  become: true
+  systemd:
+    daemon_reload: yes
+    name: rstudio-pm
+    enabled: yes
+    state: started
+  register: rstudio_pm_systemd_started
+
+#
+- name: Print the Package Manager service started
+  become: true
+  debug: msg={{ rstudio_pm_systemd_started }}
+
+#
+#- name: Add USER to the rstudio-pm group
+#  become: true
+#  command: usermod -aG rstudio-pm gpadmin
+#  register: rstudio_pm_user_added
+
+#
+- name: Adding user gpadmin to group rstudio-pm
+  become: true
+  user:
+    name: gpadmin
+    groups: rstudio-pm
+    append: yes
+
+#
+- name: Print USER to the rstudio-pm group added
+  become: true
+  debug: msg={{ rstudio_pm_user_added }}
+
+#
+- name: Confirm that rstudio-pm is listed in order to enumerates the groups that the current user is a member of
+  become: true
+  command: /opt/rstudio-pm/bin/rspm list
+  register: rstudio_pm_listed
+
+#
+- name: Print list of R Studio
+  become: true
+  debug: msg={{ rstudio_pm_listed }}
+
+#
+- name: Download RSPM
+  get_url:
+    url: "https://cdn.posit.co/package-manager/linux/amd64/{{ item.src_file }}-linux-{{ rspm_server_version }}"
+    dest: "/usr/local/bin/{{ item.dest_file }}"
+    mode: 0755
+  register: rspm_downloaded
+  with_items:
+    - { src_file: 'rspm-cli', dest_file: 'rspm' }
+    - { src_file: 'rspm-offline-downloader', dest_file: 'rspm-offline-downloader' }
+
+#
+- name: Print RSPM downloaded
+  become: true
+  debug: msg={{ rspm_downloaded }}
+
+#
+- name: Verify RSPM version
+  become: true
+  command: /usr/local/bin/rspm --version
+  register: rspm_version_verified
+
+#
+- name: Print RSPM version
+  become: true
+  debug: msg={{ rspm_version_verified }}

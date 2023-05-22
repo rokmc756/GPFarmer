@@ -6,9 +6,31 @@
   when: ansible_os_family != 'RedHat' or  ansible_os_family != 'CentOS' or ansible_os_family != 'Rocky'
 
 - name: Install R
-  include: install.yml
+  include: install-r.yml
   tags: install
+  when: use_r == true
+
+- name: Configure R variables for GPDB
+  include: config-r-variable-gpdb.yml
+  tags: config
+  when: use_r == true
+
+- name: Install R Studio
+  include: install-r-studio.yml
+  tags: install
+  when: use_r_studio == true
 
 - name: Uninstall R
-  include: uninstall.yml
+  include: uninstall-r.yml
   tags: uninstall
+  when: use_r == true
+
+- name: Unconfigure R variables for GPDB
+  include: unconfig-r-variable-gpdb.yml
+  tags: unconfig
+  when: use_r == true
+
+- name: Uninstall R Studio
+  include: uninstall-r-studio.yml
+  tags: uninstall
+  when: use_r_studio == true
