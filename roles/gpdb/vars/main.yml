@@ -17,13 +17,20 @@ gpdb_spread_mirrors: ""
 # smdw_hostname: "rk8-slave"
 # smdw_hostname: "smdw4"
 
-gpdb_major_version: 6
-gpdb_minor_version: 17
-gpdb_build_version: 0
-gpdb_rhel_name: 'rhel7'
-gpdb_binary_type: 'rpm'
+# greenplum-db-6.24.3-ubuntu18.04-amd64.deb
 
-smdw_hostname: "co7-slave"
+gpdb_major_version: 6
+gpdb_minor_version: 24
+gpdb_build_version: 3
+gpdb_os_name: 'ubuntu18.04'
+# gpdb_os_name: 'rhel7'
+gpdb_arch_name: 'amd64'
+# gpdb_arch_name: 'x86_64'
+gpdb_binary_type: 'deb'
+# gpdb_binary_type: 'rpm'
+
+smdw_hostname: "ubt18-slave"
+# smdw_hostname: "co7-slave"
 # smdw_hostname: "rh7-slave"
 # smdw_hostname: "rh7-slave"
 # smdw_hostname: "rk8-slave"

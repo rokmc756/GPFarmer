@@ -10,3 +10,71 @@ tcl,gettext,expat-devel,gettext-devel,bison,flex,perl-ExtUtils-Embed,perl-ExtUti
 readline,readline-devel,apr,apr-devel,apr-util,apr-util-devel,libevent,libxml2,libxml2-devel,
 bzip2,bzip2-devel,libyaml,python-devel,net-snmp,net-snmp-devel,net-snmp-utils,net-snmp-libs,
 liblockfile,ccache,python-lockfile,xml2,docbook2X,xmlto,libcgroup,libcgroup-tools,nmap"
+
+
+ubt_common_packages: "vim,nano,screen,psmisc,rsync,wget,mutt,unzip,net-tools,ed,m4,expect,
+netcat,openjdk-8-jdk,openjdk-8-jre,libcgroup-dev,nmap"
+# vim-enhanced -> vim
+# nc -> netcat
+# libcgroup-tools --> blank
+# libcgroup --> libcgroup-dev
+
+ubt_common_devel_packages: "automake,make,gcc,g++,build-essential,ed,lsof,python-setuptools,python-paramiko,git,bash,
+python-yaml,perl,libextutils-makemaker-cpanfile-perl,zlib1g,curl,openssl,libssl-dev,subversion,tcl,gettext,libexpat-dev,bison,bzip2,
+flex,libreadline-dev,libapr1,libapr1-dev,libaprutil1,libaprutil1-dev,libevent-dev,libxml2,libxml2-dev,bzip2,libyaml-dev,
+python-dev,snmp,snmpd,libsnmp-dev,liblockfile-bin,ccache,python-lockfile,xml2,docbook,xmlto,libcgroup-dev,krb5-multidev,
+libcurl3-gnutls,libcurl4,libevent-2.1-6,libyaml-0-2,libldap-2.4-2,openssh-client,rsync,sed,tar,zip,less,iproute2,
+firewalld,policycoreutils,selinux-utils,selinux-basics,libkrb5-dev,cgroupfs-mount,cgroup-tools,cgroup-lite,cgroup-bin"
+
+# gcc-c++  --> g++
+# build-essential added
+# PyYAML --> python-yaml
+# perl-ExtUtils-MakeMaker --> libextutils-makemaker-cpanfile-perl
+# zlib --> zlib1g
+# zlib-devel --> blank
+# curl-devel --> blank
+# openssl-devel --> libssl-dev
+# expat-devel --> libexpat-dev
+# gettext-devel --> blank
+# perl-Extutils-Embed --> blank
+# readline, readline-devel --> libreadline-dev
+# gettext-devel --> blank
+# apr --> libapr1
+# apr-devel --> libapr1-dev
+# apr-util --> libaprutil1
+# apr-util-devel --> libaprutil1-dev
+# libxml2-devel --> libxml2-dev
+# libevent --> libevent-dev
+# bzip2-devel --> blank
+# libyaml --> libyaml-dev
+# python-devel --> python-dev
+# net-snmp --> snmp , snmpd
+# net-snmp-devel --> libsnmp-dev
+# liblockfile --> liblockfile-bin
+# dockbook2X --> dockbook
+# libcgroup-toolsnmp --> blank
+
+packaged_in_official_manual: "libapr1
+,libaprutil1
+,bash
+,bzip2
+,krb5-multidev
+,libcurl3-gnutls
+,libcurl4
+,libevent-2.1-6
+,libxml2
+,libyaml-0-2
+,zlib1g
+,libldap-2.4-2
+,openssh-client
+,openssl
+,perl
+,readline
+,rsync
+,sed
+,tar
+,zip
+,net-tools
+,less
+,iproute2
+"

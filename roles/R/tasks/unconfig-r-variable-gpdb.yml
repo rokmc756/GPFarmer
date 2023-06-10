@@ -4,7 +4,7 @@
   become: true
   lineinfile:
     dest: /usr/local/greenplum-db/greenplum_path.sh
-    regexp: '^(export )(?!#)(.*R_HOME.*)'
+    regexp: '^(export )(?!#)(.*R_HOME_DIR.*)'
     state: absent
 
 #
@@ -14,3 +14,17 @@
     path: /usr/local/greenplum-db/greenplum_path.sh
     regexp: '^#(?!#)(.*GPHOME/ext/R-.*)'
     replace: '\1'
+
+#
+- name: Recursively change ownership of R libraary directory for root user
+  become: true
+  file:
+    path: /opt/R/{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}/lib/R/{{ item }}
+    state: directory
+    recurse: yes
+    owner: root
+    group: root
+  with_items:
+    - "doc"
+    - "library"
+  when: with_gpdb == true

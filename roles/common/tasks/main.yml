@@ -1,15 +1,20 @@
 ---
-# Install Greenplum Database
+# Install common role to prepare installing Greenplum Database
 
-# for now fail if it's not a Red Hat based system
+#- name: Print OS
+#  debug: msg={{ ansible_distribution }}
+
+# for now fail if it's not supported OS
 - name: Check OS ( GPDB )
-  fail: msg="Not a Red Hat based system!"
-  when: ansible_os_family != 'RedHat'
+  fail: msg="{{ ansible_distribution }} is not supported for this ansible playbook!"
+  when: ansible_distribution != "RedHat" and ansible_distribution != "CentOS" and ansible_distribution != "Rocky" and ansible_distribution != "Ubuntu" and ansible_distribution != "Debian"
 
-- name: Installation of common for Red Hat / CentOS
-  include: common-install.yml
+#
+- name: Install common role for Red Hat / CentOS / Rocky / Ubuntu / Debian
+  include: install.yml
   tags: install
 
-- name: Uninstallation of common for Red Hat / CentOS
-  include: common-uninstall.yml
+#
+- name: Uninstall common role for Red Hat / CentOS / Rocky / Ubuntu / Debian
+  include: uninstall.yml
   tags: uninstall

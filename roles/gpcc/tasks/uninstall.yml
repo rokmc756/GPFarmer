@@ -1,5 +1,5 @@
 ---
-# Uninstall Greenplum Command Center v2 on Red Hat / CentOS
+# Uninstall Greenplum Command Center on Red Hat / CentOS / Rocky / Ubuntu / Debian
 
 - name: Check if the Greenplum Database software is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db

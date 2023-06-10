@@ -1,0 +1,7 @@
+[all:vars]
+ssh_key_filename="id_rsa"
+remote_machine_username="gpadmin"
+remote_machine_password="changeme"
+
+[database]
+co7-db-master ansible_ssh_host=192.168.0.151

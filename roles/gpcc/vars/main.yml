@@ -5,18 +5,29 @@
 # greenplum-cc-web-6.6.0-gp6-rhel7-x86_64.zip
 # greenplum-cc-web-4.14.0-gp5-rhel7-x86_64.zip
 
+# Ubuntu
+# greenplum-cc-web-6.8.4-gp6-ubuntu18.04-x86_64.zip
+
 gpdb_major_version: 6
-gpdb_minor_version: 15.0
+gpdb_minor_version: 24.3
 gpdb_build_version:
 gpcc_major_version: 6
 gpcc_minor_version: 8.4
+
+gpdb_metric_major_version: 6
+gpdb_metric_minor_version: 23.0
+gpdb_metric_build_version:
+
+gpcc_metric_arch: 'amd64'
+gpcc_os_name: 'ubuntu18.04'
+
 # gpcc_build_version:
 # gpcc_rhel_name: LINUX-
 # gpcc_rhel_name: gp6-rhel8-
-gpcc_rhel_name: rhel7
+# gpcc_os_name: rhel7
+
 gpdb_initdb_only_single: false
 gpdb_initdb_with_standby: true
-# gpcc_network_range: "192.168.56.0/24"
 gpcc_network_range: "192.168.0.0/24"
 gpcc_subnet_range: 24
 gpcc_password: "changeme"

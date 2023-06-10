@@ -1,6 +1,6 @@
 ---
 
-# Upgrade Greenplum Database on Red Hat / CentOS
+# Upgrade Greenplum Database on Red Hat / CentOS / Rocky / Ubuntu / Debian
 # upgrade: {{ gpdb_base_dir }}/greenplum-db-{ new version } must not exist
 # linkchange: {{ gpdb_base_dir }} /greenplum-db points to another directory
 

@@ -1,54 +1,54 @@
 ---
-# Install Greenplum Command Center v2 on Red Hat / CentOS
+# Install Greenplum Command Center on Red Hat / CentOS / Rocky / Ubuntu / Debian
 
 - name: Get the specific ip address
   set_fact:
     prod_ip_addr_range: "{{ item }}"
+  with_items: "{{ ansible_all_ipv4_addresses }}"
   when:
     - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
     - "item | ipaddr('{{ gpcc_network_range }}')"
-  with_items: "{{ ansible_all_ipv4_addresses }}"
 
+#
 - name: Check if the Greenplum Database software is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
 
+#
 - name: Stop if database software is not installed
   fail: msg="Greenplum Database software is not installed!"
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
-    - gpdb_installed.stat.exists != True
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_installed.stat.exists != True )
 
+#
 - name: Verify that database is up and running
   become_user: gpadmin
   changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c 'SELECT VERSION()' )
+  args:
+    executable: /bin/bash
   register: select_version
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
-  when:
-    - inventory_hostname in groups['master']
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master']
 
 # Status: Command Center software is installed
 - name: Set default values for run mode variables
   set_fact:
     gpcc_gpperfmon_install: False
     gpcc_setup_cc_sne: False
-  when:
-    - inventory_hostname in groups['master']
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master']
 
+#
 - name: Verify that gpperfmon is not installed (1)
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT COUNT(*) AS count FROM pg_database WHERE datname = 'gpperfmon'" )
+  args:
+    executable: /bin/bash
   register: select_gpperfmon
-  when:
-    - inventory_hostname in groups['master']
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master']
 
+#
 - name: Add login to pg_hba.conf
   lineinfile:
     dest: /data/master/gpseg-1/pg_hba.conf
@@ -60,154 +60,126 @@
     - { line: "host     all         gpmon         ::1/128           md5" , state: present }
     - { line: "host     all         gpmon         {{ prod_ip_addr_range }}/24 md5" , state: present }
   register: gpmon_pg_hba_config
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
-    # - select_gpperfmon.stdout.find('     0') != -1
+  when: ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  # - select_gpperfmon.stdout.find('     0') != -1
 
+#
 - name: Reload database
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a && gpstart -a )
+  args:
+    executable: /bin/bash
   async: 360
   poll: 5
   changed_when: gpmon_pg_hba_config == True
-  when:
-    - inventory_hostname in groups['master']
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master']
 
+#
 - name: Verify that gpperfmon is not installed (1)
   set_fact:
     gpcc_gpperfmon_install: True
-  when:
-    - inventory_hostname in groups['master']
-    - select_gpperfmon.stdout.find('     0') != -1
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) and ( select_gpperfmon.stdout.find('     0') != -1 )
 
+#
 - name: Install gpperfmon agents
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpperfmon_install --enable --password '{{ gpcc_password }}' --port 5432 )
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_gpperfmon_install == True
-    - gpcc_major_version >= 6 and gpcc_minor_version < 7.0
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  args:
+    executable: /bin/bash
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_gpperfmon_install == True ) and ( gpcc_major_version >= 6 and gpcc_minor_version < 7.0 )
 
+#
 - name: Check if the Command Center version is already installed
   stat: path={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}
   register: gpcc_installed
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
 
+#
 - name: Copy Command Center zip file
-  copy: src=greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-gp{{ gpdb_major_version }}-{{ gpcc_rhel_name}}-x86_64.zip dest={{ gpadmin_home_dir }}/gpcc.zip mode=0644 owner=gpadmin group=gpadmin
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_installed.stat.exists != True
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  copy: src=greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-gp{{ gpdb_major_version }}-{{ gpcc_os_name}}-x86_64.zip dest={{ gpadmin_home_dir }}/gpcc.zip mode=0644 owner=gpadmin group=gpadmin
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_installed.stat.exists != True )
 
+#
 - name: Remove old temp installer directory
   file: path={{ gpadmin_home_dir }}/gpcc-tmp-install state=absent
   changed_when: False
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_installed.stat.exists != True
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_installed.stat.exists != True )
 
+#
 - name: Create new temp installer directory
   file: path={{ gpadmin_home_dir }}/gpcc-tmp-install state=directory owner=gpadmin group=gpadmin
   changed_when: False
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_installed.stat.exists != True
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_installed.stat.exists != True )
 
+#
 - name: Unzip Command Center archive
   unarchive: src={{ gpadmin_home_dir }}/gpcc.zip dest={{ gpadmin_home_dir }}/gpcc-tmp-install remote_src=yes owner=gpadmin group=gpadmin
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_installed.stat.exists != True
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_installed.stat.exists != True )
 
 # make next tasks easier by not always using the Ansible variables in the filename
 - name: Rename .bin file
   command: creates={{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpadmin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-LINUX-x86_64.bin {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_major_version <= 3
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_major_version <= 3 )
 
 # make next tasks easier by not always using the Ansible variables in the filename
 - name: Rename .bin file
-  command: creates={{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpadmin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-gp{{ gpdb_major_version }}-{{ gpcc_rhel_name }}-x86_64/gpccinstall-{{ gpcc_major_version }}.{{ gpcc_minor_version }} {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_major_version < 6 and gpcc_major_version > 3
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  command: creates={{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpadmin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-gp{{ gpdb_major_version }}-{{ gpcc_os_name }}-x86_64/gpccinstall-{{ gpcc_major_version }}.{{ gpcc_minor_version }} {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_major_version < 6 and gpcc_major_version > 3 )
 
 # make next tasks easier by not always using the Ansible variables in the filename
 - name: Rename .bin file
-  command: creates={{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpadmin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-gp{{ gpdb_major_version }}-{{ gpcc_rhel_name }}-x86_64/gpccinstall-{{ gpcc_major_version }}.{{ gpcc_minor_version }} {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_major_version >= 6
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  command: creates={{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpadmin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-gp{{ gpdb_major_version }}-{{ gpcc_os_name }}-x86_64/gpccinstall-{{ gpcc_major_version }}.{{ gpcc_minor_version }} {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_major_version >= 6 )
 
+#
 - name: Copy Command Center setup config file
   copy: src=gpcc_config.ini dest={{ gpadmin_home_dir }}/gpcc_config.ini mode=0644 owner=gpadmin group=gpadmin
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_installed.stat.exists != True and gpcc_major_version > 3
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_installed.stat.exists != True and gpcc_major_version > 3 )
 
+#
 - name: Copy Command Center setup config file
   copy: src=gpcmdr_setup.ini dest={{ gpadmin_home_dir }}/gpcmdr_setup.ini mode=0644 owner=gpadmin group=gpadmin
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_major_version <= 3
-      # - gpcc_installed.stat.exists != True and gpcc_major_version <= 3
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_major_version <= 3 )
 
+#
 - name: Copy Command Center install script file
   copy: src=install_gpcc.sh dest={{ gpadmin_home_dir }}/install_gpcc.sh mode=0755 owner=gpadmin group=gpadmin
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_installed.stat.exists != True and gpcc_major_version > 3
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_installed.stat.exists != True and gpcc_major_version > 3 )
 
+#
 - name: Check if directory for ssl keys is already created
   stat: path={{ gpadmin_home_dir }}/certs
   register: check_dir_sslkey_installed
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
 
+#
 - name: Create new ssl directory
   file: path={{ gpadmin_home_dir }}/certs state=directory owner=gpadmin group=gpadmin
   changed_when: False
   register: dir_sslkey_installed
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
-    - check_dir_sslkey_installed.stat.exists != True
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( check_dir_sslkey_installed.stat.exists != True )
 
+#
 - name: Create ssl key for GPCC access
   become_user: gpadmin
   shell: ( openssl req -newkey rsa:2048 -x509 -keyout {{ gpadmin_home_dir }}/certs/cert.pem -out {{ gpadmin_home_dir }}/certs/cert.pem -days 3650 -nodes -subj "/C=KR/ST=Seoul/L=GANGNAM/O=Pivotal/CN=jtest.pivotal.io/emailAddress=jomoon@pivotal.io" )
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  args:
+    executable: /bin/bash
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
 
+#
 - name: Install Command Center Software and later version
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gpadmin_home_dir }}/install_gpcc.sh )
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_installed.stat.exists != True and gpcc_major_version > 3
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  args:
+    executable: /bin/bash
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_installed.stat.exists != True and gpcc_major_version > 3 )
 
-- name: Command Center instance URL
+#
+- name: Print Command Center instance URL
   debug: msg="https://{{ inventory_hostname }}:28080/"
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_setup_cc_sne == True
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) and (  gpcc_setup_cc_sne == True )
 
 # This will only work on the first run (secured by gpcc_installed.stat.exists != True)
 # Note: You hereby accept the license! Please see installer for remaining questions.
@@ -223,10 +195,7 @@
     - { regexp: '^installPath=$', line: 'installPath={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}', state: present, backrefs: yes }
     - { regexp: '^        pathVerification=', line: '        pathVerification=1', state: present, backrefs: yes }
     - { regexp: '^    agreed=', line: '    agreed=1', state: present, backrefs: yes }
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_installed.stat.exists != True and gpcc_major_version <= 3
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_installed.stat.exists != True and gpcc_major_version <= 3 )
 
 # By Jack
 # - Skip to install gpcc at standby master automatically
@@ -237,38 +206,33 @@
   shell: ( sed -i '987c if\ [\ !\ -z\ \"\${GPHOME}\"\ ]\ &&\ [\ !\ -z\ \$standby\ ]\;\ then' {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin ;
            sed -i '1022c tail\ -n\ +\${SKIP}\ \$0\ \|\ \${TAR}\ zxf\ -\ -C\ \${installPath}\ \>\ /dev/null\ 2\>\&1\;\ fnums\=\`ls\ \${installPath}\ \|\ wc\ -l\`' {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin ;
            sed -i '1023c if\ [\ \$\?\ -eq\ 0\ ]\ &&\ [\ \$fnums\ -lt\ 1\ ]\;\ then' {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin )
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_installed.stat.exists != True and gpcc_major_version <= 3
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  args:
+    executable: /bin/bash
+  when: ( inventory_hostname in groups['master'] ) and (  gpcc_installed.stat.exists != True and gpcc_major_version <= 3 )
 
+#
 - name: Install Comment Center Software in {{ gpcc_base_dir }}
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin )
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_installed.stat.exists != True and gpcc_major_version <= 3
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  args:
+    executable: /bin/bash
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_installed.stat.exists != True and gpcc_major_version <= 3 )
 
+#
 - name: Create symlink to {{ gpcc_base_dir }}/greenplum-cc-web
   file: src={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }} dest={{ gpcc_base_dir }}/greenplum-cc-web state=link
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
-    - gpcc_major_version <= 6 and gpcc_minor_version < 2
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpcc_major_version <= 6 and gpcc_minor_version < 2 )
 
+#
 - name: Create symlink to {{ gpcc_base_dir }}/greenplum-cc
   file: src={{ gpcc_base_dir }}/greenplum-cc-{{ gpcc_major_version }}.{{ gpcc_minor_version }} dest={{ gpcc_base_dir }}/greenplum-cc state=link
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
-    - gpcc_major_version >= 6 and gpcc_minor_version >= 2
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpcc_major_version >= 6 and gpcc_minor_version >= 2 )
 
+#
 - name: Remove temp installer directory
   file: path={{ gpadmin_home_dir }}/gpcc-tmp-install state=absent
   changed_when: False
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_installed.stat.exists != True
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_installed.stat.exists != True )
 
 # the gpcc_path.sh from the new installation does not have $GPPERFMONHOME
 - name: Add GPPERFMONHOME to gpcc_path.sh
@@ -279,10 +243,7 @@
     state: "{{ item.state }}"
   with_items:
     - { regexp: '^export GPPERFMONHOME=', line: 'export GPPERFMONHOME={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}', state: present }
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
-    - gpcc_major_version <= 6 and gpcc_minor_version < 2
-    # - gpcc_gpperfmon_install == True
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpcc_major_version <= 6 and gpcc_minor_version < 2 )
 
 # the gpcc_path.sh from the new installation does not have $GPPERFMONHOME
 - name: Add GPPERFMONHOME to gpcc_path.sh
@@ -292,170 +253,158 @@
     line: "{{ item.line }}"
     state: "{{ item.state }}"
   with_items:
-    - { regexp: '^export GPPERFMONHOME=', line: 'export GPPERFMONHOME={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}', state: present }
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
-    - gpcc_major_version >= 6 and gpcc_minor_version >= 2
-    # - gpcc_gpperfmon_install == True
+    - { regexp: '^export GPPERFMONHOME=', line: 'export GPPERFMONHOME={{ gpcc_base_dir }}/greenplum-cc-{{ gpcc_major_version }}.{{ gpcc_minor_version }}', state: present }
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and (  gpcc_major_version >= 6 and gpcc_minor_version >= 2 )
+  #  - { regexp: '^export GPPERFMONHOME=', line: 'export GPPERFMONHOME={{ gpcc_base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}', state: present }
 
+#
 - name: Shutdown database
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
+  args:
+    executable: /bin/bash
   when: gpcc_gpperfmon_install == True
   async: 180
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master']
 
+#
 - name: Start database
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstart -a )
+  args:
+    executable: /bin/bash
   when: gpcc_gpperfmon_install == True
   async: 180
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master']
 
+#
 - name: Verify that gpperfmon is installed (1)
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT COUNT(*) AS count FROM pg_database WHERE datname = 'gpperfmon'" )
+  args:
+    executable: /bin/bash
   register: select_gpperfmon
-  when:
-    - inventory_hostname in groups['master']
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master']
 
+#
 - name: Verify that gpperfmon is not installed (1)
   fail: msg="gpperfmon agents are not installed!"
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_gpperfmon_install == True and select_gpperfmon.stdout.find('     1') == -1
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_gpperfmon_install == True and select_gpperfmon.stdout.find('     1') == -1 )
 
+#
 - name: Verify that Command Center instance is installed (1)
   stat: path={{ gpcc_base_dir }}/greenplum-cc-web/instances/sne/
   register: gpcc_sne_configured
-  when:
-    - inventory_hostname in groups['master']
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['master']
 
+#
 - name: Verify that Command Center instance is installed (2)
   set_fact:
     gpcc_setup_cc_sne: True
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_sne_configured.stat.exists != True
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['master'] ) and ( gpcc_sne_configured.stat.exists != True )
 
+#
 - name: Change the name of web server in order to setup gpcc automatically
   lineinfile:
     dest: "{{ gpadmin_home_dir }}/gpcc_config.ini"
     regexp: "web_port"
     line: "webserver_port: 28080"
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_setup_cc_sne == True and gpcc_major_version > 3
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['master'] ) and (  gpcc_setup_cc_sne == True and gpcc_major_version > 3 )
 
+#
 - name: Change the name of web server in order to setup gpcc automatically
   lineinfile:
     dest: "{{ gpadmin_home_dir }}/gpcmdr_setup.ini"
     regexp: "web_port"
     line: "webserver_port: 28080"
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_setup_cc_sne == True and gpcc_major_version <= 3
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['master'] ) and (  gpcc_setup_cc_sne == True and gpcc_major_version <= 3 )
 
+#
 - name: Setup Command Center instance for 3 and ealier versions
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_base_dir }}/greenplum-cc-web/gpcc_path.sh && gpcmdr --setup --config_file {{ gpadmin_home_dir }}/gpcmdr_setup.ini )
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_setup_cc_sne == True and gpcc_major_version <= 3
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  args:
+    executable: /bin/bash
+  when: inventory_hostname in groups['master'] and ( gpcc_setup_cc_sne == True and gpcc_major_version <= 3 )
 
+#
 - name: Start Command Center instance for 4 and later versions
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_base_dir }}/greenplum-cc-web/gpcc_path.sh && gpcc start )
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_setup_cc_sne == True and gpcc_major_version > 3 and gpcc_major_version <= 6  and gpcc_minor_version < 2
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  args:
+    executable: /bin/bash
+  when: ( inventory_hostname in groups['master'] and gpcc_setup_cc_sne == True ) and ( gpcc_major_version > 3 and gpcc_major_version <= 6  and gpcc_minor_version < 2 )
 
+#
 - name: Drop extension of metrics_collector
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d gpperfmon -c "DROP EXTENSION metrics_collector;" )
+  args:
+    executable: /bin/bash
   ignore_errors: yes
   register: mc_extension_dropped
-  when:
-    - inventory_hostname in groups['master']
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master']
 
+#
 - name: Verify if MetricsCollector gppkg is installed
   become_user: gpadmin
   command: 'rpm -q MetricsCollector --dbpath /usr/local/greenplum-db/share/packages/database'
   ignore_errors: true
   register: mc_installed
   changed_when: False
-  when:
-    - inventory_hostname in groups['master']
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master']
 
+#
 - name: Stop if MetricsCollector gppkg package is not installed
   fail: msg="MetricsCollector gppkg package is not installed!"
-  when:
-    - inventory_hostname in groups['master']
-    - "'package MetricsCollector is not installed' not in mc_installed.stdout"
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master'] and ( 'package MetricsCollector is not installed' not in mc_installed.stdout )
 
+#
 - name: Install MetricsCollector extension package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i /usr/local/greenplum-cc/gppkg/MetricsCollector-{{ gpcc_major_version }}.{{ gpcc_minor_version }}_gp_{{ gpdb_major_version }}.{{ gpdb_minor_version }}-{{ gpcc_rhel_name }}-x86_64.gppkg )
-  when:
-    - inventory_hostname in groups['master']
-    - "'package MetricsCollector is not installed' in mc_installed.stdout"
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i /usr/local/greenplum-cc/gppkg/MetricsCollector-{{ gpcc_major_version }}.{{ gpcc_minor_version }}_gp_{{ gpdb_metric_major_version }}.{{ gpdb_metric_minor_version }}-{{ gpcc_os_name }}-{{ gpcc_metric_arch }}.gppkg )
+  args:
+    executable: /bin/bash
+  when: inventory_hostname in groups['master'] and ( 'package MetricsCollector is not installed' in mc_installed.stdout )
 
+#
 - name: Add the path of GPCC variable file into .bashrc
   lineinfile:
     dest: /home/gpadmin/.bashrc
     line: "source {{ gpcc_base_dir }}/greenplum-cc/gpcc_path.sh"
     state: present
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
+#
 - name: Create password file for gpmon user for GPCC login
+  become_user: gpadmin
   copy:
     dest: "/home/gpadmin/.pgpass"
     content: "*:5432:gpperfmon:gpmon:changeme"
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
+#
 - name: Change permission of password file for gpmon user for GPCC login
+  become_user: gpadmin
   file:
     path: "/home/gpadmin/.pgpass"
     state: file
     owner: gpadmin
     group: gpadmin
     mode: "0600"
-  when:
-    - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
-# Need to check if it's run
-# - name: copy certifcate from master to slave in order to run GPCC with SSL
-#   shell: scp -r /home/gpadmin/certs gpadmin@rk8-slave:/home/gpadmin/
-#   when: inventory_hostname in groups['master']
-
+#
 - name: Start Command Center instance for 6 and later versions
   become_user: gpadmin
   changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_base_dir }}/greenplum-cc/gpcc_path.sh && PGPASSWORD=changeme gpcc start )
-  when:
-    - inventory_hostname in groups['master']
-    - gpcc_setup_cc_sne == True and gpcc_major_version >= 6 and gpcc_minor_version >= 2
-    # - ( inventory_hostname in groups['master'] ) or ( inventory_hostname in groups['standby'] )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_base_dir }}/greenplum-cc/gpcc_path.sh && gpcc start )
+  # shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_base_dir }}/greenplum-cc/gpcc_path.sh && PGPASSWORD=changeme gpcc start )
+  args:
+    executable: /bin/bash
+  when: inventory_hostname in groups['master'] and (  gpcc_setup_cc_sne == True and gpcc_major_version >= 6 and gpcc_minor_version >= 2 )

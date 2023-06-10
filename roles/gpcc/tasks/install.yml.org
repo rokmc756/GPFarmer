@@ -1,5 +1,5 @@
 ---
-# Install Greenplum Command Center v2 on Red Hat / CentOS
+# Install Greenplum Command Center on Red Hat / CentOS / Rocky / Ubuntu / Debian
 
 - name: Get the specific ip address
   set_fact:

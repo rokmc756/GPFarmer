@@ -1,8 +1,7 @@
-- hosts: all
-  become: yes
-  roles:
-    - { role: R }
-#    - { role: DataScienceR }
+#- hosts: all
+#  become: yes
+#  roles:
+#    - { role: R }
 #    - { role: pxf }
 #    - { role: gpcc }
 #    - { role: plpython }
@@ -19,25 +18,31 @@
 #    - { role: madlib }
 
 #- hosts: rk8-master
+#- hosts: rh7-master,rh7-slave
+#- hosts: co7-db-master
+
 #- hosts: all
 #  become: yes
 #  roles:
 #    - { role: gpdb }
-#    - { role: pgbouncer }
+
+- hosts: ubt18-master,ubt18-slave
+  become: yes
+  roles:
+    - { role: gpcc }
+
 #    - { role: pxf }
+#    - { role: DataScienceR }
+#    - { role: R }
+#    - { role: gpcc }
+#    - { role: pgbouncer }
 #    - { role: firewalld }
 #    - { role: gpcopy }
 
 #- hosts: rk8-master,rk8-slave
 #- hosts: co7-master,co7-slave
 # - hosts: rh7-master,rh7-slave
-# - hosts: rk8-master,rk8-slave
-
 #- hosts: all
-#  become: yes
-#  roles:
-#    - { role: gpdb }
-
 #- hosts: rh7-master,rh7-slave
 #- hosts: all
 #  become: yes

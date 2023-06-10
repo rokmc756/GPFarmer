@@ -14,6 +14,20 @@
     line: "{{ item }}"
     state: present
   with_items:
-    - "export R_HOME=/opt/R/{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}"
-    - "export LD_LIBRARY_PATH=$R_HOME/lib:$LD_LIBRARY_PATH"
-    - "export PATH=$R_HOME/bin:$PATH"
+    - "export R_HOME_DIR=/opt/R/{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}"
+    - "export LD_LIBRARY_PATH=$R_HOME_DIR/lib:$LD_LIBRARY_PATH"
+    - "export PATH=$R_HOME_DIR/bin:$PATH"
+
+#
+- name: Recursively change ownership of R libraary directory for gpadmin user
+  become: yes
+  file:
+    path: /opt/R/{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}/lib/R/{{ item }}
+    state: directory
+    recurse: yes
+    owner: gpadmin
+    group: gpadmin
+  with_items:
+    - "doc"
+    - "library"
+  when: with_gpdb == true

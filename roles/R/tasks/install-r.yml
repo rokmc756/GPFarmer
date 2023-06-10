@@ -4,7 +4,7 @@
 - name: Install EPEL repo.
   become: true
   yum:
-    name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
+    name: https://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-{{ ansible_distribution_major_version }}-14.noarch.rpm
     state: present
     disable_gpg_check: true
   register: epel_repo_installed
@@ -22,7 +22,8 @@
     state: present
   register: r_installed
   with_items:
-    - "https://cdn.rstudio.com/r/{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}/pkgs/R-{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}-1-1.x86_64.rpm"
+    - "https://cdn.rstudio.com/r/centos-{{ ansible_distribution_major_version }}/pkgs/R-{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}-1-1.x86_64.rpm"
+    # - "https://cdn.rstudio.com/r/{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}/pkgs/R-{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}-1-1.x86_64.rpm"
 
 #
 - name: Print R installed

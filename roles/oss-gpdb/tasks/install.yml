@@ -463,11 +463,13 @@
   become_user: gpadmin
   shell: ( cd /home/gpadmin/gpdb ; sudo git checkout 6.20.0 )
 
+#
 - name: Initialize and update submodules in the repository
   become: yes
   become_user: gpadmin
   shell: ( cd /home/gpadmin/gpdb ; sudo git submodule update --init )
 
+#
 - name: Configure build environment to install at /home/gpadmin/gpdb
   become: yes
   become_user: gpadmin
@@ -491,6 +493,7 @@
   when:
     - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ( ansible_distribution_major_version is version_compare('8', '>=') )
 
+#
 - name: Configure build environment to install at /home/gpadmin/gp-xerces
   become: yes
   become_user: gpadmin

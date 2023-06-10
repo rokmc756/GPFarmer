@@ -14,9 +14,11 @@
   yum:
     name:  R
     state: absent
-  #   disable_gpg_check: yes
-  #   https://cdn.rstudio.com/r/{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}/pkgs/R-{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}-1-1.x86_64.rpm
 
-  # rspm list requirements --help
-  # rspm list requirements --repo=cran --packages=ggplot2,plumber --distribution=ubuntu --release=18.04
-  # rspm list requirements --repo=validated-subset --packages=* --distribution=ubuntu --release=18.04
+# disable_gpg_check: yes
+# https://cdn.rstudio.com/r/{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}/pkgs/R-{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}-1-1.x86_64.rpm
+
+# rspm list requirements --help
+# rspm list requirements --repo=cran --packages=ggplot2,plumber --distribution=ubuntu --release=18.04
+# rspm list requirements --repo=validated-subset --packages=* --distribution=ubuntu --release=18.04
+
