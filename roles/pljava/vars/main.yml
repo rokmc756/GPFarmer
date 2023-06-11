@@ -4,6 +4,15 @@ pljava_major_version: 2
 pljava_minor_version: 0
 pljava_patch_version: 4
 pljava_gpdb_version: gp6
-pljava_rhel_version: rhel8
-pljava_database_name: testdb
+
+# pljava_os_version: rhel8
+pljava_os_version: ubuntu18.04
+
+pljava_arch_type: 'x86_64'
+# pljava_arch_type: 'amd64'
+
+pljava_database_name: pljava_testdb
 pljava_schema_name: test_scheme
+
+# pljava-2.0.4-gp6-ubuntu18.04_x86_64.gppkg
+

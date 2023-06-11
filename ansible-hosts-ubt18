@@ -13,3 +13,10 @@ ubt18-slave ansible_ssh_host=192.168.0.42
 ubt18-node01 ansible_ssh_host=192.168.0.43
 ubt18-node02 ansible_ssh_host=192.168.0.44
 ubt18-node03 ansible_ssh_host=192.168.0.45
+
+#[database]
+#oracle21c ansible_ssh_host=192.168.0.153
+#mssql16 ansible_ssh_host=192.168.0.154
+#
+#[storage]
+#minio ansible_ssh_host=192.168.0.198

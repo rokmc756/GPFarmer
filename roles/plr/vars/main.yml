@@ -4,6 +4,11 @@ plr_major_version: 3
 plr_minor_version: 0
 plr_patch_version: 4
 plr_gpdb_version: gp6
-plr_rhel_version: rhel7
-plr_database_name: testdb
+# plr_os_version: rhel7
+plr_os_version: ubuntu18
+# plr_arch_type: x86_64
+plr_arch_type: amd64
+plr_database_name: plr_testdb
 plr_schema_name: test_scheme
+
+# plr-3.0.4-gp6-ubuntu18-amd64.gppkg

@@ -14,6 +14,8 @@
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  args:
+    executable: /bin/bash
   register: select_version
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
@@ -32,15 +34,27 @@
     - inventory_hostname in groups['master']
     - "'package plr is not installed' not in plr_installed.stdout"
 
+- set_fact:
+    plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+
+#
+- set_fact:
+    plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+
+ #
 - name: Copy plr gppkg file
-  copy: src=plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_rhel_version }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src={{ plr_package_name }} dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
     - inventory_hostname in groups['master']
     - "'package plr is not installed' in plr_installed.stdout"
 
 - name: Install plr package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_rhel_version }}-x86_64.gppkg )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/{{ plr_package_name }} )
+  args:
+    executable: /bin/bash
   when:
     - inventory_hostname in groups['master']
     - "'package plr is not installed' in plr_installed.stdout"
@@ -48,6 +62,8 @@
 - name: Restart GPDB and apply parameters for plr in greenplum_path.sh
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  args:
+    executable: /bin/bash
   async: 60
   poll: 5
   when:
@@ -56,12 +72,16 @@
 - name: Verify that database for plr is installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plr_database_name }}'" )
+  args:
+    executable: /bin/bash
   register: plr_database_installed
   when: inventory_hostname in groups['master']
 
 - name: Create database for plr
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plr_database_name }} )
+  args:
+    executable: /bin/bash
   register: plr_database_created
   when:
     - inventory_hostname in groups['master']
@@ -70,6 +90,8 @@
 - name: Enabling PL/R Language Support for GPDB 4.x
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createlang plr -d {{ plr_database_name }} )
+  args:
+    executable: /bin/bash
   register: plr_language_support_enabled
   when:
     - inventory_hostname in groups['master']
@@ -79,6 +101,8 @@
 - name: Enabling PL/R Language Support for GPDB 6.x
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c "CREATE EXTENSION plr;" )
+  args:
+    executable: /bin/bash
   register: plr_language_support_enabled
   when:
     - inventory_hostname in groups['master']

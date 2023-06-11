@@ -1,9 +1,13 @@
 ---
+# DataScienceR-2.0.2-gp6-ubuntu18.04_x86_64.gppkg
 dsr_prefix_major_version:
 dsr_major_version: 2
 dsr_minor_version: 0
 dsr_patch_version: 2
 dsr_gpdb_version: gp6
-dsr_rhel_version: rhel7
-dsr_database_name: testdb
+# dsr_os_version: rhel7
+dsr_os_version: 'ubuntu18.04'
+dsr_arch_type: 'x86_64'
+# dsr_arch_type: 'amd64'
+dsr_database_name: dsr_testdb
 dsr_schema_name: test_scheme

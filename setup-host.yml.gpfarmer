@@ -26,13 +26,19 @@
 #  roles:
 #    - { role: gpdb }
 
-- hosts: ubt18-master,ubt18-slave
+#- hosts: ubt18-master,ubt18-slave
+# - hosts: all
+- hosts: ubt18-master
   become: yes
   roles:
-    - { role: gpcc }
-
-#    - { role: pxf }
+    - { role: madlib }
+#    - { role: plcontainer }
+#    - { role: pljava }
+#    - { role: madlib }   # Failed on Ubuntu 18.04
+#    - { role: DataSciencePython }
 #    - { role: DataScienceR }
+#    - { role: pxf }
+#    - { role: gpcc }
 #    - { role: R }
 #    - { role: gpcc }
 #    - { role: pgbouncer }

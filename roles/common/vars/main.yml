@@ -13,7 +13,10 @@ liblockfile,ccache,python-lockfile,xml2,docbook2X,xmlto,libcgroup,libcgroup-tool
 
 
 ubt_common_packages: "vim,nano,screen,psmisc,rsync,wget,mutt,unzip,net-tools,ed,m4,expect,
-netcat,openjdk-8-jdk,openjdk-8-jre,libcgroup-dev,nmap"
+netcat,openjdk-8-jdk,openjdk-8-jre,openjdk-8-demo,openjdk-8-jre-dcevm,openjdk-jdk-headless,
+openjdk-8-jre-zero,openjdk-8-source,openjdk-8-jre-headless,openjdk-8-dbg,openjdk-8-doc,
+libcgroup-dev,nmap"
+
 # vim-enhanced -> vim
 # nc -> netcat
 # libcgroup-tools --> blank
@@ -24,7 +27,7 @@ python-yaml,perl,libextutils-makemaker-cpanfile-perl,zlib1g,curl,openssl,libssl-
 flex,libreadline-dev,libapr1,libapr1-dev,libaprutil1,libaprutil1-dev,libevent-dev,libxml2,libxml2-dev,bzip2,libyaml-dev,
 python-dev,snmp,snmpd,libsnmp-dev,liblockfile-bin,ccache,python-lockfile,xml2,docbook,xmlto,libcgroup-dev,krb5-multidev,
 libcurl3-gnutls,libcurl4,libevent-2.1-6,libyaml-0-2,libldap-2.4-2,openssh-client,rsync,sed,tar,zip,less,iproute2,
-firewalld,policycoreutils,selinux-utils,selinux-basics,libkrb5-dev,cgroupfs-mount,cgroup-tools,cgroup-lite,cgroup-bin"
+firewalld,policycoreutils,selinux-utils,selinux-basics,libkrb5-dev,cgroupfs-mount,cgroup-tools,cgroup-lite,cgroup-bin,r-base"
 
 # gcc-c++  --> g++
 # build-essential added

@@ -13,7 +13,9 @@
 - name: Verify that database is up and running
   become_user: gpadmin
   changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c 'SELECT VERSION();' )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c 'SELECT VERSION()' )
+  args:
+    executable: /bin/bash
   register: select_version
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
@@ -25,38 +27,59 @@
   fail: msg="madlib extention software is already installed!"
   when: madlib_installed.stat.exists == True
 
+#
+- set_fact:
+    madlib_package_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}{{ madlib_patch_version }}+{{ madlib_build_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+
+#
+- set_fact:
+    madlib_package_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
+    madlib_directory_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+
 - name: Copy madlib extention tar.gz file
-  copy: src=madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}{{ madlib_patch_version }}{{ madlib_gpdb_version }}-{{ madlib_rhel_version }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src={{ madlib_package_name }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when: madlib_installed.stat.exists != True
 
 - name: Untar madlib extention archive
-  unarchive: src={{ gpadmin_home_dir }}/madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}{{ madlib_patch_version }}{{ madlib_gpdb_version }}-{{ madlib_rhel_version }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} copy=no owner=gpadmin group=gpadmin
+  unarchive: src={{ gpadmin_home_dir }}/{{ madlib_package_name }}.tar.gz dest={{ gpadmin_home_dir }} copy=no owner=gpadmin group=gpadmin
   when: madlib_installed.stat.exists != True
 
 - name: Install madlib extention package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}{{ madlib_patch_version }}{{ madlib_gpdb_version }}-{{ madlib_rhel_version }}-x86_64/madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}{{ madlib_patch_version }}{{ madlib_gpdb_version }}-{{ madlib_rhel_version }}-x86_64.gppkg )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/{{ madlib_directory_name }}/{{ madlib_directory_name }}.gppkg )
+  args:
+    executable: /bin/bash
   when: madlib_installed.stat.exists != True
 
 - name: Verify that database for madlib extention is installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ madlib_database_name }}'" )
+  args:
+    executable: /bin/bash
   register: madlib_database_installed
   when: inventory_hostname in groups['master']
 
 - name: Create database for madlib
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ madlib_database_name }} )
+  args:
+    executable: /bin/bash
   register: madlib_database_created
   when: "'100' not in madlib_database_installed.stdout"
 
 - name: Add madlib function
   become_user: root
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/madlib/bin/madpack -s madlib -p greenplum -c gpadmin@{{ madlib_mdw_hostname }}:5432/{{ madlib_database_name }} install )
+  args:
+    executable: /bin/bash
   register: madlib_function_installed
   changed_when: madlib_database_created == True
 
 - name: Check if madlib function are added
   become_user: root
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/madlib/bin/madpack -s madlib -p greenplum -c gpadmin@{{ madlib_mdw_hostname }}:5432/{{ madlib_database_name }} install-check )
+  args:
+    executable: /bin/bash
   changed_when: madlib_function_installed == True

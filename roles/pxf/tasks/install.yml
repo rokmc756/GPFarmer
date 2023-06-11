@@ -7,30 +7,87 @@
   register: gpdb_installed
 
 - name: Sanity check for {{ gpdb_base_dir }}/greenplum-db
-  fail: msg="{{ gpdb_base_dir }}/greenplum-db is supposed to be a symlink!"
-  when: gpdb_installed.stat.exists == True and gpdb_installed.stat.islnk != True
+  fail: msg="{{ gpdb_base_dir }}/greenplum-db is not existed"
+  when: gpdb_installed.stat.exists != True and gpdb_installed.stat.islnk != True
 
 - name: Install JAVA rpm package for PXF
   become: yes
   become_user: root
-  yum: name="java-1.8.0" state=present
+  package: name="java-1.8.0" state=present
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
 
-- name: Copy the PXF .rpm file to all hosts in your Greenplum cluster
+- name: Install JAVA dep package for PXF
   become: yes
   become_user: root
-  copy: src=pxf-{{ pxf_gpdb_version }}-{{ pxf_major_version }}.{{ pxf_minor_version }}-{{ pxf_patch_version }}.{{ pxf_rhel_version }}.x86_64.rpm dest=/home/gpadmin/pxf-{{ pxf_gpdb_version }}-{{ pxf_major_version }}.{{ pxf_minor_version }}-{{ pxf_patch_version }}.{{ pxf_rhel_version }}.x86_64.rpm mode=0644 owner=gpadmin group=gpadmin
+  package: name={{ item }} state=present
+  with_items:
+    - openssl
+    - libssl-dev
+    - openjdk-8-jdk
+    - openjdk-8-jre
+    - openjdk-8-demo
+    - openjdk-8-jre-dcevm
+    - openjdk-8-jdk-headless
+    - openjdk-8-jre-zero
+    - openjdk-8-source
+    - openjdk-8-jre-headless
+    - openjdk-8-dbg
+    - openjdk-8-doc
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
 
-- name: Install PXF package on each Greenplum Database host using your package management utility
+- set_fact:
+    java_home: "/usr/lib/jvm/jre-1.8.0"
+    pxf_binary_type: "rpm"
+    pxf_arch_type: "x86_64"
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+
+- set_fact:
+    pxf_package_name: pxf-{{ pxf_gpdb_version }}-{{ pxf_major_version }}.{{ pxf_minor_version }}-{{ pxf_patch_version }}.{{ pxf_os_version }}.{{ pxf_arch_type }}.{{ pxf_binary_type }}
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+
+#
+- set_fact:
+    java_home: "/usr/lib/jvm/java-8-openjdk-amd64/jre"
+    pxf_binary_type: "deb"
+    pxf_arch_type: "amd64"
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+
+#
+- set_fact:
+    pxf_package_name: pxf-{{ pxf_gpdb_version }}-{{ pxf_major_version }}.{{ pxf_minor_version }}-{{ pxf_patch_version }}-{{ pxf_os_version }}-{{ pxf_arch_type }}.{{ pxf_binary_type }}
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+
+#
+- name: Copy the PXF .{{ pxf_binary_type }} file to all hosts in your Greenplum cluster
+  become: yes
+  become_user: root
+  copy: src={{ pxf_package_name }} dest=/home/gpadmin/{{ pxf_package_name }} mode=0644 owner=gpadmin group=gpadmin
+
+#
+- name: Install PXF package on each Greenplum Database host using your package management utility for RedHat/CentOS/Rocky
   become: yes
   become_user: root
   yum:
-    name: /home/gpadmin/pxf-{{ pxf_gpdb_version }}-{{ pxf_major_version }}.{{ pxf_minor_version }}-{{ pxf_patch_version }}.{{ pxf_rhel_version }}.x86_64.rpm
+    name: /home/gpadmin/{{ pxf_package_name }}
     state: present
-    disable_gpg_check: true
   async: 60
   poll: 5
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+  # disable_gpg_check: true
 
+#
+- name: Install PXF package on each Greenplum Database host using your package management utility for Ubuntu/Debian
+  become: yes
+  become_user: root
+  apt:
+    deb: /home/gpadmin/{{ pxf_package_name }}
+    state: present
+  async: 60
+  poll: 5
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+  # disable_gpg_check: true
+
+#
 - name: Set the ownership and permissions of the PXF installation files to enable access by the gpadmin user
   become: yes
   become_user: root
@@ -42,6 +99,7 @@
   with_items:
     - "{{ gpdb_base_dir }}/pxf-{{ pxf_gpdb_version }}"
 
+#
 - name: Add the PXF bin directory to the PXF owner’s $PATH
   become: yes
   become_user: gpadmin
@@ -50,9 +108,10 @@
     line: "{{ item }}"
     insertafter: EOF
   with_items:
-    - "export PATH=$PATH:/usr/local/pxf-gp6/bin"
-    - "export JAVA_HOME=/usr/lib/jvm/jre-1.8.0"
- 
+    - "export PATH=$PATH:/usr/local/pxf-gp{{ pxf_major_version }}/bin"
+    - "export JAVA_HOME={{ java_home }}"
+
+#
 - name: Chown gpamdin for PXF dir
   become: yes
   become_user: root
@@ -63,11 +122,26 @@
     mode: u=rwX,g=rX,o=rX
     recurse: yes
 
+
+#
+- name: Change JAVA_HOME in PXF_HOME/conf/pxf-env.sh
+  become: yes
+  become_user: gpadmin
+  lineinfile:
+    dest: /usr/local/pxf-gp6/conf/pxf-env.sh
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^# export JAVA_HOME=/usr/java/default', line: 'export JAVA_HOME={{ java_home }}', state: present }
+
 #
 - name: Export the PXF JAVA_HOME setting and Run the pxf cluster init command to initialize the PXF service on all GPDB hosts
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && export JAVA_HOME=/usr/lib/jvm/jre-1.8.0 && PXF_CONF=/usr/local/pxf-{{ pxf_gpdb_version }}/conf pxf cluster register )
+  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_CONF=/usr/local/pxf-{{ pxf_gpdb_version }}/conf /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster register )
+  args:
+    executable: /bin/bash
   register: pxf_cluster_initialized
   when:
     - inventory_hostname in groups['master']
@@ -82,7 +156,9 @@
 - name: Run the pxf cluster start command to start PXF on each segment host
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && export JAVA_HOME=/usr/lib/jvm/jre-1.8.0 && source ~/.bashrc && pxf cluster start )
+  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster start )
+  args:
+    executable: /bin/bash
   register: pxf_cluster_started
   when:
     - inventory_hostname in groups['master']
@@ -95,12 +171,16 @@
 - name: Verify that database for pxf extention is installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ pxf_database_name }}'" )
+  args:
+    executable: /bin/bash
   register: pxf_database_installed
   when: inventory_hostname in groups['master']
 
 - name: Create database for PXF
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ pxf_database_name }} )
+  args:
+    executable: /bin/bash
   register: pxf_database_created
   when:
     - inventory_hostname in groups['master']
@@ -109,6 +189,8 @@
 - name: Create the PXF extension
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf_database_name }} -c "CREATE EXTENSION pxf;" )
+  args:
+    executable: /bin/bash
   register: pxf_extension_created
   when:
     - inventory_hostname in groups['master']
@@ -117,6 +199,8 @@
 - name: Check if PXF extension is installed on GPDB
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf_database_name }} -c "select count(*) FROM pg_extension where extname='pxf';" | tr -d " " | sed '/^$/d' )
+  args:
+    executable: /bin/bash
   register: pxf_extension_install_checked
   when:
     - inventory_hostname in groups['master']
@@ -130,6 +214,8 @@
 - name: Create User for PXF
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "CREATE USER {{ pxf_username }};" )
+  args:
+    executable: /bin/bash
   register: pxf_user_created
   when:
     - inventory_hostname in groups['master']
@@ -138,6 +224,8 @@
 - name: Add a role into User for PXF
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "ALTER ROLE {{ pxf_username }} superuser createdb;" )
+  args:
+    executable: /bin/bash
   register: pxf_role_added
   when:
     - inventory_hostname in groups['master']
@@ -146,6 +234,8 @@
 - name: Grant a specific role access to the pxf protocol
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf_database_name }} -c "GRANT SELECT ON PROTOCOL pxf TO {{ pxf_username }};" )
+  args:
+    executable: /bin/bash
   register: pxf_role_access_granted
   when:
     - inventory_hostname in groups['master']
@@ -154,6 +244,8 @@
 - name: Write data to an external data store with PXF
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf_database_name }} -c "GRANT INSERT ON PROTOCOL pxf TO {{ pxf_username }};" )
+  args:
+    executable: /bin/bash
   register: pxf_data_writed
   when:
     - inventory_hostname in groups['master']

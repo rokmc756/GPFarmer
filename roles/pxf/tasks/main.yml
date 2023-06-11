@@ -6,10 +6,16 @@
   fail: msg="Not a Red Hat based system!"
   when: ansible_os_family != 'RedHat' or ansible_os_family != 'CentOS' or ansible_os_family != 'Rocky'
 
+#
 - name: Install PXF
   include: install.yml
   tags: install
   when: install_pxf == true
+
+- name: Setup NFS Access
+  include: setup-nfs-access.yml
+  tags: install
+  when: with_nfs_access == true
 
 - name: Setup HDFS Access
   include: setup-hadoop-access.yml

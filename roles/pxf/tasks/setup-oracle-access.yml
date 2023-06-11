@@ -1,9 +1,23 @@
 # Start line to configure Oracle Access
+
+#
+- set_fact:
+    java_home: "/usr/lib/jvm/jre-1.8.0"
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+
+#
+- set_fact:
+    java_home: "/usr/lib/jvm/java-8-openjdk-amd64/jre"
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+
 #
 - name: Stop the pxf cluster start command to start PXF on each segment host
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && export JAVA_HOME=/usr/lib/jvm/jre-1.8.0 && source ~/.bashrc && pxf cluster stop )
+  args:
+    executable: /bin/bash
+  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster stop )
+
   register: pxf_cluster_stopped
   ignore_errors: yes
   when: inventory_hostname in groups['master']
@@ -17,6 +31,8 @@
   become: yes
   become_user: gpadmin
   shell: ( source /usr/local/greenplum-db/greenplum_path.sh && gpssh -f /home/gpadmin/hostfile -e 'killall java' )
+  args:
+    executable: /bin/bash
   ignore_errors: yes
   register: pxf_java_processes_killed
   when:
@@ -45,7 +61,9 @@
 - name: Prepare PXF on master for Oracle Access
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_oracle }} pxf cluster prepare )
+  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ pxf_base_dir_with_oracle }} /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster prepare )
+  args:
+    executable: /bin/bash
   register: pxf_cluster_oracle_prepared
   when:
     - with_oracle_access
@@ -98,7 +116,9 @@
 - name: Synchronize the PXF server configuration to the GPDB cluster
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_oracle }} pxf cluster sync )
+  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ pxf_base_dir_with_oracle }} /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster sync )
+  args:
+    executable: /bin/bash
   register: pxf_cluster_oracle__synced
   when:
     - with_oracle_access
@@ -111,7 +131,9 @@
 #
 - name: Start PXF on master for Oracle Access
   become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_oracle }} pxf cluster start )
+  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ pxf_base_dir_with_oracle }} /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster start )
+  args:
+    executable: /bin/bash
   register: pxf_cluster_oracle_started
   when:
     - with_oracle_access
@@ -124,7 +146,9 @@
 #
 - name: Create External Table for Oracle
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -f {{ pxf_base_dir_with_oracle }}/create-external-table.sql )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf_database_name }} -f {{ pxf_base_dir_with_oracle }}/create-external-table.sql )
+  args:
+    executable: /bin/bash
   register: oracle_external_table_created
   when:
     - inventory_hostname in groups['master']
@@ -135,7 +159,9 @@
 #
 - name: Create Writable External Table for Oracle
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -f {{ pxf_base_dir_with_oracle }}/create-writable-external-table.sql )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf_database_name }} -f {{ pxf_base_dir_with_oracle }}/create-writable-external-table.sql )
+  args:
+    executable: /bin/bash
   register: oracle_writable_external_table_created
   when:
     - inventory_hostname in groups['master']
@@ -147,7 +173,9 @@
 #
 - name: Select data from Oracle Database
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -c 'select * from countries' )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf_database_name }} -c 'select * from countries' )
+  args:
+    executable: /bin/bash
   register: oracle_data_selected
   when:
     - inventory_hostname in groups['master']

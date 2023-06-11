@@ -14,6 +14,8 @@
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  args:
+    executable: /bin/bash
   register: select_version
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
@@ -32,15 +34,43 @@
     - inventory_hostname in groups['master']
     - "'package pljava is not installed' not in pljava_installed.stdout"
 
+#
+- set_fact:
+    java_home: "/usr/lib/jvm/jre-1.8.0"
+    pxf_binary_type: "rpm"
+    pxf_arch_type: "x86_64"
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+
+#
+- set_fact:
+    pljava_package_name: pljava-{{ pljava_prefix_major_version }}{{ pljava_major_version }}.{{ pljava_minor_version }}.{{ pljava_patch_version }}-{{ pljava_gpdb_version }}-{{ pljava_os_version }}_{{ pljava_arch_type }}.gppkg
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+
+
+#
+- set_fact:
+    java_home: "/usr/lib/jvm/java-8-openjdk-amd64/jre"
+    pxf_binary_type: "deb"
+    pxf_arch_type: "x86_64"
+    # pxf_arch_type: "amd64"
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+
+- set_fact:
+    pljava_package_name: pljava-{{ pljava_prefix_major_version }}{{ pljava_major_version }}.{{ pljava_minor_version }}.{{ pljava_patch_version }}-{{ pljava_gpdb_version }}-{{ pljava_os_version }}_{{ pljava_arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+
+
 - name: Copy pljava gppkg file
-  copy: src=pljava-{{ pljava_prefix_major_version }}{{ pljava_major_version }}.{{ pljava_minor_version }}.{{ pljava_patch_version }}-{{ pljava_gpdb_version }}-{{ pljava_rhel_version }}_x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src={{ pljava_package_name }} dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
     - inventory_hostname in groups['master']
     - "'package pljava is not installed' in pljava_installed.stdout"
 
 - name: Install pljava package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/pljava-{{ pljava_prefix_major_version }}{{ pljava_major_version }}.{{ pljava_minor_version }}.{{ pljava_patch_version }}-{{ pljava_gpdb_version }}-{{ pljava_rhel_version }}_x86_64.gppkg )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/{{ pljava_package_name }} )
+  args:
+    executable: /bin/bash
   when:
     - inventory_hostname in groups['master']
     - "'package pljava is not installed' in pljava_installed.stdout"
@@ -51,7 +81,7 @@
     dest: /etc/environment
     state: present
     regexp: '^JAVA_HOME'
-    line: 'JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk'
+    line: 'JAVA_HOME={{ java_home }}'
 
 - name: Replace JAVA_HOME and LD_LIBRARY_PATH to greenplum_path.sh
   lineinfile:
@@ -60,8 +90,8 @@
     line: "{{ item.line }}"
     state: "{{ item.state }}"
   with_items:
-    - { regexp: '^export JAVA_HOME=', line: 'export JAVA_HOME=/usr/lib/jvm/java', state: present }
-    - { regexp: '^export LD_LIBRARY_PATH=', line: 'export LD_LIBRARY_PATH=$GPHOME/lib:$GPHOME/ext/python/lib:$JAVA_HOME/lib/server:$JAVA_HOME/jre/lib/amd64/server:$LD_LIBRARY_PATH', state: present }
+    - { regexp: '^export JAVA_HOME=', line: 'export JAVA_HOME={{ java_home }}', state: present }
+    - { regexp: '^export LD_LIBRARY_PATH=', line: 'export LD_LIBRARY_PATH=$GPHOME/lib:$GPHOME/ext/python/lib:$JAVA_HOME/lib/server:$JAVA_HOME/jre/lib/amd64/server:$JAVA_HOME/jre/lib/amd64/dcevm:$LD_LIBRARY_PATH', state: present }
   when:
     - inventory_hostname in groups['master']
     # - { regexp: '^export JAVA_HOME=', line: 'export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk', state: present }
@@ -69,12 +99,16 @@
 - name: The gpscp command copies the file to all hosts specified in the hostfile.
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpscp -f /home/gpadmin/hostfile $GPHOME/greenplum_path.sh =:/usr/local/greenplum-db/ )
+  args:
+    executable: /bin/bash
   when:
     - inventory_hostname in groups['master']
 
 - name: Restart GPDB and apply parameters for pljava in greenplum_path.sh
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  args:
+    executable: /bin/bash
   async: 300
   poll: 5
   when:
@@ -83,12 +117,16 @@
 - name: Verify that database for pljava is installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ pljava_database_name }}'" )
+  args:
+    executable: /bin/bash
   register: pljava_database_installed
   when: inventory_hostname in groups['master']
 
 - name: Create database for pljava
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ pljava_database_name }} )
+  args:
+    executable: /bin/bash
   register: pljava_database_created
   when:
     - inventory_hostname in groups['master']
@@ -97,6 +135,8 @@
 - name: Enabling PL/Java Language Support for GPDB 4.x
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createlang pljava -d {{ pljava_database_name }} )
+  args:
+    executable: /bin/bash
   register: pljava_language_support_enabled
   when:
     - inventory_hostname in groups['master']
@@ -106,6 +146,8 @@
 - name: Enabling PL/Java Language Support for GPDB 6.x
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pljava_database_name }} -c "CREATE EXTENSION pljava;" )
+  args:
+    executable: /bin/bash
   register: pljava_language_support_enabled
   when:
     - inventory_hostname in groups['master']
@@ -115,6 +157,8 @@
 - name: Set the pljava_classpath server configuration parameter in the master postgresql.conf file.
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c pljava_classpath -v 'examples.jar:pljava.jar' )
+  args:
+    executable: /bin/bash
   register: pljava_classpath_set
   when:
     - inventory_hostname in groups['master']
