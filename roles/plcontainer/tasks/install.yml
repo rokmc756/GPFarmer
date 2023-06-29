@@ -70,6 +70,28 @@
   when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ansible_distribution_major_version|int >= 18
 
 #
+- name: Copy the dependent rpm packages of docker-ce's latest version for RHEL 7
+  become_user: root
+  copy: src=el7/{{ item }} dest=/root/{{ item }} mode=0644 owner=root group=root
+  with_items:
+    - container-selinux-2.107-3.el7.noarch.rpm
+    - fuse-overlayfs-0.7.2-6.el7_8.x86_64.rpm
+    - slirp4netns-0.4.3-4.el7_8.x86_64.rpm
+  register: dependent_pkgs_docker_rhel7_copied
+  when: ansible_distribution == "RedHat" and ansible_distribution_major_version|int == 7
+
+#
+- name: Install the dependent rpm packages of docker-ce's latest version for RHEL 7
+  become_user: root
+  yum: name=/root/{{ item }} state=present
+  with_items:
+    - container-selinux-2.107-3.el7.noarch.rpm
+    - fuse-overlayfs-0.7.2-6.el7_8.x86_64.rpm
+    - slirp4netns-0.4.3-4.el7_8.x86_64.rpm
+  register: dependent_pkgs_docker_rhel7_installled
+  when: ansible_distribution == "RedHat" and ansible_distribution_major_version|int == 7
+
+#
 - name: Add the Docker repo for Redhat/CentOS/Rocky
   get_url:
     url: https://download.docker.com/linux/centos/docker-ce.repo

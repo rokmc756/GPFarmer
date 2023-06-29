@@ -7,82 +7,48 @@ gpdb_mirror_enable: true
 gpdb_spread_mirrors: ""
 
 # greenplum-db-7.0.0-beta.2-el8-x86_64.rpm
+# greenplum-db-6.24.3-ubuntu18.04-amd64.deb
 #gpdb_major_version: 7
 #gpdb_minor_version: 0
 #gpdb_build_version: '0-beta.2'
-# gpdb_rhel_name: 'rhel8'
-#gpdb_rhel_name: 'el8'
-#gpdb_binary_type: 'rpm'
-
-# smdw_hostname: "rk8-slave"
-# smdw_hostname: "smdw4"
-
-# greenplum-db-6.24.3-ubuntu18.04-amd64.deb
 
 gpdb_major_version: 6
-gpdb_minor_version: 24
-gpdb_build_version: 3
-gpdb_os_name: 'ubuntu18.04'
-# gpdb_os_name: 'rhel7'
-gpdb_arch_name: 'amd64'
-# gpdb_arch_name: 'x86_64'
-gpdb_binary_type: 'deb'
-# gpdb_binary_type: 'rpm'
+gpdb_minor_version: 21
+gpdb_build_version: 0
+gpdb_os_name: 'rhel7'
+gpdb_arch_name: 'x86_64'
+gpdb_binary_type: 'rpm'
+# gpdb_os_name: 'ubuntu18.04'
+# gpdb_arch_name: 'amd64'
+# gpdb_binary_type: 'deb'
 
-smdw_hostname: "ubt18-slave"
-# smdw_hostname: "co7-slave"
-# smdw_hostname: "rh7-slave"
-# smdw_hostname: "rh7-slave"
-# smdw_hostname: "rk8-slave"
-# smdw_hostname: "smdw4"
-
-# if you change the version, Ansible will attempt a database upgrade
-# greenplum-db-4.3.9.0-build-1-RHEL5-x86_64.zip
-#gpdb_major_version: 4
-#gpdb_minor_version: 3.9.0
-#gpdb_build_version: 1
-#gpdb_rhel_name: 'RHEL5'
-
-# Note: the string 'RHEL' was made lowercase between 4.3.9.0 and 4.3.9.1
-
-# greenplum-db-4.3.9.1-build-1-rhel5-x86_64.zip
-#gpdb_major_version: 4
-#gpdb_minor_version: 3.9.1
-#gpdb_build_version: 1
-#gpdb_rhel_name: 'rhel5'
-
-# files/greenplum-db-4.3.21.0-rhel5-x86_64.zip
-# gpdb_major_version: 4
-# gpdb_minor_version: 3.21.0
-# gpdb_build_version:
-# gpdb_rhel_name: 'rhel5'
+smdw_hostname: "rh7-slave"
 
 seg_serialized_install: False
 gpdb_initdb_single: False
 gpdb_initdb_with_standby: True
 gpdb_network_range: "192.168.0.0"
-# gpdb_network_range: "192.168.56.0"
 gpdb_admin_password: "changeme"
 
-# kernel parameters for greenplum database
-gpdb_kernel_shmmax: "kernel.shmmax = 500000000"
-gpdb_kernel_shmmni: "kernel.shmmni = 4096"
-gpdb_kernel_shmall: "kernel.shmall = 4000000000"
-gpdb_kernel_sem: "kernel.sem = 250 512000 100 2048"
-gpdb_kernel_sysrq: "kernel.sysrq = 1"
-gpdb_kernel_core_uses_pid: "kernel.core_uses_pid = 1"
-gpdb_kernel_msgmnb: "kernel.msgmnb = 65536"
-gpdb_kernel_msgmax: "kernel.msgmax = 65536"
-gpdb_kernel_msgmni: "kernel.msgmni = 2048"
-gpdb_net_ipv4_tcp_syncookies: "net.ipv4.tcp_syncookies = 1"
-gpdb_net_ipv4_ip_forward: "net.ipv4.ip_forward = 0"
-gpdb_net_ipv4_conf_default_accept_source_route: "net.ipv4.conf.default.accept_source_route = 0"
-gpdb_net_ipv4_tcp_tw_recycle: "net.ipv4.tcp_tw_recycle = 1"
-gpdb_net_ipv4_tcp_max_syn_backlog: "net.ipv4.tcp_max_syn_backlog = 4096"
-gpdb_net_ipv4_conf_all_arp_filter: "net.ipv4.conf.all.arp_filter = 1"
-gpdb_net_ipv4_ip_local_port_range: "net.ipv4.ip_local_port_range = 1025 65535"
-gpdb_net_ipv6_conf_all_disable_ipv6: "net.ipv6.conf.all.disable_ipv6 = 0"
-gpdb_net_core_netdev_max_backlog: "net.core.netdev_max_backlog = 10000"
-gpdb_net_core_rmem_max: "net.core.rmem_max = 2097152"
-gpdb_net_core_wmem_max: "net.core.wmem_max = 2097152"
-gpdb_vm_overcommit_memory: "vm.overcommit_memory = 2"
+gpdb_kernel_parameters:
+  - { "state": "present",  "param" : "kernel.shmmax",                             "value" : "50000000" }
+  - { "state": "present",  "param" : "kernel.shmmni",                             "value" : "4096" }
+  - { "state": "present",  "param" : "kernel.shmall",                             "value" : "400000000" }
+  - { "state": "present",  "param" : "kernel.sem",                                "value" : "250 512000 100 2048" }
+  - { "state": "present",  "param" : "kernel.msgmnb",                             "value" : "65536" }
+  - { "state": "present",  "param" : "kernel.msgmax",                             "value" : "65536" }
+  - { "state": "present",  "param" : "kernel.msgmni",                             "value" : "2048" }
+  - { "state": "present",  "param" : "kernel.sysrq",                              "value" : "1" }
+  - { "state": "present",  "param" : "kernel.core_uses_pid",                      "value" : "1" }
+  - { "state": "present",  "param" : "net.core.rmem_max",                         "value" : "2097152" }
+  - { "state": "present",  "param" : "net.core.wmem_max",                         "value" : "2097152" }
+  - { "state": "present",  "param" : "vm.overcommit_memory",                      "value" : "2" }
+  - { "state": "present",  "param" : "net.ipv4.ip_forward",                       "value" : "0" }
+  - { "state": "present",  "param" : "net.ipv4.tcp_syncookies",                   "value" : "1" }
+  - { "state": "present",  "param" : "net.ipv4.tcp_tw_recycle",                   "value" : "1" }
+  - { "state": "present",  "param" : "net.core.netdev_max_backlog",               "value" : "10000" }
+  - { "state": "present",  "param" : "net.ipv4.ip_local_port_range",              "value" : "1025 65536" }
+  - { "state": "present",  "param" : "net.ipv4.tcp_max_syn_backlog",              "value" : "4096" }
+  - { "state": "present",  "param" : "net.ipv4.conf.all.arp_filter",              "value" : "1" }
+  - { "state": "present",  "param" : "net.ipv6.conf.all.disable_ipv6",            "value" : "0" }
+  - { "state": "present",  "param" : "net.ipv4.conf.default.accept_source_route", "value" : "0" }

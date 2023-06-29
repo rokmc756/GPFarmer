@@ -67,6 +67,14 @@
 
 - name: Enable PostGIS and PostGIS Raster in a database
   become_user: gpadmin
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh  && {{ gpdb_base_dir }}/greenplum-db/share/postgresql/contrib/postgis-{{ postgis_major_version }}.{{ postgis_minor_version }}/postgis_manager.sh {{ postgis_database_name }} install )
+  register: postgis_raster_enabled
+  when:
+    - inventory_hostname in groups['master']
+#    - ( {{ postgis_major_version }} == 2 and {{ postgis_minor_version }} >= 5 )
+
+- name: Create PostGIS Extension and Enable Raster in a database
+  become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis_database_name }} -tAc "CREATE EXTENSION postgis;" )
   register: postgis_raster_enabled
   when: inventory_hostname in groups['master']

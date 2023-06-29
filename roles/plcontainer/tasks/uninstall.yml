@@ -10,14 +10,19 @@
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_installed.stat.exists != True
 
+#
 - name: Uninstall dependent RPMS for Docker
   yum: name={{ item }} state=absent
   with_items:
+    - slirp4netns
+    - fuse-overlayfs
+    - container-selinux
     - docker-ce
     - yum-utils
     - device-mapper-persistent-data
     - lvm2
 
+#
 - name: Remove docker repo
   become_user: root
   file:
@@ -111,14 +116,14 @@
 
 - name: Uninstall the PL/Container language extension
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -r plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}-{{ plcontainer_rhel_version }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -r plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}-{{ plcontainer_os_version }} )
   register: plcontainer_extension_uninstalled
   when:
     - inventory_hostname in groups['master']
 
 - name: Uninstall the PL/R language extension
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -r plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_rhel_version }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -r plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_os_version }} )
   register: plr_extension_uninstalled
   when:
     - inventory_hostname in groups['master']

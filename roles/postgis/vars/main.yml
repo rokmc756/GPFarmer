@@ -1,10 +1,10 @@
 ---
 postgis_prefix_major_version:
 postgis_major_version: 2
-postgis_minor_version: 5
-postgis_patch_version: .4+pivotal.7.build.1
+postgis_minor_version: 1
+postgis_patch_version: .5+pivotal.3.build.3
 postgis_gpdb_version: gp6
-postgis_rhel_version: rhel8
+postgis_rhel_version: rhel7
 postgis_database_name: postgis_testdb
 postgis_schema_name: postgis_test_scheme
 postgis_mdw_hostname: rk8-master

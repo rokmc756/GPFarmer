@@ -153,48 +153,12 @@
 - name: Modify /etc/sysctl.conf
   lineinfile:
     dest: /etc/sysctl.conf
-    regexp: "{{ item.regexp }}"
-    line: "{{ item.line }}"
+    regexp: "^{{ item.param }}"
+    line: "{{ item.param }} = {{ item.value }}"
     state: "{{ item.state }}"
-  with_items:
-    - { regexp: '^kernel.shmmax', line: '{{ gpdb_kernel_shmmax }}', state: present }
-    - { regexp: '^kernel.shmmni', line: '{{ gpdb_kernel_shmmni }}', state: present }
-    - { regexp: '^kernel.shmall', line: '{{ gpdb_kernel_shmall }}', state: present }
-    - { regexp: '^kernel.sem', line: '{{ gpdb_kernel_sem }}', state: present }
-    - { regexp: '^kernel.sysrq', line: '{{ gpdb_kernel_sysrq }}', state: present }
-    - { regexp: '^kernel.core_uses_pid', line: '{{ gpdb_kernel_core_uses_pid }}', state: present }
-    - { regexp: '^kernel.msgmnb', line: '{{ gpdb_kernel_msgmnb }}', state: present }
-    - { regexp: '^kernel.msgmax', line: '{{ gpdb_kernel_msgmax }}', state: present }
-    - { regexp: '^kernel.msgmni', line: '{{ gpdb_kernel_msgmni }}', state: present }
-    - { regexp: '^net.ipv4.tcp_syncookies', line: '{{ gpdb_net_ipv4_tcp_syncookies }}', state: present }
-    - { regexp: '^net.ipv4.ip_forward', line: '{{ gpdb_net_ipv4_ip_forward }}', state: present }
-    - { regexp: '^net.ipv4.conf.default.accept_source_route', line: '{{ gpdb_net_ipv4_conf_default_accept_source_route }}', state: present }
-    - { regexp: '^net.ipv4.tcp_max_syn_backlog', line: '{{ gpdb_net_ipv4_tcp_max_syn_backlog }}', state: present }
-    - { regexp: '^net.ipv4.conf.all.arp_filter', line: '{{ gpdb_net_ipv4_conf_all_arp_filter }}', state: present }
-    - { regexp: '^net.ipv4.ip_local_port_range', line: '{{ gpdb_net_ipv4_ip_local_port_range }}', state: present }
-    - { regexp: '^net.ipv4.ip_local_port_range', line: '{{ gpdb_net_ipv4_ip_local_port_range }}', state: present }
-    - { regexp: 'net.ipv6.conf.all.disable_ipv6', line: '{{ gpdb_net_ipv6_conf_all_disable_ipv6 }}', state: present }
-    - { regexp: '^net.core.netdev_max_backlog', line: '{{ gpdb_net_core_netdev_max_backlog }}', state: present }
-    - { regexp: '^net.core.rmem_max', line: '{{ gpdb_net_core_rmem_max }}', state: present }
-    - { regexp: '^net.core.wmem_max', line: '{{ gpdb_net_core_wmem_max }}', state: present }
-    - { regexp: '^vm.overcommit_memory', line: '{{ gpdb_vm_overcommit_memory }}', state: present }
+  with_items: "{{ gpdb_kernel_parameters }}"
   notify:
     - Reload sysctl
-
-#
-- name: Modify /etc/sysctl.conf in versions less than RHEL/CentOS/Rocky 8
-  lineinfile:
-    dest: /etc/sysctl.conf
-    regexp: "{{ item.regexp }}"
-    line: "{{ item.line }}"
-    state: "{{ item.state }}"
-  with_items:
-    - { regexp: '^net.ipv4.tcp_tw_recycle', line: '{{ gpdb_net_ipv4_tcp_tw_recycle }}', state: present }
-  notify:
-    - Reload sysctl
-  when:
-    - ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky'
-    - hostvars[inventory_hostname].ansible_distribution_major_version|int < 8
 
 #
 - name: Modify /etc/ssh/sshd_config

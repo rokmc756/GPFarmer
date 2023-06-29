@@ -1,5 +1,4 @@
 ---
-
 # for now fail if it's not a supported OS
 
 - debug: msg={{ ansible_distribution }}
@@ -12,24 +11,22 @@
   stat: path=/run/systemd/system
   register: systemd_exists
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
-  # when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ansible_distribution_major_version is version_compare('6', '>')
 
 #
 - name: check if systemd is used (2)
   fail: msg="systemd is not installed"
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and systemd_exists.stat.exists != True
-  # when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ansible_distribution_major_version is version_compare('6', '>')
 
-# update package cache - required for any new software installation
-#- name: Update package cache
-#  package: name=* state=latest update_cache=yes
-#  when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
+# Update package cache - required for any new software installation
+- name: Update package cache
+  package: name=* state=latest update_cache=yes
+  when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
 #  skip as temp
 
-# update packages to latest version
-#- name: upgrade all packages
-#  package: name=* state=latest update_cache=yes
-#  when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
+# Update packages to latest version
+- name: upgrade all packages
+  package: name=* state=latest update_cache=yes
+  when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
 #  skip as temp
 
 #  hostname: name={{ hostname }}
@@ -39,18 +36,21 @@
     - Restart system
     - Waiting for server to come back after restart
 
+#
 - name: Get the specific ip address
   set_fact:
     prod_ip_addr: "{{ item }}"
   when: "item | ipaddr('{{ common_network_range }}')"
   with_items: "{{ ansible_all_ipv4_addresses }}"
 
+#
 - name: Install firewalld
   package: name={{ item }} state=present
   with_items:
     - firewalld
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ansible_distribution_major_version|int >= 5
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ansible_distribution_major_version|int >= 7
 
+#
 - name: Stop and disable firewalld
   become: true
   become_user: root
@@ -60,6 +60,7 @@
     enabled: False
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ansible_distribution_major_version|int >= 7
 
+#
 - name: Clean rules on all chains of filter table
   become: true
   become_user: root
@@ -68,90 +69,19 @@
     flush: yes
   with_items:  [ 'INPUT', 'FORWARD', 'OUTPUT' ]
 
-- name: basic packages
-  package: name={{ item }} state=present
-  with_items:
-    - vim-enhanced
-    - nano
-    - screen
-    - psmisc
-    - rsync
-    - wget
-    - mutt
-    - yum-utils
-    - unzip
-    - net-tools
-    - ed
-    - m4
-    - expect
-    - nc
-    - java-1.8.0-openjdk
-    - java-1.8.0-openjdk-devel
-    - libcgroup
-    - libcgroup-tools
-    - nmap
+#
+- name: Install basic dependent packages for RedHat,CentOS and Rocky Linux
+  package:
+    name: "{{ rhel_common_packages }}"
+    state: present
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
-  #  - pexpect
 
-- name: Install development packages
-  package: name={{ item.package }}
-       state=present
-  with_items:
-    - { package: automake }
-    - { package: make }
-    - { package: gcc-c++ }
-    - { package: gcc }
-    - { package: ed }
-    - { package: lsof }
-    - { package: python-setuptools }
-    - { package: python-paramiko }
-    - { package: git }
-    - { package: PyYAML }
-    - { package: perl-ExtUtils-MakeMaker }
-    - { package: zlib }
-    - { package: zlib-devel }
-    - { package: curl }
-    - { package: curl-devel }
-    - { package: openssl }
-    - { package: openssl-devel }
-    - { package: svn }
-    - { package: tcl }
-    - { package: gettext }
-    - { package: expat-devel }
-    - { package: gettext-devel }
-    - { package: bison }
-    - { package: flex }
-    - { package: perl-ExtUtils-Embed }
-    - { package: perl-ExtUtils-MakeMaker }
-    - { package: readline }
-    - { package: readline-devel }
-    - { package: apr }
-    - { package: apr-devel }
-    - { package: apr-util }
-    - { package: apr-util-devel }
-    - { package: libevent }
-    - { package: libxml2 }
-    - { package: libxml2-devel }
-    - { package: bzip2 }
-    - { package: bzip2-devel }
-    - { package: libyaml }
-    - { package: python-devel }
-    - { package: net-snmp }
-    - { package: net-snmp-devel }
-    - { package: net-snmp-utils }
-    - { package: net-snmp-libs }
-    - { package: liblockfile }
-    - { package: ccache }
-    - { package: python-lockfile }
-    - { package: xml2 }
-    - { package: docbook2X }
-    - { package: xmlto }
-    - { package: libcgroup }
-    - { package: libcgroup-tools }
-    - { package: nmap }
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int == 7
-  #  - { package: python-psutil }
-  #  - { package: python-scp }
+#
+- name: Install development packages for RedHat,CentOS and Rocky Linux
+  package:
+    name: "{{ rhel_common_devel_packages }}"
+    state: present
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
 
 #
 - name: Install basic dependent packages for Ubuntu or Debian
@@ -160,6 +90,7 @@
     state: present
   when: ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
 
+#
 - name: Install development packages for Ubuntu or Debian
   package:
     name: "{{ ubt_common_devel_packages }}"
@@ -182,12 +113,14 @@
     mode: 0700
   when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
 
+#
 - name: Reboot required (Red Hat) - Step 1
   command: /root/needs-restarting.py -r
   register: reboot_required
   ignore_errors: True
   changed_when: False
 
+#
 - name: Reboot required (Red Hat) - Step 2
   shell: ( /bin/sleep 5 ; /sbin/shutdown -r now "Ansible updates triggered" ) &
   async: 120

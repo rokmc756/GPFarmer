@@ -18,20 +18,33 @@
 #    - { role: madlib }
 
 #- hosts: rk8-master
-#- hosts: rh7-master,rh7-slave
 #- hosts: co7-db-master
+# - hosts: rh7-master,rh7-slave
 
 #- hosts: all
 #  become: yes
 #  roles:
 #    - { role: gpdb }
+#    - { role: gpcc }
+#    - { role: postgis }
 
-#- hosts: ubt18-master,ubt18-slave
-# - hosts: all
-- hosts: ubt18-master
+# - hosts: rh7-master,rh7-slave
+- hosts: all
   become: yes
   roles:
-    - { role: madlib }
+    - { role: gpdb }
+#    - { role: plcontainer }
+#    - { role: pxf }
+#    - { role: postgis }
+#    - { role: gpcc }
+
+#- hosts: ubt18-master,ubt18-slave
+# - hosts: ubt18-master
+#- hosts: all
+#  become: yes
+#  roles:
+#    - { role: gpdb }
+#    - { role: madlib }
 #    - { role: plcontainer }
 #    - { role: pljava }
 #    - { role: madlib }   # Failed on Ubuntu 18.04

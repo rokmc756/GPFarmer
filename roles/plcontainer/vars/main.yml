@@ -1,11 +1,11 @@
 ---
 plcontainer_prefix_major_version:
 plcontainer_major_version: 2
-plcontainer_minor_version: 2
-plcontainer_patch_version: 0
+plcontainer_minor_version: 1
+plcontainer_patch_version: 5
 plcontainer_gpdb_version: gp6
-# plcontainer_os_version: rhel8
-plcontainer_os_version: ubuntu18.04
+plcontainer_os_version: rhel7
+# plcontainer_os_version: ubuntu18.04
 plcontainer_arch_type: x86_64
 # plcontainer_arch_type: amd64
 plcontainer_database_name: plcontainer_testdb
@@ -20,12 +20,13 @@ plcontainer_schema_name: plcontainer_test_scheme
 plr_prefix_major_version:
 plr_major_version: 3
 plr_minor_version: 0
-plr_patch_version: 4
+plr_patch_version: 3
 plr_gpdb_version: gp6
+plr_os_version: rhel7
 # plr_os_version: rhel8
-plr_os_version: ubuntu18
-plr_arch_type: amd64
+# plr_os_version: ubuntu18
+# plr_arch_type: amd64
+plr_arch_type: x86_64
 
 plr_database_name: plcontainer_testdb
 plr_schema_name: plr_test_scheme
-

@@ -1,21 +1,22 @@
 ---
 pxf_major_version: 6
-pxf_minor_version: 6.0
+pxf_minor_version: 5.0
 pxf_patch_version: 2
 pxf_gpdb_version: gp6
 # pxf_os_version: "el8"
-pxf_os_version: "ubuntu18.04"
+pxf_os_version: "el7"
+# pxf_os_version: "ubuntu18.04"
 pxf_database_name: pxf_testdb
-# pxf_mdw_hostname: rh7-master
+pxf_mdw_hostname: rh7-master
 # pxf_mdw_hostname: rk8-master
-pxf_mdw_hostname: ubt18-master
+# pxf_mdw_hostname: ubt18-master
 pxf_username: pxf_user
 pxf_setup_action: "{{ setup_action }}"
 
 # pxf-gp6-5.15.1-2.el7.x86_64.rpm
 # pxf-gp6-6.6.0-2-ubuntu18.04-amd64.deb
 
-install_pxf: false
+install_pxf: true
 
 with_nfs_access: false
 pxf_base_dir_with_nfs: /home/gpadmin/pxf-nfs-base
@@ -95,7 +96,7 @@ mssql_dbname: testdb
 mssql_user: mssqluser
 mssql_user_pass: "Changeme!@#$"
 
-with_minio_access: true
+with_minio_access: false
 pxf_base_dir_with_minio: /home/gpadmin/pxf-minio-base
 s3_access_key: minioadmin
 s3_secret_key: changeme
