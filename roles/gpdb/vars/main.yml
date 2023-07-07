@@ -6,23 +6,24 @@ gpdb_number_segments: 4
 gpdb_mirror_enable: true
 gpdb_spread_mirrors: ""
 
-# greenplum-db-7.0.0-beta.2-el8-x86_64.rpm
+# greenplum-db-7.0.0-beta.4-el8-x86_64.rpm
 # greenplum-db-6.24.3-ubuntu18.04-amd64.deb
-#gpdb_major_version: 7
-#gpdb_minor_version: 0
-#gpdb_build_version: '0-beta.2'
+gpdb_major_version: 7
+gpdb_minor_version: 0
+gpdb_build_version: '0-beta.4'
 
-gpdb_major_version: 6
-gpdb_minor_version: 21
-gpdb_build_version: 0
-gpdb_os_name: 'rhel7'
+# gpdb_major_version: 6
+# gpdb_minor_version: 21
+# gpdb_build_version: 0
+# gpdb_os_name: 'rhel7'
+gpdb_os_name: 'el8'
 gpdb_arch_name: 'x86_64'
 gpdb_binary_type: 'rpm'
 # gpdb_os_name: 'ubuntu18.04'
 # gpdb_arch_name: 'amd64'
 # gpdb_binary_type: 'deb'
 
-smdw_hostname: "rh7-slave"
+smdw_hostname: "rk8-slave"
 
 seg_serialized_install: False
 gpdb_initdb_single: False
@@ -45,10 +46,12 @@ gpdb_kernel_parameters:
   - { "state": "present",  "param" : "vm.overcommit_memory",                      "value" : "2" }
   - { "state": "present",  "param" : "net.ipv4.ip_forward",                       "value" : "0" }
   - { "state": "present",  "param" : "net.ipv4.tcp_syncookies",                   "value" : "1" }
-  - { "state": "present",  "param" : "net.ipv4.tcp_tw_recycle",                   "value" : "1" }
   - { "state": "present",  "param" : "net.core.netdev_max_backlog",               "value" : "10000" }
-  - { "state": "present",  "param" : "net.ipv4.ip_local_port_range",              "value" : "1025 65536" }
   - { "state": "present",  "param" : "net.ipv4.tcp_max_syn_backlog",              "value" : "4096" }
   - { "state": "present",  "param" : "net.ipv4.conf.all.arp_filter",              "value" : "1" }
   - { "state": "present",  "param" : "net.ipv6.conf.all.disable_ipv6",            "value" : "0" }
   - { "state": "present",  "param" : "net.ipv4.conf.default.accept_source_route", "value" : "0" }
+
+# Not work for RHEL 8
+#  - { "state": "present",  "param" : "net.ipv4.ip_local_port_range",              "value" : "1025 65536" }
+#  - { "state": "present",  "param" : "net.ipv4.tcp_tw_recycle",                   "value" : "1" }

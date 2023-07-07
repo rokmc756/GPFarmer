@@ -32,9 +32,10 @@
 - hosts: all
   become: yes
   roles:
-    - { role: gpdb }
-#    - { role: plcontainer }
+    - { role: postgis }
 #    - { role: pxf }
+#    - { role: gpdb }
+#    - { role: plcontainer }
 #    - { role: postgis }
 #    - { role: gpcc }
 

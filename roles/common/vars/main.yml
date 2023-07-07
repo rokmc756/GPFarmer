@@ -3,8 +3,12 @@ common_network_range: "192.168.0.0/24"
 
 rhel_common_packages: "vim-enhanced,nano,screen,psmisc,rsync,wget,mutt,yum-utils,unzip,net-tools,ed,m4,expect,nc,java-1.8.0-openjdk,java-1.8.0-openjdk-devel,libcgroup,libcgroup-tools,nmap"
 
-rhel_common_devel_packages: "automake,make,gcc-c++,gcc,ed,lsof,python-setuptools,python-paramiko,git,PyYAML,perl-ExtUtils-MakeMaker,zlib,zlib-devel,curl,curl-devel,openssl,openssl-devel,svn,tcl,gettext,expat-devel,gettext-devel,bison,flex,perl-ExtUtils-Embed,perl-ExtUtils-MakeMaker,
-readline,readline-devel,apr,apr-devel,apr-util,apr-util-devel,libevent,libxml2,libxml2-devel,bzip2,bzip2-devel,libyaml,python-devel,net-snmp,net-snmp-devel,net-snmp-utils,net-snmp-libs,liblockfile,ccache,python-lockfile,xml2,docbook2X,xmlto,libcgroup,libcgroup-tools,nmap"
+# 6 or 7
+# rhel_common_devel_packages: "automake,make,gcc-c++,gcc,ed,lsof,python-setuptools,python-paramiko,git,PyYAML,perl-ExtUtils-MakeMaker,zlib,zlib-devel,curl,curl-devel,openssl,openssl-devel,svn,tcl,gettext,expat-devel,gettext-devel,bison,flex,perl-ExtUtils-Embed,perl-ExtUtils-MakeMaker,
+# readline,readline-devel,apr,apr-devel,apr-util,apr-util-devel,libevent,libxml2,libxml2-devel,bzip2,bzip2-devel,libyaml,python-devel,net-snmp,net-snmp-devel,net-snmp-utils,net-snmp-libs,liblockfile,ccache,python-lockfile,xml2,docbook2X,xmlto,libcgroup,libcgroup-tools,nmap"
+
+rhel_common_devel_packages: "automake,make,gcc-c++,gcc,ed,lsof,python3-setuptools,git,perl-ExtUtils-MakeMaker,zlib,zlib-devel,curl,curl-devel,openssl,openssl-devel,svn,tcl,gettext,expat-devel,gettext-devel,bison,flex,perl-ExtUtils-Embed,perl-ExtUtils-MakeMaker,
+readline,readline-devel,apr,apr-devel,apr-util,apr-util-devel,libevent,libxml2,libxml2-devel,bzip2,bzip2-devel,libyaml,python3-devel,net-snmp,net-snmp-devel,net-snmp-utils,net-snmp-libs,liblockfile,ccache,python3-lockfile,xmlto,libcgroup,libcgroup-tools,nmap,bash-completion"
 
 ubt_common_packages: "vim,nano,screen,psmisc,rsync,wget,mutt,unzip,net-tools,ed,m4,expect,netcat,openjdk-8-jdk,openjdk-8-jre,openjdk-8-demo,openjdk-8-jre-dcevm,openjdk-jdk-headless,openjdk-8-jre-zero,openjdk-8-source,openjdk-8-jre-headless,openjdk-8-dbg,openjdk-8-doc,libcgroup-dev,nmap"
 

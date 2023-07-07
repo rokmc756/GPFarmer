@@ -70,6 +70,7 @@
   yum:
     name: /home/gpadmin/{{ pxf_package_name }}
     state: present
+    disable_gpg_check: true
   async: 60
   poll: 5
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )

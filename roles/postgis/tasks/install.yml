@@ -22,34 +22,71 @@
   ignore_errors: true
   register: postgis_installed
   changed_when: False
+  when: inventory_hostname in groups['master'] and postgis_major_version <= 2
+
+- name: Verify if PostGIS gppkg is installed
+  become_user: gpadmin
+  shell: source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg query | grep postgis | awk '{print $1}'
+  ignore_errors: true
+  register: postgis_installed
+  changed_when: False
+  when: inventory_hostname in groups['master'] and postgis_major_version >= 3
+
+- name: Print the result if PostGIS is installed
+  debug:
+    msg: "{{ postgis_installed }}"
+    # msg: "{{ postgis_installed.stdout }}"
   when: inventory_hostname in groups['master']
 
-- name: Stop if PostGIS gppkg package is not installed
-  fail: msg="PostGIS gppkg package is not installed!"
+- name: Stop if PostGIS gppkg package is installed
+  fail: msg="PostGIS gppkg package is already installed!"
   when:
-    - inventory_hostname in groups['master']
+    - inventory_hostname in groups['master'] and postgis_major_version <= 2
     - "'package postgis is not installed' not in postgis_installed.stdout"
 
-- name: Copy postgis gppkg file
-  copy: src=postgis-{{ postgis_prefix_major_version }}{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}-{{ postgis_gpdb_version }}-{{ postgis_rhel_version }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+- name: Stop if PostGIS gppkg package is installed
+  fail: msg="PostGIS gppkg package is already installed!"
+  when:
+    - inventory_hostname in groups['master'] and postgis_major_version >= 3
+    - "'postgis' in postgis_installed.stdout"
+
+- name: Copy PostGIS gppkg file
+  copy: src=postgis-{{ postgis_prefix_major_version }}{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}-{{ postgis_gpdb_version }}-{{ postgis_os_version }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
     - inventory_hostname in groups['master']
-    - "'package postgis is not installed' in postgis_installed.stdout"
+#    - "'package postgis is not installed' in postgis_installed.stdout"
 
-- name: Install postgis package
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -r"
+  when:
+    - inventory_hostname in groups['master']
+    - postgis_major_version <= 2 and postgis_minor_version >= 5
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+  when:
+    - inventory_hostname in groups['master']
+    - postgis_major_version >= 3 and postgis_minor_version >= 3
+
+#
+- name: Install PostGIS gppkg package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/postgis-{{ postgis_prefix_major_version }}{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}-{{ postgis_gpdb_version }}-{{ postgis_rhel_version }}-x86_64.gppkg )
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpadmin_home_dir }}/postgis-{{ postgis_prefix_major_version }}{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}-{{ postgis_gpdb_version }}-{{ postgis_os_version }}-x86_64.gppkg )
+  register: postgis_package_installed
+  ignore_errors: true
   when:
     - inventory_hostname in groups['master']
-    - "'package postgis is not installed' in postgis_installed.stdout"
+#    - "'package postgis is not installed' in postgis_installed.stdout"
 
-- name: Verify that database for postgis is installed
+- name: Verify that database for PostGIS is installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ postgis_database_name }}'" )
   register: postgis_database_installed
   when: inventory_hostname in groups['master']
 
-- name: Create database for postgis
+- name: Create database for PostGIS
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ postgis_database_name }} )
   register: postgis_database_created
@@ -57,7 +94,7 @@
     - inventory_hostname in groups['master']
     - "'100' not in postgis_database_installed.stdout"
 
-- name: Restart GPDB after installing PostGIS extension
+- name: Restart GPDB after installing PostGIS Extension
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
@@ -71,8 +108,9 @@
   register: postgis_raster_enabled
   when:
     - inventory_hostname in groups['master']
-#    - ( {{ postgis_major_version }} == 2 and {{ postgis_minor_version }} >= 5 )
+    - ( {{ postgis_major_version }} == 2 and {{ postgis_minor_version }} >= 5 )
 
+#
 - name: Create PostGIS Extension and Enable Raster in a database
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis_database_name }} -tAc "CREATE EXTENSION postgis;" )
@@ -94,18 +132,21 @@
 # "stderr": "ERROR:  extension \"postgis\" already exists", "stderr_lines": ["ERROR:
 # extension \"postgis\" already exists"], "stdout": "", "stdout_lines": []}
 
-- name: Enable PostGIS TIGER geocoder after enabling the postgis extension if needed
+#
+- name: Enable PostGIS TIGER geocoder after enabling the PostGIS Extension if needed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis_database_name }} -tAc "CREATE EXTENSION fuzzystrmatch ; CREATE EXTENSION postgis_tiger_geocoder;" )
   register: postgis_raster_tiger_geocoder_enabled
   when: inventory_hostname in groups['master']
 
+#
 - name: Enable the rules-based address standardizer and add rules tables for the standardizer
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis_database_name }} -tAc "CREATE EXTENSION address_standardizer ; CREATE EXTENSION address_standardizer_data_us ;" )
   register: postgis_raster_rules_based_addr_standaizer_enabled
   when: inventory_hostname in groups['master']
 
+#
 - name: Enabling GDAL Raster Drivers
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis_database_name }} -tAc "SET postgis.gdal_enabled_drivers = default;" )
@@ -113,12 +154,14 @@
   when: inventory_hostname in groups['master']
   # SET postgis.gdal_enabled_drivers TO 'GTiff PNG JPEG';
 
+#
 - name: Check the list of supported GDAL raster drivers for a Greenplum Database system
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && raster2pgsql -G )
   register: list_supported_gdal_raster_checked
   when: inventory_hostname in groups['master']
 
+#
 - name: Export line enables for GDAL raster drivers
   lineinfile:
     dest: "{{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh"
