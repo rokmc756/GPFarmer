@@ -1,14 +1,17 @@
 ---
 # Uninstall madlib extention on Greenplum database
 
+#
 - name: Check if the GPDB software is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
 
+#
 - name: Stop if GPDB software is not installed
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_installed.stat.exists != True
 
+#
 - name: Verify that database is up and running
   become_user: gpadmin
   changed_when: False
@@ -17,12 +20,14 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
   when: inventory_hostname in groups['master']
 
+#
 - name: Verify that database for MADlib extention is installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ madlib_database_name }}'" )
   register: madlib_database_installed
   when: inventory_hostname in groups['master']
 
+#
 - name: Verify if MADlib gppkg is installed
   become_user: gpadmin
   command: 'rpm -q madlib --dbpath /usr/local/greenplum-db/share/packages/database'
@@ -31,12 +36,14 @@
   changed_when: False
   when: inventory_hostname in groups['master']
 
+#
 - name: Stop if MADlib gppkg package is not installed
   fail: msg="MADlib gppkg package is not installed!"
   when:
     - inventory_hostname in groups['master']
     - "'package madlib is not installed' in select_madlib_version.stdout"
 
+#
 - name: Remove MADlib objects from the database
   become_user: gpadmin
   shell: |

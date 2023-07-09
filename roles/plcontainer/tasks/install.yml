@@ -2,14 +2,17 @@
 
 # Install PLContainer extention on Greenplum database
 
+#
 - name: Check if the GPDB software is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
 
+#
 - name: Stop if GPDB software is not installed
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_installed.stat.exists != True
 
+#
 - name: Get Kernel version
   shell: uname -r | egrep '^[0-9]*\.[0-9]*' -o
   args:
@@ -18,6 +21,7 @@
 
 - debug: msg={{ kernel_shell_output.stdout}}
 
+#
 - name: Stop installing plcontainer due to kernel version not enough
   fail: msg="{{ kernel_shell_output.stdout }} - Kernel version should be higher than 3.10"
   when: kernel_shell_output.stdout < "3.10"
@@ -48,6 +52,7 @@
 #  when:
 #    - inventory_hostname in groups['master']
 
+#
 - name: Update yum cache for RedHat/CentOS/Rocky
   become_user: gpadmin
   changed_when: False
@@ -214,25 +219,52 @@
   ignore_errors: true
   register: plcontainer_installed
   changed_when: False
+  when: inventory_hostname in groups['master'] and ( plcontainer_major_version <= 2 and plcontainer_minor_version < 2 )
+
+#
+- name: Verify if plcontainer gppkg pakcage is installed
+  become_user: gpadmin
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg query | gppkg query | grep plcontainer | awk '{print $1}' )
+  args:
+    executable: /bin/bash
+  ignore_errors: true
+  register: plcontainer_installed
+  changed_when: False
+  when: inventory_hostname in groups['master'] and ( plr_major_version >= 2 and plr_minor_version >= 2 )
+
+#
+- name: Stop if PLContainer gppkg package is not installed
+  fail: msg="PLcontainer gppkg package is already installed!"
   when:
-    - inventory_hostname in groups['master']
+    - inventory_hostname in groups['master'] and ( plcontainer_major_version <= 2 and plcontainer_minor_version < 2 )
+    - "'package plcontainer is not installed' not in plr_installed.stdout"
+
+#
+- name: Stop if PLContainer gppkg package is already installed
+  fail: msg="PLContainer gppkg package is already installed!"
+  when:
+    - inventory_hostname in groups['master'] and ( plr_major_version >= 2 and plr_minor_version >= 2 )
+    - "'plcontainer' in plr_installed.stdout"
+
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    plcontainer_package_name: plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}-{{ plcontainer_os_version }}_{{ plcontainer_arch_type }}.gppkg
+    plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
+  when: inventory_hostname in groups['master'] and ( plr_major_version <= 3 and plr_minor_version < 1 )
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    plcontainer_package_name: plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}-{{ plcontainer_os_version }}_{{ plcontainer_arch_type }}.gppkg
+    plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
+  when: inventory_hostname in groups['master'] and ( plr_major_version >= 3 and plr_minor_version >= 1 )
 
 #
 - name: Stop if plcontainer gppkg package is not installed
   fail: msg="plcontainer gppkg package is already installed!"
   when:
     - inventory_hostname in groups['master']
-    - "'package plcontainer is not installed' not in plcontainer_installed.stdout"
-
-#
-- set_fact:
-    plcontainer_package_name: plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}-{{ plcontainer_os_version }}_{{ plcontainer_arch_type }}.gppkg
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
-
-#
-- set_fact:
-    plcontainer_package_name: plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}-{{ plcontainer_os_version }}_{{ plcontainer_arch_type }}.gppkg
-  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+    - ( 'package plcontainer is not installed' not in plcontainer_installed.stdout ) or ( 'plcontainer' in plr_installed.stdout )
 
 #
 - name: Copy plcontainer gppkg file
@@ -240,63 +272,64 @@
   register: plcontainer_gppkg_copied
   when:
     - inventory_hostname in groups['master']
-    - "'package plcontainer is not installed' in plcontainer_installed.stdout"
+    - ( 'package plcontainer is not installed' not in plcontainer_installed.stdout ) or ( 'plcontainer' in plr_installed.stdout )
 
 #
 - name: Install plcontainer package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/{{ plcontainer_package_name }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpadmin_home_dir }}/{{ plcontainer_package_name }} )
   args:
     executable: /bin/bash
   register: plcontainer_plcontainer_installed
   when:
     - inventory_hostname in groups['master']
-    - "'package plcontainer is not installed' in plcontainer_installed.stdout"
+    - ( 'package plcontainer is not installed' not in plcontainer_installed.stdout ) or ( 'plcontainer' in plr_installed.stdout )
 
 #
-- name: Verify if plr gppkg is installed
+- name: Verify if PLR gppkg package is installed
   become_user: gpadmin
   command: 'rpm -q plr --dbpath /usr/local/greenplum-db/share/packages/database'
   ignore_errors: true
   register: plr_installed
   changed_when: False
+  when: inventory_hostname in groups['master'] and ( plr_major_version <= 3 and plr_minor_version < 1 )
+
+#
+- name: Verify if PLR gppkg pakcage is installed
+  become_user: gpadmin
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg query | grep plr | awk '{print $1}' )
+  args:
+    executable: /bin/bash
+  ignore_errors: true
+  register: plr_installed
+  changed_when: False
+  when: inventory_hostname in groups['master'] and ( plr_major_version >= 3 and plr_minor_version >= 1 )
+
+#
+- name: Stop if PLR gppkg package is not installed
+  fail: msg="PLR gppkg package is already installed!"
   when:
     - inventory_hostname in groups['master']
+    - ( 'package plr is not installed' in plr_installed.stdout ) or ( 'plr' in plr_installed.stdout )
 
 #
-- name: Stop if plr gppkg package is not installed
-  fail: msg="plr gppkg package is already installed!"
-  when:
-    - inventory_hostname in groups['master']
-    - "'package plr is not installed' not in plr_installed.stdout"
-
-- set_fact:
-    plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
-
-#
-- set_fact:
-    plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
-  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
-
-#
-- name: Copy plr gppkg file
+- name: Copy PLR gppkg package
   copy: src={{ plr_package_name }} dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   register: plr_gppkg_copied
   when:
     - inventory_hostname in groups['master']
-    - "'package plr is not installed' in plr_installed.stdout"
+    - ( 'package plr is not installed' in plr_installed.stdout ) or ( 'plr' in plr_installed.stdout )
 
 #
 - name: Install plr package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/{{ plr_package_name }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpadmin_home_dir }}/{{ plr_package_name }} )
   args:
     executable: /bin/bash
   register: plr_gppkg_installed
   when:
     - inventory_hostname in groups['master']
-    - "'package plr is not installed' in plr_installed.stdout"
+    - ( 'package plr is not installed' in plr_installed.stdout ) or ( 'plr' in plr_installed.stdout )
 
 #
 - name: Restart GPDB and apply parameters for plcontainer in greenplum_path.sh
