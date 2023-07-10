@@ -32,13 +32,13 @@
 - hosts: all
   become: yes
   roles:
-    - { role: plcontainer }
+    - { role: gpdb }
+#    - { role: plcontainer }
 #    - { role: plr }
 #    - { role: DataSciencePython }
 #    - { role: madlib }
 #    - { role: postgis }
 #    - { role: pxf }
-#    - { role: gpdb }
 #    - { role: plcontainer }
 #    - { role: postgis }
 #    - { role: gpcc }
