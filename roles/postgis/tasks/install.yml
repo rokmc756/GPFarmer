@@ -47,7 +47,7 @@
 #
 - name: Print the result if PostGIS is installed
   debug:
-    msg: "{{ postgis_installed }}"
+    msg: "{{ postgis_installed.stdout }}"
     # msg: "{{ postgis_installed.stdout }}"
   when: inventory_hostname in groups['master']
 

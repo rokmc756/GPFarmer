@@ -42,16 +42,22 @@
 #
 - name: Uninstall the DataSciencePython Package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ dspython_package_name }}
-  register: dspython_extension_uninstalled
-  async: 1200
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ dspython_package_name }} )
+  register: dspython_package_uninstalled
+  async: 3600
   poll: 10
   when:  inventory_hostname in groups['master']
+
+#  until: dspython_package_uninstalled is succeeded
+#  retries: 5
+#  delay: 10
+#  async: 3600
+#  poll: 5
 
 #
 - name: Restart the Greenplum Database
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
-  async: 60
+  async: 150
   poll: 5
   when: inventory_hostname in groups['master']

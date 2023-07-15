@@ -32,9 +32,9 @@
 
 #
 - set_fact:
-    madlib_package_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}{{ madlib_patch_version }}+{{ madlib_build_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
-    madlib_package_bin_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}.gppkg
-    madlib_directory_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
+    madlib_package_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
+    madlib_package_bin_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}.gppkg
+    madlib_directory_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
     gppkg_install_cmd: "gppkg -i"
   when:
     - inventory_hostname in groups['master']
@@ -53,8 +53,8 @@
 #
 - set_fact:
     madlib_package_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
-    madlib_package_bin_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}.gppkg
-    madlib_directory_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
+    madlib_package_bin_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}.gppkg
+    madlib_directory_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
     gppkg_install_cmd: "gppkg -i"
   when:
     - inventory_hostname in groups['master']
@@ -88,9 +88,11 @@
   args:
     executable: /bin/bash
   register: madlib_package_installed
-  until: madlib_package_installed is succeeded
-  retries: 10
-  delay: 30
+  async: 600
+  poll: 10
+  # until: madlib_package_installed is succeeded
+  # retries: 10
+  # delay: 30
   when: inventory_hostname in groups['master'] and madlib_installed.stat.exists != True
 
 #

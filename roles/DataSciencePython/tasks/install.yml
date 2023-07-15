@@ -111,6 +111,9 @@
     - dspython_major_version >= 3
 
 #
+- debug: msg={{ dspython_package_name }}
+
+#
 - name: Install DataSciencePython package
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpadmin_home_dir }}/{{ dspython_package_name }} )
@@ -118,22 +121,31 @@
     executable: /bin/bash
   register: dspython_package_installed
   ignore_errors: true
-  async: 1200
+  async: 3600
   poll: 10
-  until: dspython_package_installed is succeeded
-  retries: 3
-  delay: 30
   when:
     - inventory_hostname in groups['master']
     - ( 'package DataSciencePython is not installed' not in dspython_installed.stdout ) or ( 'DataSciencePython' in dspython_installed.stdout )
 
+#  until: dspython_package_installed is succeeded
+#  retries: 5
+#  delay: 10
+# async: 3600
+# poll: 5
+
+#  async: 1800
+#  poll: 10
+#  until: dspython_package_installed is succeeded
+#  retries: 3
+#  delay: 1800
+#
 #
 - name: Restart GPDB and apply parameters for dspython in greenplum_path.sh
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   args:
     executable: /bin/bash
-  async: 60
+  async: 150
   poll: 5
   when:
     - inventory_hostname in groups['master']

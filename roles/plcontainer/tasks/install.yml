@@ -1,5 +1,4 @@
 ---
-
 # Install PLContainer extention on Greenplum database
 
 #
@@ -105,7 +104,7 @@
   when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky"
 
 #
-- name: Add the GPG key for docker in Ubuntu/Debian
+- name: Add the GPG key for docker for Ubuntu/Debian
   become: yes
   become_user: root
   shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
@@ -115,7 +114,7 @@
   when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ansible_distribution_major_version|int >= 18
 
 #
-- name: Add docker repository in Ubuntu/Debian
+- name: Add docker repository for Ubuntu/Debian
   become: true
   become_user: root
   shell: add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
@@ -202,7 +201,7 @@
     - inventory_hostname in groups['master']
 
 #
-- name: Verify that database is up and running
+- name: Verify that GPDB is up and running
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
@@ -213,16 +212,16 @@
   failed_when: "'(Greenplum Database ' not in running_database_checked.stdout"
 
 #
-- name: Verify if plcontainer gppkg is installed
+- name: Verify if PLContainer gppkg is installed
   become_user: gpadmin
   command: 'rpm -q plcontainer --dbpath /usr/local/greenplum-db/share/packages/database'
   ignore_errors: true
   register: plcontainer_installed
   changed_when: False
-  when: inventory_hostname in groups['master'] and ( plcontainer_major_version <= 2 and plcontainer_minor_version < 2 )
+  when: inventory_hostname in groups['master'] and plcontainer_gpdb_version <= 6
 
 #
-- name: Verify if plcontainer gppkg pakcage is installed
+- name: Verify if PLContainer gppkg pakcage is installed
   become_user: gpadmin
   shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg query | gppkg query | grep plcontainer | awk '{print $1}' )
   args:
@@ -230,41 +229,35 @@
   ignore_errors: true
   register: plcontainer_installed
   changed_when: False
-  when: inventory_hostname in groups['master'] and ( plr_major_version >= 2 and plr_minor_version >= 2 )
+  when: inventory_hostname in groups['master'] and plcontainer_gpdb_version >= 7
 
 #
 - name: Stop if PLContainer gppkg package is not installed
   fail: msg="PLcontainer gppkg package is already installed!"
   when:
-    - inventory_hostname in groups['master'] and ( plcontainer_major_version <= 2 and plcontainer_minor_version < 2 )
-    - "'package plcontainer is not installed' not in plr_installed.stdout"
+    - inventory_hostname in groups['master'] and plcontainer_gpdb_version <= 6
+    - "'package plcontainer is not installed' not in plcontainer_installed.stdout"
 
 #
 - name: Stop if PLContainer gppkg package is already installed
   fail: msg="PLContainer gppkg package is already installed!"
   when:
-    - inventory_hostname in groups['master'] and ( plr_major_version >= 2 and plr_minor_version >= 2 )
-    - "'plcontainer' in plr_installed.stdout"
+    - inventory_hostname in groups['master'] and plcontainer_gpdb_version >= 7
+    - "'plcontainer' in plcontainer_installed.stdout"
 
+#
 - set_fact:
     gppkg_install_cmd: "gppkg -i"
-    plcontainer_package_name: plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}-{{ plcontainer_os_version }}_{{ plcontainer_arch_type }}.gppkg
-    plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
-  when: inventory_hostname in groups['master'] and ( plr_major_version <= 3 and plr_minor_version < 1 )
+    plcontainer_package_name: plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-gp{{ plcontainer_gpdb_version }}-{{ plcontainer_os_version }}_{{ plcontainer_arch_type }}.gppkg
+    plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-gp{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
+  when: inventory_hostname in groups['master'] and plcontainer_gpdb_version <= 6
 
 #
 - set_fact:
     gppkg_install_cmd: "gppkg -a install"
-    plcontainer_package_name: plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}-{{ plcontainer_os_version }}_{{ plcontainer_arch_type }}.gppkg
-    plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
-  when: inventory_hostname in groups['master'] and ( plr_major_version >= 3 and plr_minor_version >= 1 )
-
-#
-- name: Stop if plcontainer gppkg package is not installed
-  fail: msg="plcontainer gppkg package is already installed!"
-  when:
-    - inventory_hostname in groups['master']
-    - ( 'package plcontainer is not installed' not in plcontainer_installed.stdout ) or ( 'plcontainer' in plr_installed.stdout )
+    plcontainer_package_name: plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-gp{{ plcontainer_gpdb_version }}-{{ plcontainer_os_version }}_{{ plcontainer_arch_type }}.gppkg
+    plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-gp{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
+  when: inventory_hostname in groups['master'] and plcontainer_gpdb_version >= 7
 
 #
 - name: Copy plcontainer gppkg file
@@ -272,7 +265,7 @@
   register: plcontainer_gppkg_copied
   when:
     - inventory_hostname in groups['master']
-    - ( 'package plcontainer is not installed' not in plcontainer_installed.stdout ) or ( 'plcontainer' in plr_installed.stdout )
+    - ( 'package plcontainer is not installed' in plcontainer_installed.stdout ) or ( 'plcontainer' not in plcontainer_installed.stdout )
 
 #
 - name: Install plcontainer package
@@ -281,9 +274,10 @@
   args:
     executable: /bin/bash
   register: plcontainer_plcontainer_installed
+  ignore_errors: true
   when:
     - inventory_hostname in groups['master']
-    - ( 'package plcontainer is not installed' not in plcontainer_installed.stdout ) or ( 'plcontainer' in plr_installed.stdout )
+    - ( 'package plcontainer is not installed' in plcontainer_installed.stdout ) or ( 'plcontainer' not in plcontainer_installed.stdout )
 
 #
 - name: Verify if PLR gppkg package is installed
@@ -292,7 +286,7 @@
   ignore_errors: true
   register: plr_installed
   changed_when: False
-  when: inventory_hostname in groups['master'] and ( plr_major_version <= 3 and plr_minor_version < 1 )
+  when: inventory_hostname in groups['master'] and plr_gpdb_version <= 6
 
 #
 - name: Verify if PLR gppkg pakcage is installed
@@ -303,10 +297,10 @@
   ignore_errors: true
   register: plr_installed
   changed_when: False
-  when: inventory_hostname in groups['master'] and ( plr_major_version >= 3 and plr_minor_version >= 1 )
+  when: inventory_hostname in groups['master'] and plr_gpdb_version >= 7
 
 #
-- name: Stop if PLR gppkg package is not installed
+- name: Stop if PLR gppkg package is already installed
   fail: msg="PLR gppkg package is already installed!"
   when:
     - inventory_hostname in groups['master']
@@ -318,18 +312,19 @@
   register: plr_gppkg_copied
   when:
     - inventory_hostname in groups['master']
-    - ( 'package plr is not installed' in plr_installed.stdout ) or ( 'plr' in plr_installed.stdout )
+    - ( 'package plr is not installed' in plr_installed.stdout ) or ( 'plr' not in plr_installed.stdout )
 
 #
-- name: Install plr package
+- name: Install PLR package
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpadmin_home_dir }}/{{ plr_package_name }} )
   args:
     executable: /bin/bash
   register: plr_gppkg_installed
+  ignore_errors: true
   when:
     - inventory_hostname in groups['master']
-    - ( 'package plr is not installed' in plr_installed.stdout ) or ( 'plr' in plr_installed.stdout )
+    - ( 'package plr is not installed' in plr_installed.stdout ) or ( 'plr' not in plr_installed.stdout )
 
 #
 - name: Restart GPDB and apply parameters for plcontainer in greenplum_path.sh
@@ -416,19 +411,17 @@
 
 #
 - name: Copy plcontainer python docker image
-  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.1.4-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.1.4-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   register: python_docker_image_copied
   when:
     - inventory_hostname in groups['master']
-  # copy: src=plcontainer-python-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
 
 #
 - name: Copy plcontainer python3 docker gppkg file
-  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.1.4-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.1.4-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   register: python3_docker_image_copied
   when:
     - inventory_hostname in groups['master']
-  # copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
 
 #- name: Copy plcontainer R docker image
 #  copy: src=plcontainer-r-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin

@@ -62,11 +62,15 @@
 - name: Uninstall the PL/R language extension
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ plr_package_name }} )
-  ignore_errors: true
   register: plr_package_uninstalled
-  async: 180
-  poll: 5
+  ignore_errors: true
+  until: plr_package_uninstalled is succeeded
+  retries: 5
+  delay: 10
   when: inventory_hostname in groups['master']
+
+#  async: 300
+#  poll: 5
 
 #
 - name: Restart the Greenplum Database

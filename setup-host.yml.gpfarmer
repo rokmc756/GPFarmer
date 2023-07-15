@@ -29,10 +29,26 @@
 #    - { role: postgis }
 
 # - hosts: rh7-master,rh7-slave
+
 - hosts: all
   become: yes
   roles:
-    - { role: gpdb }
+    - { role: plcontainer }
+#    - { role: plr }
+#    - { role: DataSciencePython }
+#    - { role: pljava }
+#    - { role: gpdb }
+#    - { role: postgis }
+#    - { role: postgis }
+
+#    - { role: madlib }
+#    - { role: pxf }
+
+#- hosts: rh7-master,rh7-slave
+#  become: yes
+#  roles:
+#    - { role: gpcc }
+
 #    - { role: plcontainer }
 #    - { role: plr }
 #    - { role: DataSciencePython }

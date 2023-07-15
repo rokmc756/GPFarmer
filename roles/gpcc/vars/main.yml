@@ -4,18 +4,19 @@
 # greenplum-cc-web-4.7.0-LINUX-x86_64.zip
 # greenplum-cc-web-6.6.0-gp6-rhel7-x86_64.zip
 # greenplum-cc-web-4.14.0-gp5-rhel7-x86_64.zip
+# greenplum-cc-web-6.9.0-gp6-rhel7-x86_64.zip
 
 # Ubuntu
 # greenplum-cc-web-6.8.4-gp6-ubuntu18.04-x86_64.zip
 
 gpdb_major_version: 6
-gpdb_minor_version: 21.0
+gpdb_minor_version: 17.0
 gpdb_build_version:
 gpcc_major_version: 6
-gpcc_minor_version: 9.0
+gpcc_minor_version: 8.4
 
 gpdb_metric_major_version: 6
-gpdb_metric_minor_version: 21.0
+gpdb_metric_minor_version: 17.0
 gpdb_metric_build_version:
 
 # gpcc_metric_arch: 'amd64'
@@ -23,7 +24,6 @@ gpdb_metric_build_version:
 
 gpcc_metric_arch: 'x86_64'
 gpcc_os_name: 'rhel7'
-
 
 # gpcc_build_version:
 # gpcc_rhel_name: LINUX-

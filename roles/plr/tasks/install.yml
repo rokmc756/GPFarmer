@@ -79,14 +79,15 @@
     executable: /bin/bash
   register: plr_package_installed
   ignore_errors: true
-  async: 300
-  poll: 30
   until: plr_package_installed is succeeded
-  retries: 3
-  delay: 20
+  retries: 5
+  delay: 10
   when:
     - inventory_hostname in groups['master']
     - ( 'package plr is not installed' in plr_installed.stdout ) or ( 'plr' not in plr_installed.stdout )
+
+# async: 600
+# poll: 5
 
 #
 - name: Restart GPDB and apply parameters for plr in greenplum_path.sh

@@ -10,6 +10,7 @@
 # NETWORK_RANGE="192.168.56"
 
 # HOSTS_RANGE="81 85"
+# HOSTS_RANGE="61 67"
 HOSTS_RANGE="61 65"
 # HOSTS_RANGE="41 45"
 NETWORK_RANGE="192.168.0"
@@ -28,14 +29,15 @@ do
         /usr/local/greenplum-db /usr/local/greenplum-db-4.* /usr/local/greenplum-db-5.* /usr/local/greenplum-db-6.* /tmp/.s.PGSQL.* \
         /data/master/gpsne-1 /data/primary/gpsne{0..9} /data/mirror/gpsne{0..9} /data/master/gpsne-1 /data/primary/gpsne{0..9} /data/mirror/gpsne{0..9};
         killall postgres python;
-        systemctl stop cgconfig;
-        systemctl disable cgconfig;
-        rm -f /etc/cgconfig.conf;
         rm -f /etc/cgconfig.d/gpdb.conf;
         ls -al /home/gpadmin/greenplum* /root/.ssh /home/gpadmin/.ssh /data/ /data/master/* /data/primary/* /data/mirror/* \
         /usr/local/greenplum-db /usr/local/greenplum-db-4.* /usr/local/greenplum-db-5.* /usr/local/greenplum-db-6.* /tmp/.s.PGSQL.* \
         /tmp/.s.PGSQL.* /data/master/gpseg-1 /data/primary/gpseg{0..9} /data/mirror/gpseg{0..9};
-        echo "" > /etc/sysctl.conf;
         ps -ef | grep postgres;
         "
 done
+
+        # systemctl stop cgconfig;
+        # systemctl disable cgconfig;
+        # rm -f /etc/cgconfig.conf;
+        # echo "" > /etc/sysctl.conf;
