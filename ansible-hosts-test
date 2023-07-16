@@ -1,0 +1,9 @@
+[all:vars]
+ssh_key_filename="id_rsa"
+remote_machine_username="jomoon"
+remote_machine_password="changeme"
+
+[test]
+rk8-test1 ansible_ssh_host=192.168.0.221
+rk8-test2 ansible_ssh_host=192.168.0.222
+rk8-test3 ansible_ssh_host=192.168.0.223

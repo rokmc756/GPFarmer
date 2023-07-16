@@ -1,0 +1,58 @@
+---
+#
+- name: Rollback defatul group to /etc/sudoers file
+  become: true
+  become_user: root
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^%{{ wheel_group }}'
+    line: '%{{ wheel_group }}  ALL=(ALL)        ALL'
+  # become_method: sudo
+
+#
+- name: Remove config and jar files of Kafka UI
+  become: yes
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "/root/.bash_history"
+    - "/home/{{ sudo_user }}/.bash_history"
+    - "/root/.ssh"
+    - "/home/{{ sudo_user }}/.ssh"
+
+#
+- name: Remove the hostname entries in /etc/hosts file
+  vars:
+    remove_host: "jtest.pivotal.io"
+  become: yes
+  become_user: root
+  lineinfile:
+    dest: /etc/hosts
+    regexp: "{{ remove_host }}"
+    line: "{{ hostvars[item]['ansible_eth0']['ipv4']['address'] }} {{ item }}"
+    state: absent
+    backup: yes
+  register: hosts_deleted
+  when: hostvars[item]['ansible_eth0']['ipv4']['address'] is defined
+  with_items:
+    - "{{ groups['all'] }}"
+
+#
+- name: Delete "{{ sudo_user }}" user and group
+  become: true
+  become_user: root
+  user:
+    name: "{{ sudo_user }}"
+    group: "{{ sudo_group }}"
+    state: absent
+
+#
+- name: Uninstall SSHPass Package
+  become: yes
+  package:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - sshpass

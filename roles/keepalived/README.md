@@ -88,13 +88,3 @@ Collaborator Information
 ------------------------
 
 Pablo Estigarribia - pablodav (at) gmail dot com
-
-
-# https://github.com/imlxh/pgsql11-ha-with-keepalived/blob/master/keepalived.conf-master
-
-
-# SELinux -> Checi if the following is needed
-~~~
-semanage port -l | grep http_port_t
-semanage port -a -t http_port_t -p tcp 28080
-~~~

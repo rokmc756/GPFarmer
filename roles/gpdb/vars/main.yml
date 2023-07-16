@@ -9,9 +9,9 @@ gpdb_spread_mirrors: ""
 # greenplum-db-7.0.0-beta.4-el8-x86_64.rpm
 # greenplum-db-6.24.3-ubuntu18.04-amd64.deb
 # greenplum-db-5.29.8-rhel7-x86_64.rpm
-gpdb_major_version: 6
-gpdb_minor_version: 23
-gpdb_build_version: 1
+gpdb_major_version: 5
+gpdb_minor_version: 29
+gpdb_build_version: 8
 
 # gpdb_major_version: 6
 # gpdb_minor_version: 21
