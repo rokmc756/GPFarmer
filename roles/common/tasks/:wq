@@ -4,33 +4,42 @@
 #
 - debug: msg={{ ansible_distribution }}
 
+- set_fact:
+    objectName: "{{ common_devel_packakges ~ ',' ~ rhel8_common_devel_packages }}"
+
+- debug: msg="{{ objectName }}"
+
+- meta: end_play
+
 #
 - name: Check OS (common)
   fail: msg="{{ ansible_distribution }} is not supported for this ansible playbook!"
   when: ansible_distribution != "RedHat" and ansible_distribution != "CentOS" and ansible_distribution != "Rocky" and ansible_distribution != "Ubuntu" and ansible_distribution != "Debian"
 
 #
-- name: Check if systemd is used (1)
+- name: check if systemd is used (1)
   stat: path=/run/systemd/system
   register: systemd_exists
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
 
 #
-- name: Check if systemd is used (2)
+- name: check if systemd is used (2)
   fail: msg="systemd is not installed"
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and systemd_exists.stat.exists != True
 
 # Update package cache - required for any new software installation
-- name: Update Package Cache
+- name: Update package cache
   package: name=* state=latest update_cache=yes
   when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
+#  skip as temp
 
 # Update packages to latest version
-- name: Upgrade All Packages
+- name: upgrade all packages
   package: name=* state=latest update_cache=yes
   when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
+#  skip as temp
 
-#
+#  hostname: name={{ hostname }}
 - name: Hostname
   hostname: name={{ inventory_hostname }}
   notify:
@@ -71,21 +80,27 @@
   with_items:  [ 'INPUT', 'FORWARD', 'OUTPUT' ]
 
 #
-- set_fact:
-    rhel_install_packages: "{{ rhel_common_packages ~ ',' ~ rhel_common_devel_packages  ~ ',' ~ rhel7_common_devel_packages }}"
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int <= 7
-
-#
-- set_fact:
-    rhel_install_packages: "{{ rhel_common_packages ~ ',' ~ rhel_common_devel_packages  ~ ',' ~ rhel8_common_devel_packages }}"
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 8
-
-#
-- name: Install Dependent RPM packages for Greenplum in RedHat,CentOS and Rocky Linux
+- name: Install basic dependent packages for RedHat,CentOS and Rocky Linux
   package:
-    name: "{{ rhel_install_packages }}"
+    name: "{{ rhel_common_packages }}"
     state: present
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
+
+#
+- name: Install development packages for RedHat,CentOS and Rocky Linux
+  package:
+    name: "{{ rhel_common_devel_packages }}"
+    state: present
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
+
+
+#
+- name: Install development packages for RedHat,CentOS and Rocky Linux
+  package:
+    name: "{{ rhel_common_devel_packages }}"
+    state: present
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
+
 
 #
 - name: Install basic dependent packages for Ubuntu or Debian
@@ -110,19 +125,19 @@
 #  when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky"
 
 # source: https://github.com/rpm-software-management/yum-utils/blob/master/needs-restarting.py
-#- name: install Red Hat version of 'needs-restarting'
-#  copy:
-#    src: needs-restarting.py
-#    dest: /root/needs-restarting.py
-#    mode: 0700
-#  when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
+- name: install Red Hat version of 'needs-restarting'
+  copy:
+    src: needs-restarting.py
+    dest: /root/needs-restarting.py
+    mode: 0700
+  when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
 
 #
-#- name: Reboot required (Red Hat) - Step 1
-#  command: /root/needs-restarting.py -r
-#  register: reboot_required
-#  ignore_errors: True
-#  changed_when: False
+- name: Reboot required (Red Hat) - Step 1
+  command: /root/needs-restarting.py -r
+  register: reboot_required
+  ignore_errors: True
+  changed_when: False
 
 #
 - name: Reboot required (Red Hat) - Step 2

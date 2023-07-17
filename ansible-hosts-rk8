@@ -1,6 +1,6 @@
 [all:vars]
 ssh_key_filename="id_rsa"
-remote_machine_username="gpadmin"
+remote_machine_username="jomoon"
 remote_machine_password="changeme"
 
 [master]

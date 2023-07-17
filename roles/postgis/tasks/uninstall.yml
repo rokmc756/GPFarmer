@@ -1,14 +1,16 @@
 ---
 # Uninstall PostGIS Extention on Greenplum database
-
+#
 - name: Check if the GPDB software is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
 
+#
 - name: Stop if GPDB software is not installed
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_installed.stat.exists != True
 
+#
 - name: Verify that database is up and running
   become_user: gpadmin
   changed_when: False
@@ -17,6 +19,7 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
   when: inventory_hostname in groups['master']
 
+#
 - name: Verify that database for PostGIS extention is installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ postgis_database_name }}'" )
@@ -24,43 +27,40 @@
   when: inventory_hostname in groups['master']
 
 #
-- name: Verify if PostGIS gppkg is installed or not
-  become_user: gpadmin
-  command: 'rpm -q postgis --dbpath /usr/local/greenplum-db/share/packages/database'
-  ignore_errors: true
-  register: postgis_installed
-  changed_when: False
-  when: inventory_hostname in groups['master'] and postgis_major_version <= 2
+- set_fact:
+    postgis_package_name: "postgis-{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}"
+    gppkg_remove_cmd: "gppkg -r"
+    check_postgis_installed: "gppkg -q --all | grep postgis | cut -d - -f 1"
+  when:
+    - inventory_hostname in groups['master'] and postgis_gpdb_version|int <= 6
 
 #
-- name: Verify if PostGIS gppkg is installed or not
+- set_fact:
+    postgis_package_name: "postgis"
+    gppkg_remove_cmd: "gppkg -a remove"
+    check_postgis_installed: "gppkg query | grep postgis | awk '{print $1}'"
+  when:
+    - inventory_hostname in groups['master'] and postgis_gpdb_version|int >= 7
+
+#
+- name: Verify if PostGIS gppkg is installed
   become_user: gpadmin
-  shell: source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg query | grep postgis | awk '{print $1}'
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ check_postgis_installed }} )
   ignore_errors: true
   register: postgis_installed
   changed_when: False
-  when: inventory_hostname in groups['master'] and postgis_major_version >= 3
+  when: inventory_hostname in groups['master']
 
 #
 - name: Print the result if PostGIS is not installed
   debug:
-    msg: "{{ postgis_installed }}"
-    # msg: "{{ postgis_installed.stdout }}"
+    msg: "{{ postgis_installed.stdout }}"
   when: inventory_hostname in groups['master']
 
 #
 - name: Stop if PostGIS gppkg package is not installed
   fail: msg="PostGIS gppkg package is not installed!"
-  when:
-    - inventory_hostname in groups['master'] and postgis_major_version <= 2
-    - "'package postgis is not installed' in select_postgis_version.stdout"
-
-#
-- name: Stop if PostGIS gppkg package is not installed
-  fail: msg="PostGIS gppkg package is not installed!"
-  when:
-    - inventory_hostname in groups['master'] and postgis_major_version >= 3
-    - "'postgis' not in postgis_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and 'postgis' not in postgis_installed.stdout )
 
 #
 - name: Drop Extensions of PostGIS
@@ -84,22 +84,6 @@
   register: postgis_database_dropped
   when:
     - inventory_hostname in groups['master']
-
-#
-- set_fact:
-    postgis_package_name: "postgis-{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}"
-    gppkg_remove_cmd: "gppkg -r"
-  when:
-    - inventory_hostname in groups['master']
-    - postgis_major_version <= 2 and postgis_minor_version >= 5
-
-#
-- set_fact:
-    postgis_package_name: "postgis"
-    gppkg_remove_cmd: "gppkg -a remove"
-  when:
-    - inventory_hostname in groups['master']
-    - postgis_major_version >= 3 and postgis_minor_version >= 3
 
 #
 - name: Uninstall the GPDB PostGIS Pakcage
@@ -147,9 +131,8 @@
 #
 - name: Restart GPDB after removing PostGIS Extension
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 

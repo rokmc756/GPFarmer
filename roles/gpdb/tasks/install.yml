@@ -156,9 +156,23 @@
     regexp: "^{{ item.param }}"
     line: "{{ item.param }} = {{ item.value }}"
     state: "{{ item.state }}"
-  with_items: "{{ gpdb_kernel_parameters }}"
+  with_items: "{{ common_gpdb_kernel_parameters }}"
   notify:
     - Reload sysctl
+
+#
+- name: Modify /etc/sysctl.conf
+  lineinfile:
+    dest: /etc/sysctl.conf
+    regexp: "^{{ item.param }}"
+    line: "{{ item.param }} = {{ item.value }}"
+    state: "{{ item.state }}"
+  with_items: "{{ rhel7_gpdb_kernel_parameters }}"
+  notify:
+    - Reload sysctl
+  when:
+    - ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky'
+    - hostvars[inventory_hostname].ansible_distribution_major_version|int <= 7
 
 #
 - name: Modify /etc/ssh/sshd_config
@@ -225,12 +239,12 @@
   when: inventory_hostname in groups['master']
 
 #
-- name: Copy Greenplum Database {{ gpdb_major_version }} {{ gpdb_binary_type }} file
+- name: Copy Greenplum Database {{ gpdb_major_version }} zip file
   copy: src={{ binary_installer_file }}.zip dest=/home/gpadmin/{{ binary_installer_file }}.zip mode=0644 owner=gpadmin group=gpadmin
   when: gpdb_binary_type == 'zip'
 
 #
-- name: Copy Greenplum Database {{ gpdb_major_version }} {{ gpdb_binary_type }} file
+- name: Copy Greenplum Database {{ gpdb_major_version }} rpm file
   copy: src={{ binary_installer_file }}.{{ gpdb_binary_type }} dest=/home/gpadmin/{{ binary_installer_file }}.{{ gpdb_binary_type }} mode=0644 owner=gpadmin group=gpadmin
   when: gpdb_binary_type == 'rpm' or gpdb_binary_type == 'deb'
 
@@ -239,14 +253,12 @@
   file: path=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install state=absent
   changed_when: False
   when: gpdb_install == True or gpdb_upgrade == True
-  #  - inventory_hostname in groups['master']
 
 #
 - name: Create new temp installer directory
   file: path=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install state=directory owner=gpadmin group=gpadmin
   changed_when: False
   when: gpdb_install == True or gpdb_upgrade == True
-  #  - inventory_hostname in groups['master']
 
 - block:
   - name: Unzip Greenplum Database {{ gpdb_major_version }} archive (Ansible < 2.2)
@@ -258,7 +270,6 @@
     when: ansible_version.full is version_compare('2.2.0.0', operator='>=', strict=False)
 
   when: ( gpdb_install == True or gpdb_upgrade == True ) and (  gpdb_binary_type != 'rpm' and gpdb_binary_type != 'deb' )
-  # inventory_hostname in groups['master'] ann ( gpdb_major_version == 4 or gpdb_major_version == 5 )
 
 # This will only work on the first run
 # Note: You hereby accept the license! Please see installer for remaining questions.
@@ -283,8 +294,7 @@
 - name: Check if database is running
   stat: path=/tmp/.s.PGSQL.5432
   register: gpdb_running
-  when:
-    - inventory_hostname in groups['master'] and ( gpdb_upgrade == True or gpdb_linkchange == True )
+  when: inventory_hostname in groups['master'] and ( gpdb_upgrade == True or gpdb_linkchange == True )
 
 - name: Shutdown database
   become_user: gpadmin
@@ -312,7 +322,6 @@
   async: 360
   poll: 5
   when: ( gpdb_install == True or gpdb_upgrade == True ) and ( seg_serialized_install == False and  gpdb_binary_type == 'rpm' )
-  # - gpdb_initdb_single == False and seg_serialized_install == False
 
 #
 - name: Install Greenplum Database software in {{ gpdb_base_dir }} for Ubuntu / Debian
@@ -322,34 +331,27 @@
   async: 360
   poll: 5
   when: ( gpdb_install == True or gpdb_upgrade == True ) and ( seg_serialized_install == False and  gpdb_binary_type == 'deb' )
-  # - gpdb_initdb_single == False and seg_serialized_install == False
 
 #
 - name: Fix ownership for {{ gpdb_base_dir }}/greenplum-db
   become: yes
   file: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }} state=directory mode=0755 owner=gpadmin group=gpadmin recurse=yes
-  # when: gpdb_binary_type == 'rpm'
 
 #
 - name: Remove temp installer directory
   file: path=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install state=absent
   changed_when: False
   when: gpdb_install == True or gpdb_upgrade == True
-  # - gpdb_major_version == 5 or gpdb_major_version == 4
-  # - inventory_hostname in groups['master']
 
 #
 - name: Check again if the Greenplum Database version is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}
   register: gpdb_version_installed_verify
-  # when:
-  #  - inventory_hostname in groups['master']
 
 #
 - name: Stop if Greenplum Database software is not installed
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_version_installed_verify.stat.exists != True
-  # - inventory_hostname in groups['master']
 
 
 # Status: database software is installed
@@ -373,9 +375,9 @@
   delegate_to: 127.0.0.1
   when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_initdb_single == True )
 
-#  become_user: root
+#
 - name: Create hostfile file for multiple nodes
-  become_user: moonja    # It was pivotal previously
+  become_user: "{{ local_machine_user }}"        # It was pivotal previously
   shell: "rm -f {{ playbook_dir }}/hostfile; tail -n +$(($( grep -n segments {{ playbook_dir }}/ansible-hosts | cut -d ':' -f 1 ) + 1)) {{ playbook_dir }}/ansible-hosts | awk '{print $1}' >> {{ playbook_dir }}/hostfile"
   delegate_to: 127.0.0.1
   when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_initdb_single == False )

@@ -1,3 +1,13 @@
+- hosts: all
+  become: true
+  gather_facts: false
+  roles:
+    - { role: postgis }
+#    - { role: pxf }
+#    - { role: gpdb }          # Need to check if get_facts: true is required
+#    - { role: init-hosts }
+
+
 #- hosts: all
 #  become: yes
 #
@@ -30,12 +40,6 @@
 #    - { role: postgis }
 
 # - hosts: rh7-master,rh7-slave
-
-- hosts: all
-  become: yes
-  gather_facts: true
-  roles:
-    - { role: init-hosts }
 #    - { role: gpdb }
 #    - { role: plcontainer }
 #    - { role: plr }

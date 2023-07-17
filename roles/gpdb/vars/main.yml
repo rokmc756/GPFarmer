@@ -2,6 +2,7 @@
 google_cloud: false
 
 # number of Greenplum Database segments
+local_machine_user: "moonja"
 gpdb_number_segments: 4
 gpdb_mirror_enable: true
 gpdb_spread_mirrors: ""
@@ -9,21 +10,17 @@ gpdb_spread_mirrors: ""
 # greenplum-db-7.0.0-beta.4-el8-x86_64.rpm
 # greenplum-db-6.24.3-ubuntu18.04-amd64.deb
 # greenplum-db-5.29.8-rhel7-x86_64.rpm
-gpdb_major_version: 5
-gpdb_minor_version: 29
-gpdb_build_version: 8
-
-# gpdb_major_version: 6
-# gpdb_minor_version: 21
-# gpdb_build_version: 0
-gpdb_os_name: 'rhel7'
+gpdb_major_version: 6
+gpdb_minor_version: 24
+gpdb_build_version: 3
+gpdb_os_name: 'rhel8'
 gpdb_arch_name: 'x86_64'
 gpdb_binary_type: 'rpm'
 # gpdb_os_name: 'ubuntu18.04'
 # gpdb_arch_name: 'amd64'
 # gpdb_binary_type: 'deb'
 
-smdw_hostname: "rh7-slave"
+smdw_hostname: "rk8-slave"
 
 seg_serialized_install: False
 gpdb_initdb_single: False
@@ -31,7 +28,7 @@ gpdb_initdb_with_standby: True
 gpdb_network_range: "192.168.0.0"
 gpdb_admin_password: "changeme"
 
-gpdb_kernel_parameters:
+common_gpdb_kernel_parameters:
   - { "state": "present",  "param" : "kernel.shmmax",                             "value" : "500000000" }
   - { "state": "present",  "param" : "kernel.shmmni",                             "value" : "4096" }
   - { "state": "present",  "param" : "kernel.shmall",                             "value" : "4000000000" }
@@ -52,7 +49,6 @@ gpdb_kernel_parameters:
   - { "state": "present",  "param" : "net.ipv6.conf.all.disable_ipv6",            "value" : "0" }
   - { "state": "present",  "param" : "net.ipv4.conf.default.accept_source_route", "value" : "0" }
   - { "state": "present",  "param" : "net.ipv4.ip_local_port_range",              "value" : "10000    65535" }
-  - { "state": "present",  "param" : "net.ipv4.tcp_tw_recycle",                   "value" : "1" }
   - { "state": "present",  "param" : "net.ipv4.conf.all.arp_filter",              "value" : "1" }
   - { "state": "present",  "param" : "net.core.netdev_max_backlog",               "value" : "10000" }
   - { "state": "present",  "param" : "vm.swappiness",                             "value" : "10" }
@@ -64,3 +60,6 @@ gpdb_kernel_parameters:
   - { "state": "present",  "param" : "vm.dirty_background_bytes",                 "value" : "1610612736" }
   - { "state": "present",  "param" : "vm.dirty_bytes",                            "value" : "4294967296" }
   - { "state": "present",  "param" : "vm.overcommit_ratio",                       "value" : "95" }
+
+rhel7_gpdb_kernel_parameters:
+  - { "state": "present",  "param" : "net.ipv4.tcp_tw_recycle",                   "value" : "1" }
