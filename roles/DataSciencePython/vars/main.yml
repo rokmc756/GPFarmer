@@ -1,13 +1,14 @@
 ---
 # DataSciencePython2.7-2.0.6-gp6-ubuntu18.04_x86_64.gppkg
 # DataSciencePython3.9-1.1.0-gp7-el8_x86_64.gppkg
+# DataSciencePython2.7-2.0.6-gp6-rhel8_x86_64.gppkg
 dspython_prefix_major_version:
-dspython_major_version: 3
-dspython_minor_version: 9
-dspython_patch_version: 1.1.0
-dspython_gpdb_version: gp7
-dspython_os_version: el8
-# dspython_os_version: rhel8
+dspython_major_version: 2
+dspython_minor_version: 7
+dspython_patch_version: 2.0.6
+dspython_gpdb_version: 6
+dspython_os_version: rhel8
+# dspython_os_version: el8
 
 # dspython_os_version: ubuntu18.04
 # dspython_arch_type: amd64

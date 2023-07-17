@@ -17,6 +17,8 @@
   package: name={{ item }} state=present
   with_items:
     - tk
+    - tcl
+    - sqlite
 
 #
 - name: Verify that database is up and running
@@ -29,26 +31,43 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
+##
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    check_dspython_installed: "gppkg -q --all | grep DataSciencePython | cut -d . -f 1 | sed 's/[0-9]$//g'"
+    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}-{{ dspython_patch_version }}-gp{{ dspython_gpdb_version }}-{{ dspython_os_version }}_{{ dspython_arch_type }}.gppkg
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and dspython_gpdb_version|int <= 6
+
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    check_dspython_installed: "gppkg query | grep DataSciencePython | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
+    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}-{{ dspython_patch_version }}-gp{{ dspython_gpdb_version }}-{{ dspython_os_version }}_{{ dspython_arch_type }}.gppkg
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and dspython_gpdb_version|int >= 7
+
 #
-- name: Verify if DataSciencePython gppkg is installed
-  become_user: gpadmin
-  command: 'rpm -q DataSciencePython --dbpath /usr/local/greenplum-db/share/packages/database'
-  ignore_errors: true
-  register: dspython_installed
-  changed_when: False
-  when: 
-    - inventory_hostname in groups['master'] and dspython_major_version <= 2
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    check_dspython_installed: "gppkg -q --all | grep DataSciencePython | cut -d . -f 1 | sed 's/[0-9]$//g'"
+    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}.{{ dspython_patch_version }}-gp{{ dspython_gpdb_version }}-{{ dspython_os_version }}_{{ dspython_arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and dspython_gpdb_version <= 6
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    check_dspython_installed: "gppkg query | grep DataSciencePython | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
+    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}-{{ dspython_patch_version }}-gp{{ dspython_gpdb_version }}-{{ dspython_os_version }}_{{ dspython_arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and dspython_gpdb_version >= 7
 
 #
 - name: Verify if DataSciencePython gppkg is installed
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg query | gppkg query | grep DataSciencePython | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g' )
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ check_dspython_installed }} )
   args:
     executable: /bin/bash
   ignore_errors: true
   register: dspython_installed
   changed_when: False
-  when: inventory_hostname in groups['master'] and dspython_major_version >= 3
+  when: inventory_hostname in groups['master']
 
 #
 - debug: msg={{ dspython_installed.stdout }}
@@ -57,60 +76,13 @@
 #
 - name: Stop if DataSciencePython gppkg package is installed
   fail: msg="DataSciencePython gppkg package is already installed!"
-  when:
-    - inventory_hostname in groups['master'] and dspython_major_version <= 2
-    - "'package DataSciencePython is not installed' not in dspython_installed.stdout"
-
-#
-- name: Stop if DataSciencePython gppkg package is installed
-  fail: msg="DataSciencePython gppkg package is already installed!"
-  when:
-    - inventory_hostname in groups['master'] and dspython_major_version >= 3
-    - "'DataSciencePython' in dspython_installed.stdout"
-
-#
-- set_fact:
-    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}.{{ dspython_patch_version }}-{{ dspython_gpdb_version }}-{{ dspython_os_version }}_{{ dspython_arch_type }}.gppkg
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and dspython_major_version <= 2
-
-- set_fact:
-    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}-{{ dspython_patch_version }}-{{ dspython_gpdb_version }}-{{ dspython_os_version }}_{{ dspython_arch_type }}.gppkg
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and dspython_major_version >= 3
-
-#
-- set_fact:
-    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}.{{ dspython_patch_version }}-{{ dspython_gpdb_version }}-{{ dspython_os_version }}_{{ dspython_arch_type }}.gppkg
-  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and dspython_major_version <= 2
-
-#
-- set_fact:
-    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}-{{ dspython_patch_version }}-{{ dspython_gpdb_version }}-{{ dspython_os_version }}_{{ dspython_arch_type }}.gppkg
-  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and dspython_major_version >= 3
+  when: ( inventory_hostname in groups['master'] and 'DataSciencePython' in dspython_installed.stdout )
 
 #
 - name: Copy DataSciencePython gppkg file
   copy: src={{ dspython_package_name }} dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-  when:
-    - inventory_hostname in groups['master']
-    - ( 'package DataSciencePython is not installed' in dspython_installed.stdout ) or ( 'DataSciencePython' not in dspython_installed.stdout )
-#    - inventory_hostname in groups['master']
-#    - "'package DataSciencePython is not installed' in dspython_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and 'DataSciencePython' not in dspython_installed.stdout )
 
-#
-- set_fact:
-    gppkg_install_cmd: "gppkg -i"
-  when:
-    - inventory_hostname in groups['master']
-    - dspython_major_version <= 2
-
-#
-- set_fact:
-    gppkg_install_cmd: "gppkg -a install"
-  when:
-    - inventory_hostname in groups['master']
-    - dspython_major_version >= 3
-
-#
 - debug: msg={{ dspython_package_name }}
 
 #
@@ -123,22 +95,8 @@
   ignore_errors: true
   async: 3600
   poll: 10
-  when:
-    - inventory_hostname in groups['master']
-    - ( 'package DataSciencePython is not installed' not in dspython_installed.stdout ) or ( 'DataSciencePython' in dspython_installed.stdout )
+  when: ( inventory_hostname in groups['master'] and 'DataSciencePython' not in dspython_installed.stdout )
 
-#  until: dspython_package_installed is succeeded
-#  retries: 5
-#  delay: 10
-# async: 3600
-# poll: 5
-
-#  async: 1800
-#  poll: 10
-#  until: dspython_package_installed is succeeded
-#  retries: 3
-#  delay: 1800
-#
 #
 - name: Restart GPDB and apply parameters for dspython in greenplum_path.sh
   become_user: gpadmin
@@ -147,8 +105,7 @@
     executable: /bin/bash
   async: 150
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #
 - name: Verify that database for DataSciencePython is installed
@@ -174,4 +131,3 @@
 #  become_user: gpadmin
 #  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && ls -al $GPHOME/ext/DataSciencePython/lib/python2.7/site-packages/ )
 #  register: dspython_modules_listed
-

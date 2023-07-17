@@ -1,12 +1,11 @@
 - hosts: all
   become: true
-  gather_facts: false
   roles:
-    - { role: postgis }
+    - { role: DataSciencePython }
+#    - { role: postgis }
 #    - { role: pxf }
 #    - { role: gpdb }          # Need to check if get_facts: true is required
 #    - { role: init-hosts }
-
 
 #- hosts: all
 #  become: yes

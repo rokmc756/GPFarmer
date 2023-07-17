@@ -30,14 +30,23 @@
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -r"
-    dspython_package_name: DataSciencePython-{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}.{{ dspython_patch_version }}
-  when: inventory_hostname in groups['master'] and dspython_major_version <= 2
+    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}.{{ dspython_patch_version }}
+  when: inventory_hostname in groups['master'] and dspython_gpdb_version|int <= 6 and dspython_os_version == "rhel7"
+  # when: inventory_hostname in groups['master'] and dspython_gpdb_version|int <= 6 and "{{ dspython_os_version.split('.')[-1]|int }}" == 7
+
+#
+- set_fact:
+    gppkg_remove_cmd: "gppkg -r"
+    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}-{{ dspython_patch_version }}
+  when: inventory_hostname in groups['master'] and dspython_gpdb_version|int <= 6 and dspython_os_version == "rhel8"
+  # when: inventory_hostname in groups['master'] and dspython_gpdb_version|int <= 6 and "{{ dspython_os_version.split('.')[-1]|int }}" == 8
 
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -a remove"
     dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}
-  when: inventory_hostname in groups['master'] and  dspython_major_version >= 3
+  when: inventory_hostname in groups['master'] and dspython_gpdb_version|int >= 7 and dspython_os_version == "rhel8"
+    # when: inventory_hostname in groups['master'] and dspython_gpdb_version|int >= 7 and "{{ dspython_os_version.split('.')[-1]|int }}" == 8
 
 #
 - name: Uninstall the DataSciencePython Package
@@ -47,12 +56,6 @@
   async: 3600
   poll: 10
   when:  inventory_hostname in groups['master']
-
-#  until: dspython_package_uninstalled is succeeded
-#  retries: 5
-#  delay: 10
-#  async: 3600
-#  poll: 5
 
 #
 - name: Restart the Greenplum Database
