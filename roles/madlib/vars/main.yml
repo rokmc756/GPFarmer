@@ -1,19 +1,22 @@
 ---
+madlib_prefix_major_version:
 madlib_major_version: 1
-madlib_minor_version: 18
+madlib_minor_version: 21
 madlib_patch_version: 0
-madlib_build_version: 2
-madlib_gpdb_version: gp6
+madlib_build_version: 1
+madlib_gpdb_version: 6
 
 # madlib_os_version: ubuntu18
-madlib_os_version: rhel7
+madlib_os_version: rhel8
 
 # madlib_arch_type: amd64
 madlib_arch_type: x86_64
 
 madlib_database_name: madlib_testdb
-madlib_mdw_hostname: rh7-master
+madlib_mdw_hostname: rk8-master
 
+# madlib-1.21.0+1-gp6-rhel8-x86_64.tar.gz
+# madlib-1.20.0+1-gp6-rhel8-x86_64.tar.gz
 # madlib-1.18.0+2-gp6-rhel7-x86_64.tar.gz
 # madlib-2.0.0-gp7-rhel8-x86_64.tar.gz
 # madlib-1.21.0+1-gp6-ubuntu18-x86_64.tar.gz

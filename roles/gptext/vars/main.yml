@@ -10,4 +10,3 @@ gptext_java_version: 1.8.0
 gptext_rhel_name: rhel8
 gptext_database_name: gptext_testdb
 gptext_all_hosts: "rk8-master rk8-slave rk8-node01 rk8-node02 rk8-node03"
-# gptext_all_hosts: "mdw6 smdw6 sdw6-01 sdw6-02 sdw6-03"

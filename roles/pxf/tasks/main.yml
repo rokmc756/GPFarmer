@@ -8,44 +8,47 @@
 
 #
 - name: Install PXF
-  include: install.yml
+  import_tasks: install.yml
   tags: install
   when: install_pxf == true
 
+#
 - name: Setup NFS Access
-  include: setup-nfs-access.yml
+  import_tasks: setup-nfs-access.yml
   tags: install
   when: with_nfs_access == true
 
+#
 - name: Setup HDFS Access
-  include: setup-hadoop-access.yml
+  import_tasks: setup-hadoop-access.yml
   tags: install
   when: with_hadoop_access == true
 
-#- name: Test HDFS Access
-#  include: test-pxf-hadoop-data.yml
-#  tags: install
-#  when: with_hadoop_access == true
-
+#
 - name: Setup Oracle Access
-  include: setup-oracle-access.yml
+  import_tasks: setup-oracle-access.yml
   tags: install
   when: with_oracle_access == true
 
+#
 - name: Setup MS-SQL Access
-  include: setup-mssql-access.yml
+  import_tasks: setup-mssql-access.yml
   tags: install
   when: with_mssql_access == true
 
+#
 - name: Setup Minio Access
-  include: setup-minio-access.yml
+  import_tasks: setup-minio-access.yml
   tags: install
   when: with_minio_access == true
 
+#
 - name: Uninstall PXF
-  include: uninstall.yml
+  import_tasks: uninstall.yml
   tags: uninstall
 
+#
 - name: Upgrade PXF
-  include: upgrade.yml
+  import_tasks: upgrade.yml
   tags: upgrade.yml
+

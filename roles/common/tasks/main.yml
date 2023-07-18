@@ -11,10 +11,10 @@
 
 #
 - name: Install common role for Red Hat / CentOS / Rocky / Ubuntu / Debian
-  include: install.yml
+  import_tasks: install.yml
   tags: install
 
 #
 - name: Uninstall common role for Red Hat / CentOS / Rocky / Ubuntu / Debian
-  include: uninstall.yml
+  import_tasks: uninstall.yml
   tags: uninstall

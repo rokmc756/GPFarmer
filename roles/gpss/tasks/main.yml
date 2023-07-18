@@ -7,14 +7,17 @@
   fail: msg="Not a Red Hat based system!"
   when: ansible_os_family != 'RedHat'
 
+#
 - name: Setup Kafka
-  include: setup-kafka.yml
+  import_tasks: setup-kafka.yml
   tags: install
 
+#
 - name: Setup GPSS
-  include: setup-gpss.yml
+  import_tasks: setup-gpss.yml
   tags: install
 
+#
 - name: Uninstall
-  include: uninstall.yml
+  import_tasks: uninstall.yml
   tags: uninstall

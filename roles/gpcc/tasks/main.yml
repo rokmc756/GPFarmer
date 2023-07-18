@@ -6,10 +6,13 @@
   fail: msg="{{ ansible_distribution }} is not supported for this ansible playbook!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
+#
 - name: Installation for Red Hat / CentOS / Rocky / Ubuntu / Debian
-  include: install.yml
+  import_tasks: install.yml
   tags: install
 
+#
 - name: Installation for Red Hat / CentOS / Rocky / Ubuntu / Debian
-  include: uninstall.yml
+  import_tasks: uninstall.yml
   tags: uninstall
+

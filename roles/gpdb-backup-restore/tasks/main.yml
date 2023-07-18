@@ -6,10 +6,13 @@
   fail: msg="Not a Red Hat based system!"
   when: ansible_os_family != 'RedHat' or  ansible_os_family != 'CentOS' or ansible_os_family != 'Rocky'
 
+#
 - name: Install GPDB backup and restore utility
-  include: install.yml
+  import_tasks: install.yml
   tags: install
 
+#
 - name: Uninstall GPDB backup and restore utility
-  include: uninstall.yml
+  import_tasks: uninstall.yml
   tags: uninstall
+

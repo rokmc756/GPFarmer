@@ -7,7 +7,7 @@ dspython_major_version: 2
 dspython_minor_version: 7
 dspython_patch_version: 2.0.6
 dspython_gpdb_version: 6
-dspython_os_version: rhel8
+dspython_os_version: "rhel8"
 # dspython_os_version: el8
 
 # dspython_os_version: ubuntu18.04

@@ -1,15 +1,17 @@
 ---
-
 # Install DataScienceR extention on Greenplum database
 
+#
 - name: Check if the GPDB software is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
 
+#
 - name: Stop if GPDB software is not installed
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_installed.stat.exists != True
 
+#
 - name: Verify that database is up and running
   become_user: gpadmin
   changed_when: False
@@ -20,44 +22,68 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    check_dsr_installed: "gppkg -q --all | grep DataScienceR | cut -d . -f 1 | sed 's/[0-9]$//g'"
+    dsr_package_name: DataScienceR-{{ dsr_major_version }}.{{ dsr_minor_version }}.{{ dsr_patch_version }}-gp{{ dsr_gpdb_version }}-{{ dsr_os_version }}_{{ dsr_arch_type }}.gppkg
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ( dsr_gpdb_version|int <= 6 and dsr_os_version|regex_replace('[^0-9]','')|int <= 8 )
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    check_dsr_installed: "gppkg query | grep DataScienceR | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
+    dsr_package_name: DataScienceR-{{ dsr_major_version }}.{{ dsr_minor_version }}-{{ dsr_patch_version }}-gp{{ dsr_gpdb_version }}-{{ dsr_os_version }}_{{ dsr_arch_type }}.gppkg
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ( dsr_gpdb_version|int >= 7 and dsr_os_version|regex_replace('[^0-9]','')|int >= 8 )
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    check_dsr_installed: "gppkg -q --all | grep DataScienceR | cut -d . -f 1 | sed 's/[0-9]$//g'"
+    dsr_package_name: DataScienceR-{{ dsr_major_version }}.{{ dsr_minor_version }}.{{ dsr_patch_version }}-gp{{ dsr_gpdb_version }}-{{ dsr_os_version }}_{{ dsr_arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and dsr_gpdb_version <= 6
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    check_dsr_installed: "gppkg query | grep DataScienceR | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
+    dsr_package_name: DataScienceR-{{ dsr_major_version }}.{{ dsr_minor_version }}-{{ dsr_patch_version }}-gp{{ dsr_gpdb_version }}-{{ dsr_os_version }}_{{ dsr_arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and dsr_gpdb_version >= 7
+
+#
 - name: Verify if DataScienceR gppkg is installed
   become_user: gpadmin
-  command: 'rpm -q DataScienceR --dbpath /usr/local/greenplum-db/share/packages/database'
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ check_dsr_installed }} )
+  args:
+    executable: /bin/bash
   ignore_errors: true
   register: dsr_installed
   changed_when: False
   when: inventory_hostname in groups['master']
 
-- name: Stop if DataScienceR gppkg package is not installed
-  fail: msg="DataScienceR gppkg package is not installed!"
-  when: inventory_hostname in groups['master'] and ( 'package DataScienceR is not installed' not in dsr_installed.stdout )
+#
+- debug: msg={{ dsr_installed.stdout }}
+  when: inventory_hostname in groups['master']
 
 #
-- set_fact:
-    dsr_package_name: DataScienceR-{{ dsr_prefix_major_version }}{{ dsr_major_version }}.{{ dsr_minor_version }}.{{ dsr_patch_version }}-{{ dsr_gpdb_version }}-{{ dsr_os_version }}_{{ dsr_arch_type }}.gppkg
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
-
-#
-- set_fact:
-    dsr_package_name: DataScienceR-{{ dsr_prefix_major_version }}{{ dsr_major_version }}.{{ dsr_minor_version }}.{{ dsr_patch_version }}-{{ dsr_gpdb_version }}-{{ dsr_os_version }}_{{ dsr_arch_type }}.gppkg
-  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+- name: Stop if DataScienceR gppkg package is installed
+  fail: msg="DataScienceR gppkg package is already installed!"
+  when: ( inventory_hostname in groups['master'] and 'DataScienceR' in dsr_installed.stdout )
 
 #
 - name: Copy DataScienceR gppkg file
   copy: src={{ dsr_package_name }} dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-  when:
-    - inventory_hostname in groups['master']
-    - "'package DataScienceR is not installed' in dsr_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and 'DataScienceR' not in dsr_installed.stdout )
 
+#
 - name: Install DataScienceR package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/{{ dsr_package_name }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpadmin_home_dir }}/{{ dsr_package_name }} )
   args:
     executable: /bin/bash
-  when:
-    - inventory_hostname in groups['master']
-    - "'package DataScienceR is not installed' in dsr_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and 'DataScienceR' not in dsr_installed.stdout )
 
+#
 - name: Restart GPDB and apply parameters for DataScienceR in greenplum_path.sh
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
@@ -65,9 +91,9 @@
     executable: /bin/bash
   async: 60
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
+#
 - name: Verify that database for DataScienceR is installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ dsr_database_name }}'" )
@@ -76,12 +102,12 @@
   register: dsr_database_installed
   when: inventory_hostname in groups['master']
 
+#
 - name: Create database for DataScienceR
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ dsr_database_name }} )
   args:
     executable: /bin/bash
   register: dsr_database_created
-  when:
-    - inventory_hostname in groups['master']
-    - "'100' not in dsr_database_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and '100' not in dsr_database_installed.stdout )
+

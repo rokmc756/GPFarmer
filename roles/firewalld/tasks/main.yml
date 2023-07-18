@@ -7,10 +7,13 @@
   fail: msg="Not a Red Hat based system!"
   when: ansible_os_family != 'RedHat'
 
+#
 - name: Configure firewalld ruleset for gpdb in RHEL or CentOS
-  include: install.yml
+  import_tasks: install.yml
   tags: install
 
+#
 - name: Remove firewalld ruleset for gpdb in RHEL or CentOS
-  include: uninstall.yml
+  import_tasks: uninstall.yml
   tags: uninstall
+

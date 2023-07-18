@@ -18,30 +18,55 @@
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
   register: select_version
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
-  when: inventory_hostname in groups['master']
+  when: ( inventory_hostname in groups['master'] and gpdb_installed.stat.exists == True )
 
 #
 - name: Verify that database for MADlib extention is installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ madlib_database_name }}'" )
   register: madlib_database_installed
-  when: inventory_hostname in groups['master']
+  when: ( inventory_hostname in groups['master'] and '(Greenplum Database ' in select_version.stdout )
 
 #
-- name: Verify if MADlib gppkg is installed
+- set_fact:
+    gppkg_remove_cmd: "gppkg -r"
+    check_madlib_installed: "gppkg -q --all | grep madlib | cut -d - -f 1"
+    madlib_package_name: madlib-{{ madlib_prefix_major_version }}{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}
+  when: inventory_hostname in groups['master'] and madlib_gpdb_version|int <= 6 and ( madlib_os_version | regex_replace('[^0-9]','')|int <= 8 )
+
+#
+- set_fact:
+    gppkg_remove_cmd: "gppkg -r"
+    check_madlib_installed: "gppkg -q --all | grep madlib | cut -d - -f 1"
+    madlib_package_name: madlib-{{ madlib_prefix_major_version }}{{ madlib_major_version }}.{{ madlib_minor_version }}-{{ madlib_patch_version }}
+  when: inventory_hostname in groups['master'] and madlib_gpdb_version|int >= 7 and ( madlib_os_version | regex_replace('[^0-9]','')|int >= 8 )
+
+#
+- set_fact:
+    gppkg_remove_cmd: "gppkg -a remove"
+    check_madlib_installed: "gppkg query | grep madlib | awk '{print $1}'"
+    madlib_package_name: madlib{{ madlib_prefix_major_version }}{{ madlib_major_version }}.{{ madlib_minor_version }}
+  when: inventory_hostname in groups['master'] and madlib_gpdb_version|int >= 7 and ( madlib_os_version | regex_replace('[^0-9]','')|int >= 8 )
+
+#
+- name: Verify if MADLib gppkg is installed
   become_user: gpadmin
-  command: 'rpm -q madlib --dbpath /usr/local/greenplum-db/share/packages/database'
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ check_madlib_installed }} )
   ignore_errors: true
-  register: select_madlib_version
+  register: madlib_installed
   changed_when: False
   when: inventory_hostname in groups['master']
 
 #
-- name: Stop if MADlib gppkg package is not installed
-  fail: msg="MADlib gppkg package is not installed!"
-  when:
-    - inventory_hostname in groups['master']
-    - "'package madlib is not installed' in select_madlib_version.stdout"
+- name: Print the result if MADLib is not installed
+  debug:
+    msg: "{{ madlib_installed.stdout }}"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Stop if MADLib gppkg package is not existed
+  fail: msg="PostGIS gppkg package is not installed!"
+  when: ( inventory_hostname in groups['master'] and 'madlib' not in madlib_installed.stdout )
 
 #
 - name: Remove MADlib objects from the database
@@ -51,46 +76,42 @@
     y
     EOF
   register: madlib_extension_uninstalled
-  changed_when: select_madlib_version == True
-  when:
-    - inventory_hostname in groups['master']
-    - "'package madlib is not installed' not in select_madlib_version.stdout"
+  ignore_errors: yes
+  when: ( inventory_hostname in groups['master'] and 'madlib' in madlib_installed.stdout )
 
+#
 - name: Drop database for MADlib
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ madlib_database_name }} )
   register: madlib_database_dropped
-  when:
-    - inventory_hostname in groups['master']
+  when: ( inventory_hostname in groups['master'] and '100' in madlib_database_installed.stdout )
 
+#
 - name: Uninstall the GPDB MADlib Pakcage
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -r madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}{{ madlib_patch_version }}{{ madlib_gpdb_version }}-{{ madlib_rhel_version }}-x86_64 )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ madlib_package_name }} )
   register: madlib_package_uninstalled
   changed_when: madlib_database_installed == True
-  when:
-    - inventory_hostname in groups['master']
+  when: ( inventory_hostname in groups['master'] and 'madlib' in madlib_installed.stdout )
 
+#
 - name: Check if the directory of MADlib package is still remained
   stat: path={{ gpdb_base_dir }}/greenplum-db/madlib
   register: madlib_dir_remained
-  when:
-    - inventory_hostname in groups['master']
 
-- name: Remove madlib directory still remained
+#
+- name: Remove MADLib directory still remained
   file:
     owner: gpadmin
     group: gpadmin
     path: "{{ gpdb_base_dir }}/greenplum-db/madlib"
     state: absent
-  when:
-    - inventory_hostname in groups['master']
-    - madlib_dir_remained.stat.exists == True
+  when: madlib_dir_remained.stat.exists == True
 
+#
 - name: Restart GPDB after removing MADlib extension
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
+  when: ( inventory_hostname in groups['master'] )

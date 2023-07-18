@@ -23,40 +23,34 @@
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && droplang plr -d {{ plr_database_name }}; )
   register: plr_support_removed
-  when:
-    - inventory_hostname in groups['master']
-    - plr_gpdb_version == "GPDB4.3"
-    - "'100' in plr_database_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and plr_gpdb_version == "4.3" and '100' in plr_database_installed.stdout )
 
 #
 - name: Remove PL/R Support far a Database of GPDB 6.x
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c 'DROP EXTENSION plcontainer CASCADE;' )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c 'DROP EXTENSION plr CASCADE;' )
   register: plr_support_removed
-  when:
-    - inventory_hostname in groups['master']
-    - plr_gpdb_version == "gpdb6"
-    - "'100' in plr_database_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and plr_gpdb_version|int == 6 and '100' in plr_database_installed.stdout )
+  # shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c 'DROP EXTENSION plcontainer CASCADE;' )
 
 #
 - name: Drop database for plr
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plr_database_name }} )
   register: plr_database_deleted
-  when:
-    - inventory_hostname in groups['master']
-    - "'100' in plr_database_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and '100' in plr_database_installed.stdout )
 
+#
 - set_fact:
     gppkg_remove_cmd: "gppkg -r"
     plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}
-  when: inventory_hostname in groups['master'] and ( plr_major_version <= 3 and plr_minor_version < 1 )
+  when: ( inventory_hostname in groups['master'] and plr_gpdb_version|int <= 6 ) and ( plr_os_version|regex_replace('[^0-9]','')|int <= 8 )
 
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -a remove"
     plr_package_name: plr
-  when: inventory_hostname in groups['master'] and ( plr_major_version >= 3 and plr_minor_version >= 1 )
+  when: ( inventory_hostname in groups['master'] and plr_gpdb_version|int >= 7 ) and ( plr_os_version|regex_replace('[^0-9]','')|int >= 8 )
 
 #
 - name: Uninstall the PL/R language extension

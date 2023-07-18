@@ -1,11 +1,16 @@
 - hosts: all
   become: true
   roles:
-    - { role: DataSciencePython }
+    - { role: gptext }
+#    - { role: madlib }
+#    - { role: DataSciencePython }
+#    - { role: DataScienceR }
+#    - { role: plr }
 #    - { role: postgis }
 #    - { role: pxf }
-#    - { role: gpdb }          # Need to check if get_facts: true is required
+#    - { role: gpdb }               # Need to check if get_facts: true is required
 #    - { role: init-hosts }
+
 
 #- hosts: all
 #  become: yes

@@ -23,30 +23,48 @@
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ dspython_database_name }} )
   register: dspython_database_deleted
-  when:
-    - inventory_hostname in groups['master']
-    - "'100' in dspython_database_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and '100' in dspython_database_installed.stdout )
 
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -r"
+    check_dspython_installed: "gppkg -q --all | grep DataSciencePython | cut -d - -f 1"
     dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}.{{ dspython_patch_version }}
-  when: inventory_hostname in groups['master'] and dspython_gpdb_version|int <= 6 and dspython_os_version == "rhel7"
-  # when: inventory_hostname in groups['master'] and dspython_gpdb_version|int <= 6 and "{{ dspython_os_version.split('.')[-1]|int }}" == 7
+  when: inventory_hostname in groups['master'] and dspython_gpdb_version|int <= 6 and ( dspython_os_version | regex_replace('[^0-9]','')|int <= 7 )
 
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -r"
+    check_dspython_installed: "gppkg -q --all | grep DataSciencePython | cut -d - -f 1"
     dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}-{{ dspython_patch_version }}
-  when: inventory_hostname in groups['master'] and dspython_gpdb_version|int <= 6 and dspython_os_version == "rhel8"
-  # when: inventory_hostname in groups['master'] and dspython_gpdb_version|int <= 6 and "{{ dspython_os_version.split('.')[-1]|int }}" == 8
+  when: inventory_hostname in groups['master'] and dspython_gpdb_version|int <= 6 and ( dspython_os_version | regex_replace('[^0-9]','')|int >= 8 )
 
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -a remove"
+    check_dspython_installed: "gppkg query | grep DataSciencePython | awk '{print $1}'"
     dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}
-  when: inventory_hostname in groups['master'] and dspython_gpdb_version|int >= 7 and dspython_os_version == "rhel8"
-    # when: inventory_hostname in groups['master'] and dspython_gpdb_version|int >= 7 and "{{ dspython_os_version.split('.')[-1]|int }}" == 8
+  when: inventory_hostname in groups['master'] and dspython_gpdb_version|int >= 7 and ( dspython_os_version | regex_replace('[^0-9]','')|int >= 8 )
+
+#
+- name: Verify if DataSciencePython gppkg is installed
+  become_user: gpadmin
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ check_dspython_installed }} )
+  ignore_errors: true
+  register: dspython_installed
+  changed_when: False
+  when: inventory_hostname in groups['master']
+
+#
+- name: Print the result if DataSciencePython is not installed
+  debug:
+    msg: "{{ dspython_installed.stdout }}"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Stop if DataSciencePython gppkg package is not installed
+  fail: msg="PostGIS gppkg package is not installed!"
+  when: ( inventory_hostname in groups['master'] and 'DataSciencePython' not in dspython_installed.stdout )
 
 #
 - name: Uninstall the DataSciencePython Package
@@ -64,3 +82,4 @@
   async: 150
   poll: 5
   when: inventory_hostname in groups['master']
+
