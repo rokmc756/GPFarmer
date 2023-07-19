@@ -5,34 +5,35 @@
 # greenplum-cc-web-6.6.0-gp6-rhel7-x86_64.zip
 # greenplum-cc-web-4.14.0-gp5-rhel7-x86_64.zip
 # greenplum-cc-web-6.9.0-gp6-rhel7-x86_64.zip
+# greenplum-cc-web-6.9.0-gp6-rhel8-x86_64.zip
 
 # Ubuntu
 # greenplum-cc-web-6.8.4-gp6-ubuntu18.04-x86_64.zip
 
 gpdb_major_version: 6
-gpdb_minor_version: 17.0
+gpdb_minor_version: 23.0
 gpdb_build_version:
 gpcc_major_version: 6
 gpcc_minor_version: 8.4
 
 gpdb_metric_major_version: 6
-gpdb_metric_minor_version: 17.0
+gpdb_metric_minor_version: 23.0
 gpdb_metric_build_version:
-
+gpcc_metric_arch: 'x86_64'
+gpcc_os_name: 'rhel8'
 # gpcc_metric_arch: 'amd64'
 # gpcc_os_name: 'ubuntu18.04'
 
-gpcc_metric_arch: 'x86_64'
-gpcc_os_name: 'rhel7'
+gpccws_port: 28080
+gpmon_password: "changeme"
+master_data_dir: "/data/master/gpseg-1"
 
-# gpcc_build_version:
-# gpcc_rhel_name: LINUX-
-# gpcc_rhel_name: gp6-rhel8-
-# gpcc_os_name: rhel7
-
-gpdb_initdb_only_single: false
-gpdb_initdb_with_standby: true
-gpcc_network_range: "192.168.0.0/24"
-gpcc_subnet_range: 24
-gpcc_password: "changeme"
-gpdb_master_data_dir: "/data/master/gpseg-1"
+# SSL Key configuration
+gpcc_ssl_dir: "/home/gpadmin/certs"
+gpcc_ssl_days: 3660
+gpcc_ssl_country: "KR"
+gpcc_ssl_state: "Seoul"
+gpcc_ssl_location: "GangNam"
+gpcc_ssl_organization: "Pivotal"
+gpcc_ssl_common_name: "jtest.pivotal.io"
+gpcc_ssl_email: "jomoon@pivotal.io"

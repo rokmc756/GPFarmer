@@ -1,5 +1,5 @@
 #!/usr/bin/expect -f
-set timeout 5 
+set timeout 5
 	spawn /home/gpadmin/gpcc-tmp-install/gpcc.bin -c /home/gpadmin/gpcc_config.ini -W
 
 	expect  "^Password for GPDB user gpmon:*"

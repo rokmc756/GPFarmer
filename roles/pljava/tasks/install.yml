@@ -1,5 +1,4 @@
 ---
-
 # Install pljava extention on Greenplum database
 
 #
@@ -24,42 +23,20 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
 #
-- name: Verify if PLJava gppkg is installed
-  become_user: gpadmin
-  command: 'rpm -q pljava --dbpath /usr/local/greenplum-db/share/packages/database'
-  ignore_errors: yes
-  register: pljava_installed
-  changed_when: False
-  when:
-    - inventory_hostname in groups['master']
-    - pljava_gpdb_version == "gp6"
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    remote_copy_cmd: "gpscp"
+    check_pljava_installed: "gppkg -q --all | grep pljava | cut -d - -f 1"
+    pljava_package_name: pljava-{{ pljava_prefix_major_version }}{{ pljava_major_version }}.{{ pljava_minor_version }}.{{ pljava_patch_version }}-gp{{ pljava_gpdb_version }}-{{ pljava_os_version }}_{{ pljava_arch_type }}.gppkg
+  when: inventory_hostname in groups['master'] and pljava_gpdb_version|int <= 6
 
 #
-- name: Verify if PLJava gppkg pakcage is installed
-  become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg query | grep pljava | awk '{print $1}' )
-  args:
-    executable: /bin/bash
-  ignore_errors: true
-  register: pljava_installed
-  changed_when: False
-  when:
-    - inventory_hostname in groups['master']
-    - pljava_gpdb_version == "gp7"
-
-#
-- name: Stop if PLJava gppkg package is installed
-  fail: msg="PLJava gppkg package is installed!"
-  when:
-    - inventory_hostname in groups['master'] and pljava_gpdb_version == "gp6"
-    - ( 'package pljava is not installed' not in pljava_installed.stdout )
-
-#
-- name: Stop if PLJava gppkg package is installed
-  fail: msg="PLJava gppkg package is installed!"
-  when:
-    - inventory_hostname in groups['master'] and pljava_gpdb_version == "gp7"
-    - ( 'pljava' in pljava_installed.stdout )
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    remote_copy_cmd: "gpsync"
+    check_pljava_installed: "gppkg query | grep pljava | awk '{print $1}'"
+    pljava_package_name: pljava-{{ pljava_major_version }}.{{ pljava_minor_version }}.{{ pljava_patch_version }}-gp{{ pljava_gpdb_version }}-{{ pljava_os_version }}-{{ pljava_arch_type }}.gppkg
+  when: inventory_hostname in groups['master'] and pljava_gpdb_version|int >= 7
 
 #
 - set_fact:
@@ -72,25 +49,25 @@
   when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
 
 #
-- set_fact:
-    gppkg_install_cmd: "gppkg -i"
-    remote_copy_cmd: "gpscp"
-    pljava_package_name: pljava-{{ pljava_prefix_major_version }}{{ pljava_major_version }}.{{ pljava_minor_version }}.{{ pljava_patch_version }}-{{ pljava_gpdb_version }}-{{ pljava_os_version }}_{{ pljava_arch_type }}.gppkg
-  when: inventory_hostname in groups['master'] and pljava_gpdb_version == "gp6"
+- name: Verify if PLJava pakcage is installed
+  become_user: gpadmin
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ check_pljava_installed }} )
+  args:
+    executable: /bin/bash
+  ignore_errors: true
+  register: pljava_installed
+  changed_when: False
+  when: inventory_hostname in groups['master']
 
 #
-- set_fact:
-    gppkg_install_cmd: "gppkg -a install"
-    remote_copy_cmd: "gpsync"
-    pljava_package_name: pljava-{{ pljava_prefix_major_version }}{{ pljava_major_version }}.{{ pljava_minor_version }}.{{ pljava_patch_version }}-{{ pljava_gpdb_version }}-{{ pljava_os_version }}_{{ pljava_arch_type }}.gppkg
-  when: inventory_hostname in groups['master'] and pljava_gpdb_version == "gp7"
+- name: Stop if pljava gppkg package is already installed
+  fail: msg="pljava gppkg package is already installed!"
+  when: ( inventory_hostname in groups['master'] and 'pljava' in pljava_installed.stdout )
 
 #
 - name: Copy pljava gppkg file
   copy: src={{ pljava_package_name }} dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-  when:
-    - inventory_hostname in groups['master']
-    - ( 'package pljava is not installed' in pljava_installed.stdout ) or ( 'pljava' not in pljava_installed.stdout )
+  when: ( inventory_hostname in groups['master'] and 'pljava' not in pljava_installed.stdout )
 
 #
 - name: Install pljava package
@@ -98,9 +75,7 @@
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpadmin_home_dir }}/{{ pljava_package_name }} )
   args:
     executable: /bin/bash
-  when:
-    - inventory_hostname in groups['master']
-    - ( 'package pljava is not installed' in pljava_installed.stdout ) or ( 'pljava' not in pljava_installed.stdout )
+  when: ( inventory_hostname in groups['master'] and 'pljava' not in pljava_installed.stdout )
 
 #
 - name: Set JAVA_HOME
@@ -123,7 +98,6 @@
     - { regexp: '^export LD_LIBRARY_PATH=', line: 'export LD_LIBRARY_PATH=$GPHOME/lib:$GPHOME/ext/python/lib:$JAVA_HOME/lib/server:$JAVA_HOME/lib/amd64/server:$JAVA_HOME/jre/lib/amd64/server:$JAVA_HOME/jre/lib/amd64/dcevm:$LD_LIBRARY_PATH', state: present }
   when:
     - inventory_hostname in groups['master']
-    # - { regexp: '^export JAVA_HOME=', line: 'export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk', state: present }
 
 #
 - name: The gpscp command copies the file to all hosts specified in the hostfile.
@@ -141,8 +115,7 @@
     executable: /bin/bash
   async: 300
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #
 - name: Verify that database for pljava is installed
@@ -160,9 +133,7 @@
   args:
     executable: /bin/bash
   register: pljava_database_created
-  when:
-    - inventory_hostname in groups['master']
-    - "'100' not in pljava_database_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and '100' not in pljava_database_installed.stdout )
 
 #
 - name: Enabling PL/Java Language Support for GPDB 4.x
@@ -171,10 +142,7 @@
   args:
     executable: /bin/bash
   register: pljava_language_support_enabled
-  when:
-    - inventory_hostname in groups['master']
-    - pljava_gpdb_version == "GPDB4.3"
-    - "'100' not in pljava_database_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and pljava_gpdb_version == "4.3" and '100' not in pljava_database_installed.stdout )
 
 #
 - name: Enabling PL/Java Language Support for GPDB 6.x or 7.x
@@ -183,10 +151,7 @@
   args:
     executable: /bin/bash
   register: pljava_language_support_enabled
-  when:
-    - inventory_hostname in groups['master']
-    - pljava_gpdb_version == "gp6" or pljava_gpdb_version == "gp7"
-    - "'100' not in pljava_database_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and  pljava_gpdb_version|int <= 7 and '100' not in pljava_database_installed.stdout )
 
 #
 - name: Set the pljava_classpath server configuration parameter in the master postgresql.conf file.
@@ -195,7 +160,5 @@
   args:
     executable: /bin/bash
   register: pljava_classpath_set
-  when:
-    - inventory_hostname in groups['master']
-    - pljava_gpdb_version == "gp6" or pljava_gpdb_version == "gp7"
-    - "'100' not in pljava_database_installed.stdout"
+  when: (  inventory_hostname in groups['master'] and  pljava_gpdb_version <= 7 and '100' not in pljava_database_installed.stdout )
+

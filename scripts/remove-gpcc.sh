@@ -10,11 +10,14 @@
 # MASTER_HOST=41
 # HOSTS_RANGE="41 42 43 44 45"
 
-MASTER_HOST=61
-HOSTS_RANGE="61 62 63 64 65"
+MASTER_HOST=171
+HOSTS_RANGE="171 172 173 174 175"
 
+#
 MASTER_HOST_IP=192.168.0.$MASTER_HOST
 
+
+ssh gpadmin@$MASTER_HOST_IP "source /usr/local/greenplum-db/greenplum_path.sh && source /usr/local/greenplum-cc/gpcc_path.sh && gppkg -r MetricsCollector;"
 ssh gpadmin@$MASTER_HOST_IP "source /usr/local/greenplum-db/greenplum_path.sh && source /usr/local/greenplum-cc/gpcc_path.sh && gpcc stop;"
 
 for i in $HOSTS_RANGE

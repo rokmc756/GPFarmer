@@ -212,42 +212,10 @@
   failed_when: "'(Greenplum Database ' not in running_database_checked.stdout"
 
 #
-- name: Verify if PLContainer gppkg is installed
-  become_user: gpadmin
-  command: 'rpm -q plcontainer --dbpath /usr/local/greenplum-db/share/packages/database'
-  ignore_errors: true
-  register: plcontainer_installed
-  changed_when: False
-  when: inventory_hostname in groups['master'] and plcontainer_gpdb_version <= 6
-
-#
-- name: Verify if PLContainer gppkg pakcage is installed
-  become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg query | gppkg query | grep plcontainer | awk '{print $1}' )
-  args:
-    executable: /bin/bash
-  ignore_errors: true
-  register: plcontainer_installed
-  changed_when: False
-  when: inventory_hostname in groups['master'] and plcontainer_gpdb_version >= 7
-
-#
-- name: Stop if PLContainer gppkg package is not installed
-  fail: msg="PLcontainer gppkg package is already installed!"
-  when:
-    - inventory_hostname in groups['master'] and plcontainer_gpdb_version <= 6
-    - "'package plcontainer is not installed' not in plcontainer_installed.stdout"
-
-#
-- name: Stop if PLContainer gppkg package is already installed
-  fail: msg="PLContainer gppkg package is already installed!"
-  when:
-    - inventory_hostname in groups['master'] and plcontainer_gpdb_version >= 7
-    - "'plcontainer' in plcontainer_installed.stdout"
-
-#
 - set_fact:
     gppkg_install_cmd: "gppkg -i"
+    check_plr_installed: "gppkg -q --all | grep plr | cut -d - -f 1"
+    check_plcontainer_installed: "gppkg -q --all | grep plcontainer | cut -d - -f 1"
     plcontainer_package_name: plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-gp{{ plcontainer_gpdb_version }}-{{ plcontainer_os_version }}_{{ plcontainer_arch_type }}.gppkg
     plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-gp{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
   when: inventory_hostname in groups['master'] and plcontainer_gpdb_version <= 6
@@ -255,17 +223,33 @@
 #
 - set_fact:
     gppkg_install_cmd: "gppkg -a install"
+    check_plr_installed: "gppkg query | grep plr | awk '{print $1}'"
+    check_plcontainer_installed: "gppkg query | grep plcontainer | awk '{print $1}'"
     plcontainer_package_name: plcontainer-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-gp{{ plcontainer_gpdb_version }}-{{ plcontainer_os_version }}_{{ plcontainer_arch_type }}.gppkg
     plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-gp{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
   when: inventory_hostname in groups['master'] and plcontainer_gpdb_version >= 7
 
 #
+- name: Verify if PLContainer gppkg is installed
+  become_user: gpadmin
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ check_plcontainer_installed }} )
+  args:
+    executable: /bin/bash
+  ignore_errors: true
+  register: plcontainer_installed
+  changed_when: False
+  when: inventory_hostname in groups['master']
+
+#
+- name: Stop if PLContainer gppkg package is already installed
+  fail: msg="PLcontainer gppkg package is already installed!"
+  when: ( inventory_hostname in groups['master'] and 'plcontainer' in plcontainer_installed.stdout )
+
+#
 - name: Copy plcontainer gppkg file
   copy: src={{ plcontainer_package_name }} dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   register: plcontainer_gppkg_copied
-  when:
-    - inventory_hostname in groups['master']
-    - ( 'package plcontainer is not installed' in plcontainer_installed.stdout ) or ( 'plcontainer' not in plcontainer_installed.stdout )
+  when: ( inventory_hostname in groups['master'] and 'plcontainer' not in plcontainer_installed.stdout )
 
 #
 - name: Install plcontainer package
@@ -275,44 +259,29 @@
     executable: /bin/bash
   register: plcontainer_plcontainer_installed
   ignore_errors: true
-  when:
-    - inventory_hostname in groups['master']
-    - ( 'package plcontainer is not installed' in plcontainer_installed.stdout ) or ( 'plcontainer' not in plcontainer_installed.stdout )
-
-#
-- name: Verify if PLR gppkg package is installed
-  become_user: gpadmin
-  command: 'rpm -q plr --dbpath /usr/local/greenplum-db/share/packages/database'
-  ignore_errors: true
-  register: plr_installed
-  changed_when: False
-  when: inventory_hostname in groups['master'] and plr_gpdb_version <= 6
+  when: ( inventory_hostname in groups['master'] and 'plcontainer' not in plcontainer_installed.stdout )
 
 #
 - name: Verify if PLR gppkg pakcage is installed
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg query | grep plr | awk '{print $1}' )
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ check_plr_installed }} )
   args:
     executable: /bin/bash
   ignore_errors: true
   register: plr_installed
   changed_when: False
-  when: inventory_hostname in groups['master'] and plr_gpdb_version >= 7
+  when: inventory_hostname in groups['master']
 
 #
 - name: Stop if PLR gppkg package is already installed
   fail: msg="PLR gppkg package is already installed!"
-  when:
-    - inventory_hostname in groups['master']
-    - ( 'package plr is not installed' in plr_installed.stdout ) or ( 'plr' in plr_installed.stdout )
+  when: ( inventory_hostname in groups['master'] and 'plr' in plr_installed.stdout )
 
 #
 - name: Copy PLR gppkg package
   copy: src={{ plr_package_name }} dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   register: plr_gppkg_copied
-  when:
-    - inventory_hostname in groups['master']
-    - ( 'package plr is not installed' in plr_installed.stdout ) or ( 'plr' not in plr_installed.stdout )
+  when: ( inventory_hostname in groups['master'] and 'plr' not in plr_installed.stdout )
 
 #
 - name: Install PLR package
@@ -322,9 +291,7 @@
     executable: /bin/bash
   register: plr_gppkg_installed
   ignore_errors: true
-  when:
-    - inventory_hostname in groups['master']
-    - ( 'package plr is not installed' in plr_installed.stdout ) or ( 'plr' not in plr_installed.stdout )
+  when: ( inventory_hostname in groups['master'] and 'plr' not in plr_installed.stdout )
 
 #
 - name: Restart GPDB and apply parameters for plcontainer in greenplum_path.sh
@@ -334,8 +301,7 @@
     executable: /bin/bash
   async: 60
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #
 - name: Add the plc_coordinator shared library to the Greenplum Database shared_preload_libraries parameter.
@@ -344,8 +310,7 @@
   args:
     executable: /bin/bash
   register: plcontainer_shared_library_added
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #
 - name: Verify that database for plcontainer is installed
@@ -363,9 +328,7 @@
   args:
     executable: /bin/bash
   register: plcontainer_database_created
-  when:
-    - inventory_hostname in groups['master']
-    - "'100' not in plcontainer_database_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and '100' not in plcontainer_database_installed.stdout )
 
 #
 - name: Create plcontainer extension for a database
@@ -374,9 +337,7 @@
   args:
     executable: /bin/bash
   register: plcontainer_extension_database_created
-  when:
-    - inventory_hostname in groups['master']
-    - plcontainer_database_created.rc == 0
+  when: ( inventory_hostname in groups['master'] and plcontainer_database_created.rc == 0 )
 
 #
 - name: Verify that database for plr is installed
@@ -394,9 +355,7 @@
   args:
     executable: /bin/bash
   register: plr_database_created
-  when:
-    - inventory_hostname in groups['master']
-    - "'100' not in plr_database_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and '100' not in plr_database_installed.stdout )
 
 #
 - name: Create plr extension for a database
@@ -405,29 +364,25 @@
   args:
     executable: /bin/bash
   register: plr_extension_database_created
-  when:
-    - inventory_hostname in groups['master']
-    - "'100' in plr_database_installed.stdout"
+  when: ( inventory_hostname in groups['master'] and '100' in plr_database_installed.stdout )
 
 #
 - name: Copy plcontainer python docker image
-  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.1.4-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=plcontainer-python-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_docker_minor_version }}-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   register: python_docker_image_copied
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #
 - name: Copy plcontainer python3 docker gppkg file
-  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.1.4-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_docker_minor_version }}-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   register: python3_docker_image_copied
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
-#- name: Copy plcontainer R docker image
-#  copy: src=plcontainer-r-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-#  register: r_docker_image_copied
-#  when:
-#    - inventory_hostname in groups['master']
+#
+- name: Copy plcontainer R docker image
+  copy: src=plcontainer-r-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_docker_minor_version }}-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  register: r_docker_image_copied
+  when: inventory_hostname in groups['master']
 
 # - name: Copy plcontainer R beta docker image
 #  copy: src=plcontainer-r-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
@@ -442,19 +397,16 @@
   args:
     executable: /bin/bash
   register: installed_docker_images_listed
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 # Add a Python 2 based runtime
-- name: Add a Python 2 based runtime
+- name: Add a Python based runtime
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && plcontainer runtime-add -r plc_python_shared -i pivotaldata/plcontainer_python_shared:devel -l python )
   args:
     executable: /bin/bash
-  register: python3_based_runtime_added
-  when:
-    - inventory_hostname in groups['master']
-    - "{{ installed_docker_images_listed.stdout.find('plc_python_shared') != -1 }}"
+  register: python_based_runtime_added
+  when: ( inventory_hostname in groups['master'] and installed_docker_images_listed.stdout.find('plc_python_shared') != -1 )
 
 #
 - name: Add a Python 3 based runtime that is supported with PL/Container 2.1.x
@@ -463,9 +415,7 @@
   args:
     executable: /bin/bash
   register: python3_based_runtime_added
-  when:
-    - inventory_hostname in groups['master']
-    - "{{ installed_docker_images_listed.stdout.find('plc_r_shared') != -1 }}"
+  when: ( inventory_hostname in groups['master'] and  installed_docker_images_listed.stdout.find('plc_python3_shared') != -1 )
 
 #
 - name: Add an R based runtime
@@ -474,9 +424,7 @@
   args:
     executable: /bin/bash
   register: r_based_runtime_added
-  when:
-    - inventory_hostname in groups['master']
-    - "{{ installed_docker_images_listed.stdout.find('plc_python3_shared') != -1 }}"
+  when: ( inventory_hostname in groups['master'] and installed_docker_images_listed.stdout.find('plc_r_shared') != -1 )
 
 #
 - name: List the names of the runtimes your created and added to the PL/Container XML file

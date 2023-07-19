@@ -1,6 +1,10 @@
 ---
-common_network_range: "192.168.0.0/24"
 rhel_common_packages: "vim-enhanced,nano,screen,psmisc,rsync,wget,mutt,yum-utils,unzip,net-tools,ed,m4,expect,nc,java-1.8.0-openjdk,java-1.8.0-openjdk-devel,libcgroup,libcgroup-tools,nmap"
+
+# yum-utils
+# dnf-plugins-core
+# python3-dnf-plugins-core
+# python3-systemd
 
 # 6 or 7
 # rhel_common_devel_packages: "automake,make,gcc-c++,gcc,ed,lsof,python-setuptools,python-paramiko,git,PyYAML,perl-ExtUtils-MakeMaker,zlib,zlib-devel,curl,curl-devel,openssl,openssl-devel,svn,tcl,gettext,expat-devel,gettext-devel,bison,flex,perl-ExtUtils-Embed,perl-ExtUtils-MakeMaker,
@@ -75,3 +79,7 @@ packages_in_official_manual: "libapr1
 ,less
 ,iproute2
 "
+
+update_cache: false
+upgrade_packages: false
+
