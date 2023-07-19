@@ -173,7 +173,7 @@
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and check_dir_sslkey_installed.stat.exists != True
 
 #
-- name: Create ssl key for Greenplum Command Center Web UI
+- name: Create SSL key for Greenplum Command Center Web UI
   shell: ( openssl req -newkey rsa:2048 -x509 -keyout {{ gpcc_ssl_dir }}/cert.pem -out {{ gpcc_ssl_dir }}/cert.pem -days {{ gpcc_ssl_days }} -nodes -subj "/C={{ gpcc_ssl_country }}/ST={{ gpcc_ssl_state }}/L={{ gpcc_ssl_location }}/O={{ gpcc_ssl_organization }}/CN={{ gpcc_ssl_common_name }}/emailAddress={{ gpcc_ssl_email }}" )
   args:
     executable: /bin/bash
@@ -268,13 +268,13 @@
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
 #
-- name: Restart Greenplum database
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
-  args:
-    executable: /bin/bash
-  async: 180
-  poll: 5
-  when: ( inventory_hostname in groups['master'] and gpcc_gpperfmon_install == True )
+#- name: Restart Greenplum database
+#  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+#  args:
+#    executable: /bin/bash
+#  async: 180
+#  poll: 5
+#  when: ( inventory_hostname in groups['master'] and gpcc_gpperfmon_install == True )
 
 #
 - name: Verify that gpperfmon is installed (1)
@@ -327,13 +327,13 @@
   when: inventory_hostname in groups['master'] and ( gpcc_setup_cc_sne == True and gpcc_major_version|int <= 3 )
 
 #
-- name: Drop extension of metrics_collector if it exists
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d gpperfmon -c "DROP EXTENSION metrics_collector;" )
-  args:
-    executable: /bin/bash
-  ignore_errors: yes
-  register: mc_extension_dropped
-  when: inventory_hostname in groups['master']
+#- name: Drop extension of metrics_collector if it exists
+#  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d gpperfmon -c "DROP EXTENSION metrics_collector;" )
+#  args:
+#    executable: /bin/bash
+#  ignore_errors: yes
+#  register: mc_extension_dropped
+#  when: inventory_hostname in groups['master']
 
 #
 - name: Verify if MetricsCollector gppkg pakcage is installed
@@ -356,6 +356,48 @@
   args:
     executable: /bin/bash
   when: ( inventory_hostname in groups['master'] and 'MetricsCollector' not in mc_installed.stdout )
+
+#
+- name: Create MetricsCollector extension
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d gpperfmon -c "CREATE EXTENSION metrics_collector;" )
+  args:
+    executable: /bin/bash
+  ignore_errors: yes
+  register: mc_extension_created
+  when: ( gpcc_major_version >= 6 and gpcc_minor_version >= 7 ) and ( inventory_hostname in groups['master'] and 'MetricsCollector' in mc_installed.stdout )
+
+#
+- name: Enable the data colleciton agents
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_enable_gpperfmon -v on )
+  register: gpperfmon_enabled
+  when: inventory_hostname in groups['master']
+
+#
+- name: Enable query metrics
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_enable_query_metrics -v on )
+  register: query_metric_enabled
+  when: inventory_hostname in groups['master']
+
+#
+- name: Add GUC of MetricsCollector
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c shared_preload_libraries -v 'metrics_collector' )
+  register: metrics_collector_added
+  when: inventory_hostname in groups['master']
+
+#
+- name: Reload Greenplum Database
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  args:
+    executable: /bin/bash
+  async: 360
+  poll: 5
+  when: inventory_hostname in groups['master'] and gpmon_pg_hba_config.changed == True
 
 #
 - name: Add the path of GPCC variable file into .bashrc
@@ -381,6 +423,15 @@
     group: gpadmin
     mode: "0600"
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
+
+#
+- name: Kill zombie process of gpccws
+  changed_when: False
+  shell: ( killall gpccws > /dev/null 2>&1 )
+  args:
+    executable: /bin/bash
+  ignore_errors: true
+  when: ( inventory_hostname in groups['standby'] and gpcc_setup_cc_sne == True )
 
 #
 - name: Start Greenplum Command Center {{ gpcc_major_version  }}.{{ gpcc_minor_version }}
