@@ -1,8 +1,28 @@
 ---
 # Fail if OS is not supportable
-- name: Check OS (common)
+- name: Check OS supportable (common)
   fail: msg="{{ ansible_distribution }} is not supported for this ansible playbook!"
   when: ansible_distribution != "RedHat" and ansible_distribution != "CentOS" and ansible_distribution != "Rocky" and ansible_distribution != "Ubuntu" and ansible_distribution != "Debian"
+
+#
+- set_fact:
+    gpdb_network_range: "{{ hostvars[inventory_hostname]['ansible_eth0']['ipv4']['network'] }}/{{ ( hostvars[inventory_hostname]['ansible_eth0']['ipv4']['address'] + '/' + hostvars[inventory_hostname]['ansible_eth0']['ipv4']['netmask'] ) | ansible.utils.ipaddr('prefix') }}"
+#
+- set_fact:
+    rhel_install_packages: "{{ rhel_common_packages ~ ',' ~ rhel_common_devel_packages  ~ ',' ~ rhel7_common_devel_packages }}"
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int <= 7
+
+#
+- set_fact:
+    rhel_install_packages: "{{ rhel_common_packages ~ ',' ~ rhel_common_devel_packages  ~ ',' ~ rhel8_common_devel_packages }}"
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 8
+
+#
+- name: Get the specific ip address
+  set_fact:
+    prod_ip_addr_range: "{{ item }}"
+  with_items: "{{ ansible_all_ipv4_addresses }}"
+  when: "item | ansible.utils.ipaddr( gpdb_network_range )"
 
 #
 - name: Check if systemd is used (1)
@@ -33,17 +53,6 @@
     - Waiting for server to come back after restart
 
 #
-- set_fact:
-    gpdb_network_range: "{{ hostvars[inventory_hostname]['ansible_eth0']['ipv4']['network'] }}/{{ ( hostvars[inventory_hostname]['ansible_eth0']['ipv4']['address'] + '/' + hostvars[inventory_hostname]['ansible_eth0']['ipv4']['netmask'] ) | ansible.utils.ipaddr('prefix') }}"
-
-#
-- name: Get the specific ip address
-  set_fact:
-    prod_ip_addr_range: "{{ item }}"
-  with_items: "{{ ansible_all_ipv4_addresses }}"
-  when: "item | ansible.utils.ipaddr( gpdb_network_range )"
-
-#
 - name: Install firewalld
   package: name={{ item }} state=present
   with_items:
@@ -68,16 +77,6 @@
     chain: "{{ item }}"
     flush: yes
   with_items:  [ 'INPUT', 'FORWARD', 'OUTPUT' ]
-
-#
-- set_fact:
-    rhel_install_packages: "{{ rhel_common_packages ~ ',' ~ rhel_common_devel_packages  ~ ',' ~ rhel7_common_devel_packages }}"
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int <= 7
-
-#
-- set_fact:
-    rhel_install_packages: "{{ rhel_common_packages ~ ',' ~ rhel_common_devel_packages  ~ ',' ~ rhel8_common_devel_packages }}"
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 8
 
 #
 - name: Install Dependent RPM packages for Greenplum in RedHat/CentOS/Rocky Linux

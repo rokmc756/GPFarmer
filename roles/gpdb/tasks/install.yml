@@ -2,7 +2,6 @@
 # Install Greenplum Database on Red Hat / CentOS / Rocky / Ubuntu / Debian
 
 # new installation: {{ gpdb_base_dir }}/greenplum-db must not exist
-#          upgrade: {{ gpdb_base_dir }}/greenplum-db-{ new version } must not exist
 #       linkchange: {{ gpdb_base_dir }} /greenplum-db points to another directory
 
 #
@@ -66,46 +65,54 @@
   debug: msg="New Greenplum Database installation"
   when: gpdb_install == True
 
+#
 - name: Greenplum Database Link Change
   debug: msg="Changing link to Greenplum Database version"
   when: gpdb_linkchange == True
 
+#
 - name: Greenplum Database - Nothing to do
   debug: msg="Nothing to do (no installation/upgrade required)"
   when: gpdb_install == False and gpdb_linkchange == False
 
-
 ###########################################################
 # Basic system setup
 
-- name: gpadmin group
-  group: name=gpadmin state=present
+#
+- name: Add gpadmin group
+  group:
+    name: gpadmin
+    state: present
 
-# do not create ssh keys
-# this conflicts somehow with gpssh-exkeys
+# Do not create ssh keys since this conflicts somehow with gpssh-exkeys
 - name: gpadmin user
-  user: name=gpadmin password="{{ 'changeme' | password_hash('sha512') }}" comment='Greenplum Administrator' createhome=yes shell=/bin/bash generate_ssh_key=no groups=gpadmin append=yes state=present
+  user:
+    name: gpadmin
+    password: "{{ 'changeme' | password_hash('sha512') }}"
+    comment: 'Greenplum Administrator'
+    createhome: yes
+    shell: /bin/bash
+    generate_ssh_key: no
+    groups: gpadmin
+    append: yes
+    state: present
   changed_when: False
 
 #
 - name: Fix ownership for {{ gpdb_base_dir }}
   file: path={{ gpdb_base_dir }} state=directory mode=0755 owner=gpadmin group=gpadmin
 
-# Need to check if it works
+#
 - name: Stop and disable iptables
   service: name=iptables state=stopped enabled=no
   changed_when: False
-  when:
-    - ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky'
-    - hostvars[inventory_hostname].ansible_distribution_major_version == 6 or hostvars[inventory_hostname].ansible_distribution_major_version == 5
+  when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' ) and hostvars[inventory_hostname].ansible_distribution_major_version|int <= 6
 
 #
 - name: Stop and Disable firewalld
   service: name=firewalld state=stopped enabled=no
   changed_when: False
-  when:
-    - ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky'
-    - hostvars[inventory_hostname].ansible_distribution_major_version == 7
+  when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' ) and  hostvars[inventory_hostname].ansible_distribution_major_version >= 7
 
 #
 - name: Stop and disable ufw, ebtables
@@ -117,8 +124,7 @@
     - ebtables
     - firewalld
     - snapd
-  when:
-    - ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+  when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
 
 #
 - name: Disable SELinux
@@ -160,9 +166,7 @@
   with_items: "{{ rhel7_gpdb_kernel_parameters }}"
   notify:
     - Reload sysctl
-  when:
-    - ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky'
-    - hostvars[inventory_hostname].ansible_distribution_major_version|int <= 7
+  when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' ) and hostvars[inventory_hostname].ansible_distribution_major_version|int <= 7
 
 #
 - name: Modify /etc/ssh/sshd_config
@@ -194,34 +198,28 @@
 #
 - name: Create empty variable for data directories
   set_fact: data_dirs=""
-  when:
-    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
-    - gpdb_install == True
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and  gpdb_install == True
 
 #
 - name: Create empty variable for mirror data directories
   set_fact: mirror_data_dirs=""
-  when:
-    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
-    - gpdb_mirror_enable == True and gpdb_install == True
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
+
+#- debug: msg="data_dirs={{ item }}"
 
 #
 - name: Loop over number for primary segments
-  #debug: msg="data_dirs={{ item }}"
   set_fact: data_dirs="{{ data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/primary"
   with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
-  when:
-    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
-    - gpdb_install == True
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and  gpdb_install == True
 
+#- debug: msg="data_dirs={{ item }}"
+ 
 #
 - name: Loop over number for mirror segments
-  #debug: msg="data_dirs={{ item }}"
   set_fact: mirror_data_dirs="{{ mirror_data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/mirror"
   with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
-  when:
-    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
-    - gpdb_mirror_enable == True and gpdb_install == True
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
 
 #
 - name: Copy removal script
@@ -229,14 +227,8 @@
   when: inventory_hostname in groups['master']
 
 #
-- name: Copy Greenplum Database {{ gpdb_major_version }} zip file
-  copy: src={{ binary_installer_file }}.zip dest=/home/gpadmin/{{ binary_installer_file }}.zip mode=0644 owner=gpadmin group=gpadmin
-  when: gpdb_binary_type == 'zip'
-
-#
-- name: Copy Greenplum Database {{ gpdb_major_version }} rpm file
+- name: Copy Greenplum Database {{ gpdb_major_version }} {{ gpdb_binary_type }} file
   copy: src={{ binary_installer_file }}.{{ gpdb_binary_type }} dest=/home/gpadmin/{{ binary_installer_file }}.{{ gpdb_binary_type }} mode=0644 owner=gpadmin group=gpadmin
-  when: gpdb_binary_type == 'rpm' or gpdb_binary_type == 'deb'
 
 #
 - name: Remove old temp installer directory
@@ -285,8 +277,9 @@
 - name: Check if database is running
   stat: path=/tmp/.s.PGSQL.5432
   register: gpdb_running
-  when: inventory_hostname in groups['master'] and gpdb_linkchange == True
+  when: ( inventory_hostname in groups['master'] and gpdb_linkchange == True )
 
+#
 - name: Shutdown database
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
@@ -294,7 +287,7 @@
     executable: /bin/bash
   async: 60
   poll: 5
-  when: inventory_hostname in groups['master'] and gpdb_linkchange == True and gpdb_running.stat.exists == True
+  when: inventory_hostname in groups['master'] and ( gpdb_linkchange == True and gpdb_running.stat.exists == True )
 
 #
 - name: Install Greenplum Database software in {{ gpdb_base_dir }}
@@ -388,8 +381,11 @@
 
 #
 - name: Fix hostname in hostlist file
-  replace: dest=/home/gpadmin/hostfile regexp='^replace_this_with_hostname_of_your_machine$' replace='{{ ansible_hostname }}'
-  when: inventory_hostname in groups['master'] and gpdb_install == True
+  replace:
+    dest: /home/gpadmin/hostfile
+    regexp: '^replace_this_with_hostname_of_your_machine$'
+    replace: '{{ ansible_hostname }}'
+  when: ( inventory_hostname in groups['master'] and gpdb_install == True )
 
 #
 - name: Fix settings in gpinitsystem config file
@@ -425,8 +421,7 @@
   become: yes
   file: path={{ gpdb_base_dir }}/greenplum-db src={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }} state=link owner=gpadmin group=gpadmin mode=0755
   when: gpdb_linkchange == True and gpdb_install == True
-  # or gpdb_linkchange == True and gpdb_install == True
-  # - inventory_hostname in groups['master']
+  # when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_linkchange == True and gpdb_install == True )
 
 
 # Status: Config files ready, initialize database if required
@@ -479,11 +474,6 @@
   register: gpseginstall_installed
   when: inventory_hostname in groups['master'] and ( gpdb_initialized.stat.exists != True and gpdb_initdb_single == False and seg_serialized_install == True )
   # changed_when: False
-
-  #- name: Repoint symlink to new Greenplum Database version
-  #  file: path={{ gpdb_base_dir }}/greenplum-db src={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }} state=link
-  #  when:
-  #    - gpseginstall_installed == True
 
 #
 - name: Initialize Greenplum Database cluster
@@ -617,4 +607,3 @@
   when: gpdb_linkchange == True
 
 # Status: Greenplum Database up and running
-# FIXME: update bash history
