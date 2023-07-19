@@ -2,6 +2,7 @@
   become: true
   roles:
     - { role: gpdb }               # Need to check if get_facts: true is required
+
 #    - { role: init-hosts }
 #    - { role: postgis }
 #    - { role: pljava }
