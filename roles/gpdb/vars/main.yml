@@ -1,6 +1,4 @@
 ---
-google_cloud: false
-
 # number of Greenplum Database segments
 local_machine_user: "moonja"
 gpdb_number_segments: 4
@@ -26,6 +24,7 @@ gpdb_initdb_single: False
 gpdb_initdb_with_standby: True
 gpdb_network_range: "192.168.0.0"
 gpdb_admin_password: "changeme"
+master_data_dir: "/data/master/gpseg-1"
 
 common_gpdb_kernel_parameters:
   - { "state": "present",  "param" : "kernel.shmmax",                             "value" : "500000000" }

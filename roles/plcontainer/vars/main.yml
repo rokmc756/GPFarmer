@@ -41,3 +41,5 @@ plr_arch_type: x86_64
 plr_database_name: plcontainer_testdb
 plr_schema_name: plr_test_scheme
 
+update_cache: false
+upgrade_packages: false

@@ -427,7 +427,7 @@
 #
 - name: Kill zombie process of gpccws
   changed_when: False
-  shell: ( pgrep gpccws | xargs kill > /dev/null 2>&1 )
+  shell: ( killall gpccws > /dev/null 2>&1 )
   args:
     executable: /bin/bash
   ignore_errors: true
