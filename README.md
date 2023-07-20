@@ -13,30 +13,28 @@ Since it only provide install GPDB on a single host GPFarmer support multiple ho
 binary type, rpm and bin..
 
 # Supported GPDB and extension version
-GPDB 4.x/5.x/6.x
+GPDB 4.x, 5.x, 6.x, 7.x
 
-GPCC 1/2
+GPCC 4x, 6x
 
 GPTEXT 3.x.x
 
-madlib 1.1.x
+madlib 1.x, 2.x
 
 postgis 2.x
 
 
 # Supported Platform and OS
 Virtual Machines
-
-Cloud Infrastructure
-
 Baremetal
 
 RHEL and CentOS 5/6/7
+Ubuntu 18.04
 
 
 # Prerequisite
-MacOS or Fedora/CentOS/RHEL installed with ansible as ansible host.
-At least three supported OS should be prepared with yum repository configured
+MacOS or Fedora/CentOS/RHEL should have installed ansible as ansible host.
+Supported OS for ansible target host should be prepared with package repository configured such as yum, dnf and apt
 
 # Prepare ansible host to run gpfarmer
 * MacOS
@@ -49,14 +47,13 @@ $ brew install https://raw.githubusercontent.com/kadwanev/bigboybrew/master/Libr
 * Fedora/CentOS/RHEL
 ~~~
 $ sudo yum install ansible
-$ sudo yum install sshpass
 ~~~
 
 ## Prepareing OS
 Configure Yum / Local & EPEL Repostiory
 
 # Download / configure / run gpfarmer
-$ git clone https://github.com/pivotal-jack-moon/gpfarmer
+$ git clone https://github.com/rokmc756
 
 $ cd gpfarmer
 
@@ -70,90 +67,91 @@ $ vi ansible-hosts
 ~~~
 [all:vars]
 ssh_key_filename="id_rsa"
-remote_machine_username="gpadmin"    # Replace with username of gpdb administrator
-remote_machine_password="changeme"   # Replace with password of user
+remote_machine_username="gpadmin"             # Replace with username of gpdb administrator
+remote_machine_password="changeme"            # Replace with password of user
 
 [master]
-mdw6 ansible_ssh_host=192.168.0.61    # Change IP address of gpdb master host
+rk8-master  ansible_ssh_host=192.168.0.171    # Change IP address of gpdb master host
 
 [standby]
-smdw6 ansible_ssh_host=192.168.0.62   # Change IP address of gpdb standby host
+rk8-slave   ansible_ssh_host=192.168.0.172    # Change IP address of gpdb standby host
 
 [segments]
-sdw6-1 ansible_ssh_host=192.168.0.63  # Change IP address of gpdb segment host
-sdw6-2 ansible_ssh_host=192.168.0.64  # Change IP address of gpdb segment host
-sdw6-3 ansible_ssh_host=192.168.0.65  # Change IP address of gpdb segment host
+rk8-node01  ansible_ssh_host=192.168.0.173    # Change IP address of gpdb segment host
+rk8-node02  ansible_ssh_host=192.168.0.174    # Change IP address of gpdb segment host
+rk8-node03  ansible_ssh_host=192.168.0.175    # Change IP address of gpdb segment host
 ~~~
 
 $ vi role/gpdb/var/main.yml
 ~~~
 ---
-google_cloud: false
-
+---
 # number of Greenplum Database segments
-gpdb_number_segments: 2               # Change how many instances want to run
-gpdb_mirror_enable: true              # Enable if mirror instances is run or not
-gpdb_spread_mirrors: "-S"             # Enable if spread mirror is used or not
+local_machine_user: "moonja"
+gpdb_number_segments: 4
+gpdb_mirror_enable: true
+gpdb_spread_mirrors: ""
 
-# if you change the version, Ansible will attempt a database upgrade
-# greenplum-db-4.3.9.0-build-1-RHEL5-x86_64.zip
-gpdb_major_version: 5
-gpdb_minor_version: 21.0
-gpdb_build_version:
-gpdb_rhel_name: 'rhel7'
-gpdb_binary_type: 'zip'
-
-smdw_hostname: "smdw6"
-seg_serialized_install: False
-gpdb_initdb_single: False
-gpdb_initdb_with_standby: True
-gpdb_network_range: "192.168.0.0"
-gpdb_admin_password: "changeme"
+gpdb_major_version: 6
+gpdb_minor_version: 23
+gpdb_build_version: 0
+gpdb_os_name: 'rhel8'
+gpdb_arch_name: 'x86_64'
+gpdb_binary_type: 'rpm'
+~~ snip
 ~~~
 
 $ vi role/gpcc/var/main.yml
 ~~~
 ---
-# greenplum-cc-web-6.0.0-beta.5-rhel7_x86_64.zip
-# greenplum-cc-web-4.7.0-LINUX-x86_64.zip
-gpcc_major_version: 4
-gpcc_minor_version: 7.0
-gpcc_build_version:
-gpcc_rhel_name: LINUX-
-# gpcc_rhel_name: rhel7_
-gpdb_initdb_only_single: false
-gpdb_initdb_with_standby: true
-gpcc_network_range: "192.168.0.0/24"
-gpcc_subnet_range: 24
-gpcc_password: "changeme"
+gpdb_major_version: 6
+gpdb_minor_version: 23.0
+gpdb_build_version:
+gpcc_major_version: 6
+gpcc_minor_version: 8.4
+
+gpdb_metric_major_version: 6
+gpdb_metric_minor_version: 23.0
+gpdb_metric_build_version:
+gpcc_metric_arch: 'x86_64'
+gpcc_os_name: 'rhel8'
+
+gpccws_port: 28080
+gpmon_password: "changeme"
+master_data_dir: "/data/master/gpseg-1"
+~~ snip
 ~~~
 
 $ vi role/gptext/var/main.yml
 ~~~
 ---
+# greenplum-text-3.3.1-rhel7_x86_64.tar.gz
+# greenplum-text-3.9.1-rhel8_x86_64.tar.gz
 gptext_major_version: 3
-gptext_minor_version: 3.0
+gptext_minor_version: 9.1
 gptext_patch_version:
 gptext_build_version:
 gptext_gpdb_version:
 gptext_java_version: 1.8.0
-gptext_rhel_name: rhel6
-gptext_database_name: testdb
-gptext_all_hosts: "mdw6 smdw6 sdw6-1 sdw6-2 sdw6-3"   # The number of all nodes should be 3, 5 or 7
+gptext_rhel_name: rhel8
+gptext_database_name: gptext_testdb
+gptext_all_hosts: "rk8-master rk8-slave rk8-node01 rk8-node02 rk8-node03"
 ~~~
 
 $ vi role/madlib/var/main.yml
 ~~~
 ---
+madlib_prefix_major_version:
 madlib_major_version: 1
-madlib_minor_version: 15
-madlib_patch_version: 1
-madlib_gpdb_version: gp5
-madlib_rhel_version: rhel7
-madlib_database_name: testdb
-madlib_mdw_hostname: mdw6
-# madlib-1.15.1-gp5-rhel6-x86_64.tar.gz
-# madlib-1.15.1-gp4.3orca-rhel5-x86_64.tar.gz
+madlib_minor_version: 21
+madlib_patch_version: 0
+madlib_build_version: 1
+madlib_gpdb_version: 6
+madlib_os_version: rhel8
+madlib_arch_type: x86_64
+madlib_database_name: madlib_testdb
+madlib_mdw_hostname: rk8-master
+~~ snip
 ~~~
 
 $ vi role/postgis/var/mail.yml
@@ -161,44 +159,70 @@ $ vi role/postgis/var/mail.yml
 ---
 postgis_prefix_major_version:
 postgis_major_version: 2
-postgis_minor_version: 1
-postgis_patch_version: .5+pivotal.2
-postgis_gpdb_version: gp5
-postgis_rhel_version: rhel7
-postgis_database_name: testdb
-# postgis-2.1.5+pivotal.2-gp5-rhel7-x86_64.gppkgg
-# postgis-ossv2.0.3_pv2.0.2_gpdb4.3orca-rhel5-x86_64.gppkg
+postgis_minor_version: 5
+postgis_patch_version: .4+pivotal.8.build.1
+postgis_gpdb_version: 6
+postgis_os_version: rhel8
+postgis_database_name: postgis_testdb
+postgis_schema_name: postgis_test_scheme
+postgis_mdw_hostname: rk8-master
 ~~~
 
-$ vi install-host.yml
+$ vi setup-host.yml
 ~~~
 ---
 - hosts: all
-  become: yes
+  become: true
   roles:
-    - gpdb
-    - gptext
+   - { role: init-hosts }
+   - { role: gpdb }               
+   - { role: madlib }                  # Failed on ubuntu 18.04
+   - { role: postgis }
+   - { role: pljava }
+   - { role: plcontainer }
+   - { role: DataSciencePython }
+   - { role: DataScienceR }
+   - { role: pxf }
+   - { role: gptext }
+   - { role: plr }
 
-- hosts: mdw6
-  become: yes
+- hosts: rk8-master,rk8-slave
+  become: true
+  become_user: gpadmin
   roles:
-    - gpcc
-    - madlib
-    - postgis
+    - { role: gpcc }
 ~~~
 
-$ make init
+$ make install 
 
-$ make install
+$ vi setup-host.yml
+~~~
+---
+- hosts: rk8-master,rk8-slave
+  become: true
+  become_user: gpadmin
+  roles:
+    - { role: gpcc }
+
+- hosts: all
+  become: true
+  roles:
+   - { role: plr }
+   - { role: gpdb }
+   - { role: gptext }
+   - { role: pxf }
+   - { role: DataScienceR }
+   - { role: DataSciencePython }
+   - { role: madlib }
+   - { role: postgis }
+   - { role: pljava }
+   - { role: plcontainer }
+   - { role: init-hosts }
+
+~~~
+$ make uninstall
 
 
 # Planning
-Adding Resource Group for Workload Management of GPCC
-
-Adding playbook to remove GPDB and other extensions
-
-Adding playbook to update GPDB and other extensions
-
 Converting Makefile.init from original project.
-
-Documenting how to make OS template for GPDB and GPFarmer.
+Adding GPCR role
