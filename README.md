@@ -226,3 +226,7 @@ $ make uninstall
 # Planning
 Converting Makefile.init from original project.
 Adding GPCR role
+Adding SELinux role
+Adding tuned role
+Adding gpupgrade
+
