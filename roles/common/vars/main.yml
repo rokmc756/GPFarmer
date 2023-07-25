@@ -1,5 +1,5 @@
 ---
-rhel_common_packages: "vim-enhanced,nano,screen,psmisc,rsync,wget,mutt,yum-utils,unzip,net-tools,ed,m4,expect,nc,java-1.8.0-openjdk,java-1.8.0-openjdk-devel,libcgroup,libcgroup-tools,nmap"
+rhel_common_packages: "vim-enhanced,nano,screen,psmisc,rsync,wget,mutt,yum-utils,unzip,net-tools,ed,m4,expect,nc,java-1.8.0-openjdk,java-1.8.0-openjdk-devel,libcgroup,libcgroup-tools,nmap,openldap-clients"
 
 # yum-utils
 # dnf-plugins-core

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-HOSTS_RANGE="171 175"
+HOSTS_RANGE="61 67"
 NETWORK_RANGE="192.168.0"
 USER="root"
 

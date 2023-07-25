@@ -416,9 +416,11 @@
     group: gpadmin
     recurse: "{{ item.recurse }}"
   with_items:
-    - { "state": "link", "perm": "0777", "recurse": "no", "dir": "{{ gpdb_base_dir }}/greenplum-db" }
     - { "state": "directory", "perm": "0755", "recurse": "yes", "dir": "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}" }
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+
+
+#    - { "state": "link", "perm": "0777", "recurse": "no", "dir": "{{ gpdb_base_dir }}/greenplum-db" }
 
 #
 - name: Change permission of Greenplum Database link since above task does not work for link
