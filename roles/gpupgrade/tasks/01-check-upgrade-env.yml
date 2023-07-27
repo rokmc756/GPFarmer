@@ -1,0 +1,210 @@
+---
+# Upgrade Greenplum Database by GPUpgrade on Red Hat / CentOS / Rocky / Ubuntu / Debian
+
+#
+- name: Check if any version of Greenplum Database is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db
+  register: gpdb_link_existed
+
+#
+- name: Check if the Greenplum Database version is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}
+  register: gpdb_dir_existed
+
+#
+- name: Sanity check for {{ gpdb_base_dir }}/greenplum-db
+  fail: msg="{{ gpdb_base_dir }}/greenplum-db is supposed to be a symlink!"
+  when: gpdb_link_existed.stat.exists == True and gpdb_link_existed.stat.islnk != True
+
+#
+- name: Set name for greenplum and gpupgrade binary installer file
+  set_fact:
+    gpdb_binary_installer_file: greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}-{{ gpdb_os_name }}-{{ gpdb_arch_name }}
+    gpupgrade_binary_installer_file: gpupgrade-{{ gpupgrade_major_version }}.{{ gpupgrade_minor_version }}.{{ gpupgrade_build_version }}-{{ gpupgrade_patch_version }}.{{ gpdb_os_name }}.{{ gpdb_arch_name }}
+
+#
+- name: Set default values for run mode variables
+  set_fact:
+    gpdb_upgrade: False
+    gpdb_linkchange: False
+
+# Non-existent {{ gpdb_base_dir }}/greenplum-db is a new installation
+- name: Identify Greenplum Database Upgrade
+  set_fact:
+    gpdb_upgrade: True
+  when: gpdb_dir_existed.stat.exists == True and  gpdb_dir_existed.stat.exists == True
+
+
+# If the link points to a different existing directory, it's a link change
+- name: Identify Greenplum Database Linkchange
+  set_fact:
+    gpdb_linkchange: True
+  when: gpdb_link_existed.stat.exists == True
+
+#
+- name: Upgrade Greenplum Database
+  debug: msg="Upgrade new Greenplum Database version"
+  when: gpdb_upgrade == True
+
+#
+- name: Change Greenplum Database link
+  debug: msg="Change link to new Greenplum Database version"
+  when: gpdb_linkchange == True
+
+#
+- name: Greenplum Database - Nothing to do for upgrade
+  debug: msg="Nothing to do (no upgrade required)"
+  when: gpdb_upgrade == False and gpdb_linkchange == False
+
+###########################################################
+# Basic system setup
+
+#
+- name: Stop and disable iptables
+  service: name=iptables state=stopped enabled=no
+  changed_when: False
+  when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' ) and hostvars[inventory_hostname].ansible_distribution_major_version|int <= 6
+
+#
+- name: Stop and Disable firewalld
+  service: name=firewalld state=stopped enabled=no
+  changed_when: False
+  when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' ) and  hostvars[inventory_hostname].ansible_distribution_major_version|int >= 7
+
+#
+- name: Stop and disable ufw, ebtables
+  service: name={{ item }} state=stopped enabled=no
+  changed_when: False
+  ignore_errors: true
+  with_items:
+    - ufw
+    - ebtables
+    - firewalld
+    - snapd
+  when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+- meta: flush_handlers
+
+#######################################################################################################################################################################################################
+# Database installation
+
+- name: Copy Greenplum {{ gpdb_major_version }} and GPUpgrade {{ gpupgrade_major_version }} {{ binary_type }} file
+  copy:
+    src: "{{ item }}"
+    dest: "/home/gpadmin/{{ item }}"
+    mode: 0644
+    owner: gpadmin
+    group: gpadmin
+  with_items:
+    - "{{ gpdb_binary_installer_file }}.{{ binary_type }}"
+    - "{{ gpupgrade_binary_installer_file }}.{{ binary_type }}"
+
+#
+- block:
+  - name: Unzip Greenplum Database {{ gpdb_major_version }} archive (Ansible < 2.2)
+    unarchive: src=/home/gpadmin/{{ binary_installer_file }}.zip dest=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install remote_src=yes copy=no owner=gpadmin group=gpadmin
+    when: ansible_version.full is version_compare('2.2.0.0', operator='<', strict=False)
+
+  - name: Unzip Greenplum Database {{ gpdb_major_version }} archive (Ansible >= 2.2)
+    unarchive: src=/home/gpadmin/{{ binary_installer_file }}.zip dest=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install remote_src=yes owner=gpadmin group=gpadmin
+    when: ansible_version.full is version_compare('2.2.0.0', operator='>=', strict=False)
+
+  when: gpdb_upgrade == True and (  gpdb_binary_type != 'rpm' and gpdb_binary_type != 'deb' )
+
+#
+- name: Check if database is running
+  stat: path=/tmp/.s.PGSQL.5432
+  register: gpdb_running
+  when: inventory_hostname in groups['master']
+
+#
+- name: Shutdown database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
+  args:
+    executable: /bin/bash
+  async: 60
+  poll: 5
+  when: ( inventory_hostname in groups['master'] and gpdb_running.stat.exists == True )
+
+#
+- name: Install Greenplum Database rpm package in {{ gpdb_base_dir }}for Red Hat / CentOS / Rocky Linux
+  yum:
+    name: "{{ item }}"
+    state: present
+    disable_gpg_check: yes
+  async: 360
+  poll: 5
+  with_items:
+    - "bash-completion"
+    - "/home/gpadmin/{{ gpdb_binary_installer_file }}.{{ binary_type }}"
+  when: ( gpdb_upgrade == True and gpdb_binary_type == 'rpm' )
+
+#
+- name: Install Greenplum Database deb package in {{ gpdb_base_dir }} for Ubuntu / Debian
+  apt:
+    deb: "{{ item }}"
+    state: present
+  async: 360
+  poll: 5
+    - "bash-completion"
+    - "/home/gpadmin/{{ gpdb_binary_installer_file }}.{{ binary_type }}"
+  when: ( gpdb_upgrade == True and gpdb_binary_type == 'deb' )
+
+#
+- name: Install gpupgrade rpm file in prefix directory
+  become_user: root
+  shell: "rpm --prefix=/usr/local/gpupgrade -ivh {{ gpdb_binary_installer_file }}.{{ binary_type }}"
+  delegate_to: 127.0.0.1
+  when: inventory_hostname in groups['master'] and gpdb_upgrade == True
+
+#
+- name: Change permission of gpupgrade prefix directory
+  become: true
+  become_user: root
+  shell: "chown -R gpadmin:gpadmin {{ gpdb_base_dir }}/gpupgrade"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Add PATH of gpupgrade to greenplum_path.sh
+  become_user: gpadmin
+  lineinfile:
+    dest: "{{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+    firstmatch: true
+    insertbefore: "BOF"
+  with_items:
+    - { regexp: '^PATH=', line: 'PATH=/usr/local/gpupgrade:$PATH', state: present }
+
+
+
+# Status: database software is installed
+###########################################################
+# Database initialization
+
+#
+- name: Change permission of Greenplum Database directory
+  become: true
+  become_user: root
+  file:
+    path: "{{ item.dir }}"
+    state: "{{ item.state }}"
+    mode: "{{ item.perm }}"
+    owner: gpadmin
+    group: gpadmin
+    recurse: "{{ item.recurse }}"
+  with_items:
+    - { "state": "directory", "perm": "0755", "recurse": "yes", "dir": "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}" }
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+
+#
+- name: Check again if the Greenplum Database version is already upgraded
+  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}
+  register: gpdb_upgraded_verify
+
+#
+- name: Stop if Greenplum Database software is not upgraded
+  fail: msg="Installing Greenplum Database Software is currently failed!"
+  when: gpdb_installed_verify.stat.exists != True

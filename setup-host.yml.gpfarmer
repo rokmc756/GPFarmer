@@ -1,8 +1,9 @@
 - hosts: all
   become: true
   roles:
-   - { role: init-hosts }
-#   - { role: gpdb }               # Need to check if get_facts: true is required
+   - { role: gpdb }               # Need to check if get_facts: true is required
+#   - { role: gpupgrade }
+#   - { role: init-hosts }
 #   - { role: pxf }
 #   - { role: madlib }            # Failed on ubuntu 18.04
 #   - { role: postgis }

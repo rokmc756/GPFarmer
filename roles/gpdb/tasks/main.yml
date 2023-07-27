@@ -16,8 +16,3 @@
   import_tasks: uninstall.yml
   tags: uninstall
 
-#
-- name: Upgrade of gpdb for Red Hat / CentOS / Rocky / Ubuntu /Debian
-  import_tasks: upgrade.yml
-  tags: upgrade
-

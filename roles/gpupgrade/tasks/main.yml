@@ -1,0 +1,53 @@
+---
+# Install Greenplum Database on RedHat / CentOS / Rocky / Ubuntu / Debian
+
+# for now fail if it's not suppoted OS
+- name: Check OS ( GPDB )
+  fail: msg="{{ ansible_distribution }} is not supported for this ansible playbook!"
+  when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
+
+#
+#- name: Upgrade gpdb for Red Hat / CentOS / Rocky / Ubuntu / Debian
+#  import_tasks: install.yml
+#  tags: install
+
+#
+- name: Upgrade gpdb for Red Hat / CentOS / Rocky / Ubuntu / Debian
+  import_tasks: 01-check-upgrade-env.yml
+  tags: install
+
+#
+- name: Upgrade gpdb for Red Hat / CentOS / Rocky / Ubuntu / Debian
+  import_tasks: 02-perform-pre-upgrade.yml
+  tags: install
+
+#
+- name: Upgrade gpdb for Red Hat / CentOS / Rocky / Ubuntu / Debian
+  import_tasks: 03-initial-gpupgrade.yml
+  tags: install
+
+#
+- name: Upgrade gpdb for Red Hat / CentOS / Rocky / Ubuntu / Debian
+  import_tasks: 04-run-upgrade.yml
+  tags: install
+
+
+#
+- name: Upgrade gpdb for Red Hat / CentOS / Rocky / Ubuntu / Debian
+  import_tasks: 05-finalize-upgrade.yml
+  tags: install
+
+#
+- name: Upgrade gpdb for Red Hat / CentOS / Rocky / Ubuntu / Debian
+  import_tasks: 06-perform-post-upgrade.yml
+  tags: install
+
+#
+- name: Upgrade gpdb for Red Hat / CentOS / Rocky / Ubuntu / Debian
+  import_tasks: 07-revert-upgrade.yml
+  tags: install
+
+#
+- name: Rollback gpdb for Red Hat / CentOS / Rocky / Ubuntu / Debian
+  import_tasks: uninstall.yml
+  tags: uninstall

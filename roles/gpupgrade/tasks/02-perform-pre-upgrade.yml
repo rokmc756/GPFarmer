@@ -1,0 +1,146 @@
+# 01
+# To determine what extensions are installed on your source cluster, query the pg_extension catalog table:
+# SELECT * FROM pg_extension;
+# During the upgrade process, extensions are handled differently depending on the type of extension:
+
+# 02
+# Greenplum Database ships with some PostgreSQL native extensions, such as amcheck, dblink, hstore, fuzzystrmatch, citext, and pgcrypto.
+# gpupgrade handles these PostgreSQL extensions automatically through the upgrade process. There is no action required in preparation for the upgrade regarding these extensions.
+# For other PostgreSQL native extensions that are not shipped with Greenplum, you must install them on the target cluster by placing the .so library files inside $libdir directory.
+# Do not run CREATE EXTENSION <extension_name> as gpupgrade handles this part.
+# You must copy any custom user defined files such as dictionary, synonym, or thesaurus to the target cluster.
+
+# 03
+# Upgrade Supported Greenplum Extensions
+# Greenplum supported extensions can be upgraded by gpupgrade as part of the upgrade process and are listed below.
+# Upgrade the supported Greenplum extensions to their latest version on the source cluster before upgrading the Greenplum Database.
+# Extension	Action	Documentation
+# GPText	Upgrade to 3.9.0+	Upgrading Greenplum Text
+# MADlib	Upgrade to 1.20.0+	Upgrading MADlib
+# PostGIS	Upgrade to 2.1.5+pivotal.3	Upgrading PostGIS
+# PXF	Upgrade to 5.16.4+ or 6.3.0+	Upgrading PXF
+# Additionally, check if any of your extensions is installed outside of the default $GPHOME directory.
+# You will need this information when editing the gpupgrade_config file when you Run gpupgrade initialize.
+
+# 04
+# Uninstall Unsupported Greenplum Extensions
+# Greenplum unsupported extensions cannot be upgraded by gpupgrade and are listed below. Uninstall them from the source cluster, you will re-install them once the cluster is upgraded.
+# Extension	Uninstalling
+# Oracle Compatibility Functions	Uninstalling Oracle Compatibility Functions
+# Greenplum PL/Java Language Extension	Uninstalling PL/Java
+# Python Data Science Module Package	Uninstalling the Python Data Science Module Package
+# R Data Science Library Package	Uninstalling the R Data Science Library Package
+# VMware Greenplum Command Center	See the GPCC Pre-Upgrade Steps below
+# Keep track of the extensions you uninstall, and the related modifications you had to make to the source Greenplum Database system, so that you can re-apply them after you finalize the upgrade.
+#
+# Drop or alter any tables, views, or user-defined functions (UDFs) you have created that reference UDFs or custom data types supplied by the unsupported extensions.
+# Remove any files the extension creates in the Greenplum Database master data directory.
+
+# Caution
+# Dropping any extension that defines user defined types, aggregates, functions, operators, or views, will drop the data associated with those objects.
+# For example, if an extension declares a user defined type, any tables and columns that use that type will be dropped when the extension is dropped.
+# One specific example is the PostGIS extension that defines a geometry data type. A column that uses the geometry type will be dropped when PostGIS is dropped.
+
+# 05
+# GPCC Pre-Upgrade Steps
+# Perform these steps on the source cluster to uninstall Greenplum Command Center:
+# Upgrade to the latest version of Greenplum Command Center 4.X. Refer to Upgrading Greenplum Command Center.
+# Access the Workload Mgmt page from Command Center to ensure all previous settings have been migrated.
+# Stop Command Center by issuing the gpcc stop command.
+# Issue the the following commands against Greenplum Database:
+# DROP EXTERNAL WEB TABLE gpmetrics.gpcc_size_ext_table FROM gpperfmon;
+# DROP VIEW gpmetrics.gp_data_dirs FROM gpperfmon;
+# DROP EXTENSION gp_wlm FROM postgres;
+# Back up the contents of the $MASTER_DATA_DIRECTORY/gpmetrics directory to a safe location.
+
+# 06
+# Review pg_upgrade consistency checks
+# During the upgrade process, gpupgrade runs scripts that perform consistency checks.
+# You may decide to review the scripts and checks beforehand and if applicable, manually address the issues before continuing with the upgrade process.
+# See pg_upgrade Checks for the list of checks.
+
+# 07
+# Analyze pg_catalog
+# During the upgrade process, the utility runs multiple queries against the catalog tables, which take longer to complete if the statistics are outdated.
+# Run ANALYZE against each database catalog table to significantly reduce the duration of gpupgrade initialize and gpupgrade execute commands.
+# analyzedb -a -s pg_catalog -d <database_name>
+
+# 08
+# Perform catalog health check
+# Run gpcheckcat to ensure that the source catalog is in a healthy state. See the gpcheckcat reference page for further details.
+
+# 09
+# Check for CAST in pg_catalog
+# The upgrade process fails if the source cluster contains any CAST backing funtion defined in the pg_catalog system catalog.
+# Use these steps to check your source cluster and prepare for the upgrade:
+# While logged into the master node, find all casts with functions defined in pg_catalog:
+#
+# SELECT c.oid AS castoid, c.castsource::regtype, c.casttarget::regtype, c.castfunc::regprocedure \
+# FROM pg_cast c JOIN pg_proc p ON c.castfunc = p.oid \
+# WHERE p.pronamespace = 11 AND c.oid >= 16384;
+# For example, if the original cast and function were created similar to:
+#
+# CREATE FUNCTION pg_catalog.text(date) \
+# RETURNS text STRICT IMMUTABLE LANGUAGE SQL \
+# AS 'SELECT textin(date_out($1));';
+# CREATE CAST (date AS text) WITH FUNCTION pg_catalog.text(date) AS IMPLICIT;
+# Drop the function with CASCADE. For example:
+#
+#DROP FUNCTION pg_catalog.text(date) CASCADE;
+#Recreate the function in a different schema. For example, if the new schema is public:
+#
+#CREATE FUNCTION public.text(date) \
+#RETURNS text STRICT IMMUTABLE LANGUAGE SQL \
+#AS 'SELECT textin(date_out($1));';
+#Recreate cast with the new function:
+#CREATE CAST (date AS text) WITH FUNCTION public.text(date) AS IMPLICIT;
+
+# 10
+# Update .bashrc or .bash_profile
+# Since gpupgrade does major version in-place upgrades, it can be easy to mix source and target environments, causing Greenplum utilities to fail.
+# To prevent such failures, perform the following steps:
+# On all segments, remove from .bashrc or .bash_profile files any lines that source greenplum_path.sh or set Greenplum variables.
+#
+# Start a new shell and ensure PATH, LD_LIBRARY_PATH, PYTHONHOME, and PYTHONPATH are clear of any Greenplum values.
+#
+# Log in to a segment host, and verfiy the above values are clear of any Greenplum values.
+#
+
+# 11
+# Prepare test queries
+# Prepare test queries to use after gpupgrade execute and during the post-upgrade phase, to test and verify that the new installation runs as expected.
+# Your test queries should not create new tables or data.
+
+# 12
+# Review Link vs Copy Mode and Disk Space Requirements
+# gpupgrade supports two upgrade modes, copy and link, with copy being the default.
+# Decide on which mode to use based on the following information:
+# Attribute	Copy Mode	Link Mode
+# Description	Copies source cluster’s files to the target cluster	Uses hard links to modify the source cluster’s data in place
+# Upgrade Time	Slow, since it copies data before upgrading	Fast, since it modifies the data in place
+# Disk Space
+# Requirements	~60% free space on each host	~20% free space on each host
+# Revert Speed
+# (after gpupgrade execute)	Fast, since the source cluster is untouched	Slow, since it uses rsync to revert the source primary segments and mirrors
+# Risk	No risk since the source cluster is untouched	The source cluster is modified
+# Note
+# If your Greenplum cluster has no standby or mirror hosts, you will not be able to revert the upgrade after gpupgrade execute.
+# Consider using copy mode, or adding standby and mirrors to your cluster.
+
+# 13
+# About Disk Space Requirements
+# You must ensure that enough free disk space is available for the upgrade process.
+# Before initializing the upgrade, you configure the gpupgrade_config file when you Prepare for gpupgrade initialize.
+# The parameter disk_free_ratio in this file sets the free space requirement for the upgrade, and it offers default values depending on the upgrade mode you choose.
+# However, you may tune the parameter disk_free_ratio based on your specific environment characteristics.
+# Estimate how much free space you need using the guidelines below.
+# Note that copy mode requires additional space, since it copies the files to the target cluster.
+# On the Greenplum master host the available space should be at least the sum of:
+# 2 times the size of the MASTER_DATA_DIRECTORY.
+# The size of all user defined master tablespaces.
+# On all segment hosts the available space should be at least the sum of:
+# The size of MASTER_DATA_DIRECTORY.
+# The size of all user defined master tablespaces.
+# For copy mode: the size of all primary data directories.
+# During the upgrade process, the utility creates a backup copy of the master data directory and user defined tablespaces. You may optionally configure the parent_backup_dirs parameter in the gpupgrade_config file to set the internal location to store this backup. See gpupgrade Configuration File for more information.
+

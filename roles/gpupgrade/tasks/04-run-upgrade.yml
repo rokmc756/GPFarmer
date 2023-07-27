@@ -1,0 +1,74 @@
+# 01
+#During this phase you run the gpupgrade execute command that upgrades the Greenplum Database master and primary segments. You verify the command has run successfully by connecting to the target cluster.
+#
+#The following table summarizes the cluster state before and after gpupgrade execute:
+#
+#Before Execute	After Execute
+#Source	Target	Source	Target
+#Master	UP	Initialized but DOWN	DOWN	UP and populated
+#Standby	UP	Non Existent	DOWN	Non Existent
+#Primaries	UP	Initialized but DOWN	DOWN	UP and populated
+#Mirrors	UP	Non Existent	DOWN	Non Existent
+
+# 02
+# Workflow Summary
+#The gpupgrade execute command performs the following substeps:
+
+#Ensures that the agent processes are running.
+#Checks for active connections on the source cluster.
+#Waits for the cluster to be ready.
+#Stops the source cluster.
+#Upgrades the master.
+#Copies the master catalog to the primary segments.
+#Upgrades the primary segments.
+#Starts the target cluster.
+
+# 03
+#Prepare for gpupgrade execute
+#You can run gpupgrade execute once the Initialize the Upgrade (gpupgrade initialize) phase is finished.
+#
+#Ensure you are in the upgrade window. The source Greenplum Database cluster is unavailable.
+#
+#Caution
+#If using link mode, and the source Greenplum cluster does not have a standby host and mirrors, gpupgrade generates a warning:
+#
+#The source cluster does not have standby and/or mirror segments.
+#After "gpupgrade execute" has been run, there will be no way to
+#return the cluster to its original state using "gpupgrade revert".
+
+# 04
+# Run gpupgrade execute
+# Log in to the master host as gpadmin user and run the gpupgrade execute command.
+# gpupgrade execute --verbose
+# The utility displays a summary message and waits for user confirmation before proceeding. Then it proceeds to run the different substeps and displays its progress on the screen:
+#
+#Checking active connections on source cluster...                   [COMPLETE] 
+#Stopping source cluster...                                         [COMPLETE]   
+#Upgrading master...                                                [COMPLETE]   
+#.......
+#To resolve any [FAILED] substeps, review the screen error comments and recommendations, and visit Troubleshooting and Debugging.
+#
+#Once gpupgrade execute has completed successfully, gpupgrade reports on the state of the target cluster and its master listen port and data directory.
+
+
+# 05
+# Connect to and Verify the Target Cluster
+# The target Greenplum Database cluster is running with new, temporary connection parameters, which you must specify when you connect to the cluster. The output of the gpupgrade execute command shows the values for the MASTER_DATA_DIRECTORY and PGPORT environment variables. Source the greenplum_path.sh file in the target Greenplum Database installation directory and set the following environment variables:
+#
+# source /usr/local/greenplum-db-<target-version>/greenplum_path.sh
+# export MASTER_DATA_DIRECTORY=$(gpupgrade config show --target-datadir)
+# export PGPORT=$(gpupgrade config show --target-port)
+# If you need to access the source cluster again, you must either reset the variables to their original values or log out and log in again to allow the startup scripts to set the variables back to the values for the source cluster.
+#
+# Perform the following actions to verify the target Greenplum Database before you make the decision to finalize the upgrade:
+#
+# Run gpstate against the target cluster to view the status of the cluster. The master instance and primary segments should be up. The master standby and mirror segments are not added to the cluster until you run gpupgrade finalize.
+# Run gpcheckcat to verify the system catalog.
+# Merge needed entries from the pg_hba.conf authentication file in the source cluster master directory into the pg_hba.conf file in the target cluster master directory.
+# The upgrade has installed the default postgresql.conf file and updated the master port. Review the postgresql.conf file in the source master directory for any server configuration parameters you need to apply to the target cluster. See Server Configuration Parameter Changes for parameters that have been added, removed, or modified between Greenplum Database 5 and Greenplum Database 6.
+# Run any test scripts you have available to verify the upgraded database. Be sure to test all of your standard transactions against the target database and verify the results.
+# Test user applications against the upgraded databases.
+#
+# Caution
+# Do not make any changes to the database. Any changes that are made during this phase will persist in the target cluster and cause inconsistencies.
+

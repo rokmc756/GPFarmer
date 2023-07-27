@@ -1,0 +1,457 @@
+---
+# Upgrade Greenplum Database by GPUpgrade on Red Hat / CentOS / Rocky / Ubuntu / Debian
+
+#
+- name: Check if any version of Greenplum Database is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db
+  register: gpdb_link_existed
+
+#
+- name: Check if the Greenplum Database version is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}
+  register: gpdb_dir_existed
+
+#
+- name: Sanity check for {{ gpdb_base_dir }}/greenplum-db
+  fail: msg="{{ gpdb_base_dir }}/greenplum-db is supposed to be a symlink!"
+  when: gpdb_link_existed.stat.exists == True and gpdb_link_existed.stat.islnk != True
+
+#
+- name: Set name for greenplum and gpupgrade binary installer file
+  set_fact:
+    gpdb_binary_installer_file: greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}-{{ gpdb_os_name }}-{{ gpdb_arch_name }}
+    gpupgrade_binary_installer_file: gpupgrade-{{ gpupgrade_major_version }}.{{ gpupgrade_minor_version }}.{{ gpupgrade_build_version }}-{{ gpupgrade_patch_version }}.{{ gpdb_os_name }}.{{ gpdb_arch_name }}
+
+#
+- name: Set default values for run mode variables
+  set_fact:
+    gpdb_upgrade: False
+    gpdb_linkchange: False
+
+# Non-existent {{ gpdb_base_dir }}/greenplum-db is a new installation
+- name: Identify Greenplum Database Upgrade
+  set_fact:
+    gpdb_upgrade: True
+  when: gpdb_dir_existed.stat.exists == True and  gpdb_dir_existed.stat.exists == True
+
+
+# If the link points to a different existing directory, it's a link change
+- name: Identify Greenplum Database Linkchange
+  set_fact:
+    gpdb_linkchange: True
+  when: gpdb_link_existed.stat.exists == True
+
+#
+- name: Upgrade Greenplum Database
+  debug: msg="Upgrade new Greenplum Database version"
+  when: gpdb_upgrade == True
+
+#
+- name: Change Greenplum Database link
+  debug: msg="Change link to new Greenplum Database version"
+  when: gpdb_linkchange == True
+
+#
+- name: Greenplum Database - Nothing to do for upgrade
+  debug: msg="Nothing to do (no upgrade required)"
+  when: gpdb_upgrade == False and gpdb_linkchange == False
+
+###########################################################
+# Basic system setup
+
+#
+- name: Stop and disable iptables
+  service: name=iptables state=stopped enabled=no
+  changed_when: False
+  when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' ) and hostvars[inventory_hostname].ansible_distribution_major_version|int <= 6
+
+#
+- name: Stop and Disable firewalld
+  service: name=firewalld state=stopped enabled=no
+  changed_when: False
+  when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' ) and  hostvars[inventory_hostname].ansible_distribution_major_version|int >= 7
+
+#
+- name: Stop and disable ufw, ebtables
+  service: name={{ item }} state=stopped enabled=no
+  changed_when: False
+  ignore_errors: true
+  with_items:
+    - ufw
+    - ebtables
+    - firewalld
+    - snapd
+  when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+- meta: flush_handlers
+
+#######################################################################################################################################################################################################
+# Database installation
+
+- name: Copy Greenplum {{ gpdb_major_version }} and GPUpgrade {{ gpupgrade_major_version }} {{ binary_type }} file
+  copy:
+    src: "{{ item }}"
+    dest: "/home/gpadmin/{{ item }}"
+    mode: 0644
+    owner: gpadmin
+    group: gpadmin
+  with_items:
+    - "{{ gpdb_binary_installer_file }}.{{ binary_type }}"
+    - "{{ gpupgrade_binary_installer_file }}.{{ binary_type }}"
+
+#
+- block:
+  - name: Unzip Greenplum Database {{ gpdb_major_version }} archive (Ansible < 2.2)
+    unarchive: src=/home/gpadmin/{{ binary_installer_file }}.zip dest=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install remote_src=yes copy=no owner=gpadmin group=gpadmin
+    when: ansible_version.full is version_compare('2.2.0.0', operator='<', strict=False)
+
+  - name: Unzip Greenplum Database {{ gpdb_major_version }} archive (Ansible >= 2.2)
+    unarchive: src=/home/gpadmin/{{ binary_installer_file }}.zip dest=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install remote_src=yes owner=gpadmin group=gpadmin
+    when: ansible_version.full is version_compare('2.2.0.0', operator='>=', strict=False)
+
+  when: gpdb_upgrade == True and (  gpdb_binary_type != 'rpm' and gpdb_binary_type != 'deb' )
+
+#
+- name: Check if database is running
+  stat: path=/tmp/.s.PGSQL.5432
+  register: gpdb_running
+  when: inventory_hostname in groups['master']
+
+#
+- name: Shutdown database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
+  args:
+    executable: /bin/bash
+  async: 60
+  poll: 5
+  when: ( inventory_hostname in groups['master'] and gpdb_running.stat.exists == True )
+
+#
+- name: Install Greenplum Database rpm package in {{ gpdb_base_dir }}for Red Hat / CentOS / Rocky Linux
+  yum:
+    name: "{{ item }}"
+    state: present
+    disable_gpg_check: yes
+  async: 360
+  poll: 5
+  with_items:
+    - "bash-completion"
+    - "/home/gpadmin/{{ gpdb_binary_installer_file }}.{{ binary_type }}"
+  when: ( gpdb_upgrade == True and gpdb_binary_type == 'rpm' )
+
+#
+- name: Install Greenplum Database deb package in {{ gpdb_base_dir }} for Ubuntu / Debian
+  apt:
+    deb: "{{ item }}"
+    state: present
+  async: 360
+  poll: 5
+    - "bash-completion"
+    - "/home/gpadmin/{{ gpdb_binary_installer_file }}.{{ binary_type }}"
+  when: ( gpdb_upgrade == True and gpdb_binary_type == 'deb' )
+
+#
+- name: Install gpupgrade rpm file in prefix directory
+  become_user: root
+  shell: "rpm --prefix=/usr/local/gpupgrade -ivh {{ gpdb_binary_installer_file }}.{{ binary_type }}"
+  delegate_to: 127.0.0.1
+  when: inventory_hostname in groups['master'] and gpdb_upgrade == True
+
+#
+- name: Change permission of gpupgrade prefix directory
+  become: true
+  become_user: root
+  shell: "chown -R gpadmin:gpadmin {{ gpdb_base_dir }}/gpupgrade"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Add PATH of gpupgrade to greenplum_path.sh
+  become_user: gpadmin
+  lineinfile:
+    dest: "{{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+    firstmatch: true
+    insertbefore: "BOF"
+  with_items:
+    - { regexp: '^PATH=', line: 'PATH=/usr/local/gpupgrade:$PATH', state: present }
+
+
+
+# Status: database software is installed
+###########################################################
+# Database initialization
+
+#
+- name: Change permission of Greenplum Database directory
+  become: true
+  become_user: root
+  file:
+    path: "{{ item.dir }}"
+    state: "{{ item.state }}"
+    mode: "{{ item.perm }}"
+    owner: gpadmin
+    group: gpadmin
+    recurse: "{{ item.recurse }}"
+  with_items:
+    - { "state": "directory", "perm": "0755", "recurse": "yes", "dir": "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}" }
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+
+#
+- name: Check again if the Greenplum Database version is already upgraded
+  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}
+  register: gpdb_upgraded_verify
+
+#
+- name: Stop if Greenplum Database software is not upgraded
+  fail: msg="Installing Greenplum Database Software is currently failed!"
+  when: gpdb_installed_verify.stat.exists != True
+
+
+# 01
+# To determine what extensions are installed on your source cluster, query the pg_extension catalog table:
+# SELECT * FROM pg_extension;
+# During the upgrade process, extensions are handled differently depending on the type of extension:
+
+# 02
+# Greenplum Database ships with some PostgreSQL native extensions, such as amcheck, dblink, hstore, fuzzystrmatch, citext, and pgcrypto.
+# gpupgrade handles these PostgreSQL extensions automatically through the upgrade process. There is no action required in preparation for the upgrade regarding these extensions.
+# For other PostgreSQL native extensions that are not shipped with Greenplum, you must install them on the target cluster by placing the .so library files inside $libdir directory.
+# Do not run CREATE EXTENSION <extension_name> as gpupgrade handles this part.
+# You must copy any custom user defined files such as dictionary, synonym, or thesaurus to the target cluster.
+
+
+# 03
+# Upgrade Supported Greenplum Extensions
+# Greenplum supported extensions can be upgraded by gpupgrade as part of the upgrade process and are listed below.
+# Upgrade the supported Greenplum extensions to their latest version on the source cluster before upgrading the Greenplum Database.
+# Extension	Action	Documentation
+# GPText	Upgrade to 3.9.0+	Upgrading Greenplum Text
+# MADlib	Upgrade to 1.20.0+	Upgrading MADlib
+# PostGIS	Upgrade to 2.1.5+pivotal.3	Upgrading PostGIS
+# PXF	Upgrade to 5.16.4+ or 6.3.0+	Upgrading PXF
+# Additionally, check if any of your extensions is installed outside of the default $GPHOME directory.
+# You will need this information when editing the gpupgrade_config file when you Run gpupgrade initialize.
+
+# 04
+# Uninstall Unsupported Greenplum Extensions
+# Greenplum unsupported extensions cannot be upgraded by gpupgrade and are listed below. Uninstall them from the source cluster, you will re-install them once the cluster is upgraded.
+# Extension	Uninstalling
+# Oracle Compatibility Functions	Uninstalling Oracle Compatibility Functions
+# Greenplum PL/Java Language Extension	Uninstalling PL/Java
+# Python Data Science Module Package	Uninstalling the Python Data Science Module Package
+# R Data Science Library Package	Uninstalling the R Data Science Library Package
+# VMware Greenplum Command Center	See the GPCC Pre-Upgrade Steps below
+# Keep track of the extensions you uninstall, and the related modifications you had to make to the source Greenplum Database system, so that you can re-apply them after you finalize the upgrade.
+#
+# Drop or alter any tables, views, or user-defined functions (UDFs) you have created that reference UDFs or custom data types supplied by the unsupported extensions.
+# Remove any files the extension creates in the Greenplum Database master data directory.
+
+# Caution
+# Dropping any extension that defines user defined types, aggregates, functions, operators, or views, will drop the data associated with those objects.
+# For example, if an extension declares a user defined type, any tables and columns that use that type will be dropped when the extension is dropped.
+# One specific example is the PostGIS extension that defines a geometry data type. A column that uses the geometry type will be dropped when PostGIS is dropped.
+
+# 05
+# GPCC Pre-Upgrade Steps
+# Perform these steps on the source cluster to uninstall Greenplum Command Center:
+# Upgrade to the latest version of Greenplum Command Center 4.X. Refer to Upgrading Greenplum Command Center.
+# Access the Workload Mgmt page from Command Center to ensure all previous settings have been migrated.
+# Stop Command Center by issuing the gpcc stop command.
+# Issue the the following commands against Greenplum Database:
+# DROP EXTERNAL WEB TABLE gpmetrics.gpcc_size_ext_table FROM gpperfmon;
+# DROP VIEW gpmetrics.gp_data_dirs FROM gpperfmon;
+# DROP EXTENSION gp_wlm FROM postgres;
+# Back up the contents of the $MASTER_DATA_DIRECTORY/gpmetrics directory to a safe location.
+
+# 06
+# Review pg_upgrade consistency checks
+# During the upgrade process, gpupgrade runs scripts that perform consistency checks.
+# You may decide to review the scripts and checks beforehand and if applicable, manually address the issues before continuing with the upgrade process.
+# See pg_upgrade Checks for the list of checks.
+
+# 07
+# Analyze pg_catalog
+# During the upgrade process, the utility runs multiple queries against the catalog tables, which take longer to complete if the statistics are outdated.
+# Run ANALYZE against each database catalog table to significantly reduce the duration of gpupgrade initialize and gpupgrade execute commands.
+# analyzedb -a -s pg_catalog -d <database_name>
+
+# 08
+# Perform catalog health check
+# Run gpcheckcat to ensure that the source catalog is in a healthy state. See the gpcheckcat reference page for further details.
+
+# 09
+# Check for CAST in pg_catalog
+# The upgrade process fails if the source cluster contains any CAST backing funtion defined in the pg_catalog system catalog.
+# Use these steps to check your source cluster and prepare for the upgrade:
+# While logged into the master node, find all casts with functions defined in pg_catalog:
+#
+# SELECT c.oid AS castoid, c.castsource::regtype, c.casttarget::regtype, c.castfunc::regprocedure \
+# FROM pg_cast c JOIN pg_proc p ON c.castfunc = p.oid \
+# WHERE p.pronamespace = 11 AND c.oid >= 16384;
+# For example, if the original cast and function were created similar to:
+#
+# CREATE FUNCTION pg_catalog.text(date) \
+# RETURNS text STRICT IMMUTABLE LANGUAGE SQL \
+# AS 'SELECT textin(date_out($1));';
+# CREATE CAST (date AS text) WITH FUNCTION pg_catalog.text(date) AS IMPLICIT;
+# Drop the function with CASCADE. For example:
+#
+#DROP FUNCTION pg_catalog.text(date) CASCADE;
+#Recreate the function in a different schema. For example, if the new schema is public:
+#
+#CREATE FUNCTION public.text(date) \
+#RETURNS text STRICT IMMUTABLE LANGUAGE SQL \
+#AS 'SELECT textin(date_out($1));';
+#Recreate cast with the new function:
+#CREATE CAST (date AS text) WITH FUNCTION public.text(date) AS IMPLICIT;
+
+# 10
+# Update .bashrc or .bash_profile
+# Since gpupgrade does major version in-place upgrades, it can be easy to mix source and target environments, causing Greenplum utilities to fail.
+# To prevent such failures, perform the following steps:
+# On all segments, remove from .bashrc or .bash_profile files any lines that source greenplum_path.sh or set Greenplum variables.
+#
+# Start a new shell and ensure PATH, LD_LIBRARY_PATH, PYTHONHOME, and PYTHONPATH are clear of any Greenplum values.
+#
+# Log in to a segment host, and verfiy the above values are clear of any Greenplum values.
+#
+
+# 11
+# Prepare test queries
+# Prepare test queries to use after gpupgrade execute and during the post-upgrade phase, to test and verify that the new installation runs as expected.
+# Your test queries should not create new tables or data.
+
+# 12
+# Review Link vs Copy Mode and Disk Space Requirements
+# gpupgrade supports two upgrade modes, copy and link, with copy being the default.
+# Decide on which mode to use based on the following information:
+# Attribute	Copy Mode	Link Mode
+# Description	Copies source cluster’s files to the target cluster	Uses hard links to modify the source cluster’s data in place
+# Upgrade Time	Slow, since it copies data before upgrading	Fast, since it modifies the data in place
+# Disk Space
+# Requirements	~60% free space on each host	~20% free space on each host
+# Revert Speed
+# (after gpupgrade execute)	Fast, since the source cluster is untouched	Slow, since it uses rsync to revert the source primary segments and mirrors
+# Risk	No risk since the source cluster is untouched	The source cluster is modified
+# Note
+# If your Greenplum cluster has no standby or mirror hosts, you will not be able to revert the upgrade after gpupgrade execute.
+# Consider using copy mode, or adding standby and mirrors to your cluster.
+
+# 13
+# About Disk Space Requirements
+# You must ensure that enough free disk space is available for the upgrade process.
+# Before initializing the upgrade, you configure the gpupgrade_config file when you Prepare for gpupgrade initialize.
+# The parameter disk_free_ratio in this file sets the free space requirement for the upgrade, and it offers default values depending on the upgrade mode you choose.
+# However, you may tune the parameter disk_free_ratio based on your specific environment characteristics.
+# Estimate how much free space you need using the guidelines below.
+# Note that copy mode requires additional space, since it copies the files to the target cluster.
+# On the Greenplum master host the available space should be at least the sum of:
+# 2 times the size of the MASTER_DATA_DIRECTORY.
+# The size of all user defined master tablespaces.
+# On all segment hosts the available space should be at least the sum of:
+# The size of MASTER_DATA_DIRECTORY.
+# The size of all user defined master tablespaces.
+# For copy mode: the size of all primary data directories.
+# During the upgrade process, the utility creates a backup copy of the master data directory and user defined tablespaces. You may optionally configure the parent_backup_dirs parameter in the gpupgrade_config file to set the internal location to store this backup. See gpupgrade Configuration File for more information.
+
+
+
+
+- name: Restart Greenplum Database after initialization
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when: inventory_hostname in groups['master'] and ( gpdb_install == True or gpdb_linkchange == True )
+
+#
+- name: Check if database is running
+  stat: path=/tmp/.s.PGSQL.5432
+  register: gpdb_running_nothing
+  when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_linkchange == True )
+
+#
+- name: Start database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstart -a )
+  async: 60
+  poll: 5
+  when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_linkchange == True and gpdb_running_nothing.stat.exists != True )
+
+#
+- name: Create the cgconfig.conf for all nodes
+  become: true
+  template: src=cgconfig.conf.j2 dest=/etc/cgconfig.conf owner=root group=root mode=644 force=yes
+  register: cgconfig_created
+
+#
+- name: Copy systemd configuration of cgconfig into /etc/systemd/system
+  become: true
+  template: src=cgconfig.systemd.j2 dest=/etc/systemd/system/cgconfig.service owner=root group=root mode=644 force=yes
+  register: systemd_cgconfig_created
+  when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+#
+- name: Enable and Restart cgconfig for applying config
+  become: true
+  systemd:
+    name: cgconfig
+    enabled: yes
+    state: restarted
+    daemon_reload: true
+  register: cgconfig_restarted
+
+#
+- name: Enabling Resource Groups by gpconfig
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_resource_manager -v "group" )
+  args:
+    executable: /bin/bash
+  register: resource_group_enabled
+  when: inventory_hostname in groups['master']
+
+#
+- name: Apply new changes for Resource Groups
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  args:
+    executable: /bin/bash
+  register: rs_applied
+  when: inventory_hostname in groups['master']
+
+#
+- name: Add the path of greenplum variable file into .bashrc
+  become: true
+  become_user: gpadmin
+  lineinfile:
+    dest: /home/gpadmin/.bashrc
+    line: "source /usr/local/greenplum-db/greenplum_path.sh"
+    state: present
+
+#
+- name: Verify that Greenplum Database is up and running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  args:
+    executable: /bin/bash
+  register: select_version
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+#
+- name: Greenplum Database Installation
+  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }} installed"
+  when: gpdb_install == True
+
+#
+- name: Greenplum Database Version switched
+  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }} is active"
+  when: gpdb_linkchange == True
+
+# Status: Greenplum Database up and running

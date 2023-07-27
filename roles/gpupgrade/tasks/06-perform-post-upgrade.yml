@@ -1,0 +1,40 @@
+# 01
+# Perform the following steps once Greenplum Upgrade has completed upgrading Greenplum Database in order to ensure consistency across your environment.
+# 
+# Merge any user-defined parameters and modifications from the source cluster configuration files such as pg_hba.conf and postgresql.conf into the target cluster configuration files. Be mindful of removed parameters.
+# Copy any user-defined files from the source cluster to the target clusters data directory.
+# Perform the following post-upgrade tasks required by supported extensions, if applicable:
+#
+# Extension	Post Upgrade Task(s)
+# PXF	Perform the PXF Post-gpupgrade Actions procedure.
+# Re-install any unsupported extensions you uninstalled when preparing for the upgrade:
+#
+# Extension	Installing
+# Oracle Compatibility Functions	Installing Oracle Compatibility Functions
+# Greenplum PL/Java Language Extension	Installing PL/Java
+# Python Data Science Module Package	Installing the Python Data Science Module Package
+# R Data Science Library Package	Installing the R Data Science Library Package
+# VMware Greenplum Command Center	See the GPCC Post-Upgrade Steps below
+
+
+# 02
+# GPCC Post-Upgrade Steps
+
+# Perform the following steps on the target cluster to install Greenplum Command Center:
+
+# Install the latest version of Greenplum Command Center 6.
+# If the Command Center installer prompts you to upgrade the metrics_collector, follow the provided instructions.
+# Restore the $MASTER_DATA_DIRECTORY/gpmetrics directory using the backup that you created from the source cluster prior to upgrading.
+# Run the following commands:
+# BEGIN;
+# LOCK TABLE gpmetrics._gpcc_pg_log_meta IN EXCLUSIVE MODE;
+# TRUNCATE gpmetrics._gpcc_pg_log_meta;
+# INSERT INTO gpmetrics._gpcc_pg_log_meta (id, last_log_file, last_offset) SELECT 1, last_log_file, last_offset
+# FROM gpmetrics._gpcc_pg_log_last_file ORDER BY last_log_file DESC LIMIT 1;
+# COMMIT;
+# If you applied any of the workarounds suggested during the pg_upgrade Checks, complete any actions that are pending upgrade completion.
+# If you decided not to run ANALYZE against the target cluster when you ran gpupgrade finalize, run vacuumdb all -analyze-in-stages now to update all table statistics. Be sure to account for the additional downtime required to recreate statistics on the cluster. You may use the option --table to specify individual tables in order to make more important tables available first.
+#
+# Run VACUUM against your heap tables to generate free space maps, in order to improve data loading workloads on heap tables. You may perform this operation at any time, as concurrent VACUUM operations do not prevent reading or inserting data into heap tables.
+# Once the new cluster is fully operational and verified, remove the source cluster with the following command:
+# gpssh -f <hostfile> -d "rm -rf <data-directory-name>_old"

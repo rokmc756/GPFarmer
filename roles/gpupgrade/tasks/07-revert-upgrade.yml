@@ -1,0 +1,54 @@
+# 01
+# The gpupgrade revert command restores the source cluster to its original state before you started the upgrade. You may revert the upgrade at any time during or after gpupgrade initialize, or after gpupgrade execute, even if there is an error.
+# You do not need to revert the upgrade due to an error during gpupgrade initialize or gpupgrade execute. You can simply fix the reported problems and re-run the command.
+# gpupgrade revert cannot restore the source cluster after you run gpupgrade finalize. To recover the source cluster after gpupgrade finalize, restore from a backup.
+#
+# Important
+# Only revert the upgrade during a scheduled downtime. Users should receive sufficient notice that the Greenplum Database cluster will be offline for an extended period.
+#
+# Reverting the upgrade after running gpupgrade initialize completes quickly, since the source cluster has not been altered. If reverting the upgrade after running gpupgrade execute, once the primary segments are upgraded, the reverting speed depends on the upgrade mode:
+#
+# If you used copy mode, reverting the upgrade is fast, since the utility simply removes the target cluster primary data directories.
+# If you used link mode, reverting the upgrade is slow, since the utility uses rsync to re-create the source cluster primary segments from the mirrors.
+#
+# Note
+# If you used link mode, you must have segment mirroring enabled and a standby master in your cluster in order to run gpupgrade revert after gpupgrade execute. Otherwise, the command exits with an error message.
+
+
+# 02
+# Workflow Summary
+# The gpupgrade revert command performs the following substeps to restore the cluster to its original state:
+#
+# Ensures that the agent processes are running.
+# Checks active connections on target cluster.
+# Stops the target cluster.
+# Deletes target cluster data directories.
+# Deletes target tablespace directories.
+# Re-enables the source cluster.
+# Restores the source cluster.
+# Starts the source cluster.
+# Recovers the source cluster mirrors.
+# Archives log directories.
+# Deletes internal backup directories on the segments.
+# Deletes state directories on the segments.
+# Stops hub and agents.
+# Executes the revert data migration SQL scripts.
+# Deletes the master state directory.
+
+
+# 03
+# Run the gpupgrade revert Command
+# Run the following command to revert the upgrade process:
+#
+# gpupgrade revert --verbose
+# The utility displays a summary message and waits for user confirmation before proceeding. Then it proceeds to run the different steps and displays its progress on the screen:
+#
+# Checking active connections on target cluster...                   [COMPLETE]   
+# Stopping target cluster...                                         [COMPLETE]   
+# ...
+# The utility prompts to run the Revert data migration SQL scripts, if applicable. It displays all the scripts that it needs to apply, along with an explanation of what they do. The tool provides several options: none, some and all. Apply the provided scripts to get any database objects that were modified or dropped during gpupgrade initialize back to their original state.
+#
+# Once gpupgrade revert completes, the source Greenplum cluster is running, and the target Greenplum cluster, and all files and directories gpupgrade initialize created are removed. The configuration file you used with gpupgrade initialize is untouched, and the log files for all gpupgrade commands you ran are archived in the $HOME/gpAdminLogs/gpupgrade directory by renaming the directory with a timestamp, in the format $HOME/gpAdminLogs/gpupgrade-<upgradeID>-<timestamp>.
+#
+# Next Steps
+# Once the gpupgrade revert command has completed successfully, undo any manual changes in the source cluster that you performed in preparation for the upgrade process. Recreate any dropped database objects, and reinstall any database extensions or libraries you uninstalled. Using the cluster without restoring these changes can lead to degraded performance and possible application failures.

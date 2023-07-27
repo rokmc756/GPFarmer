@@ -1,0 +1,138 @@
+# 01
+# During this phase you prepare the source cluster for the upgrade and run the gpupgrade initialize command that initializes the target cluster.
+# Before proceeding, ensure you have reviewed and completed Perform the Pre-Upgrade Actions.
+# Important
+# We refer to the downtime required to perform the upgrade as the upgrade window. It is possible to run some steps of gpupgrade initialize before entering the upgrade window. You may choose to schedule one or more shorter maintenance windows to run the migration scripts provided by the utility. Read carefully through the different substeps of the gpupgrade initialize command to understand how the process works.
+# The following table summarizes the cluster state before and after running gpupgrade initialize:
+# Before Initialize	After Initialize
+# Source	Target	Source	Target
+# Master	UP	Non Existent	UP	Initialized but DOWN
+# Standby	UP	Non Existent	UP	Non Existent
+# Primaries	UP	Non Existent	UP	Initialized but DOWN
+# Mirrors	UP	Non Existent	UP	Non Existent
+
+# 02
+# Workflow Summary
+# The gpupgrade initialize command performs the following substeps:
+#
+# Verifies the Greenplum Database versions.
+# Saves the source cluster configuration.
+# Starts the hub process on the master node.
+# Generates the data migration SQL scripts needed for the whole upgrade process.
+# Executes the stats data migration SQL scripts to collect database and cluster statistics.
+# Executes the initialize data migration SQL scripts to address catalog inconsistencies between source and target cluster.
+# Verifies that gpupgrade is installed across all hosts.
+# Starts the agent processes on segment hosts and standby master.
+# Checks environment paths.
+# Creates internal backup directories on the segments to store the backup of the master data directory and user-defined master tablespaces.
+# Checks if there is enough disk space.
+# Generates the target cluster configuration.
+# Initializes the target master and segment hosts.
+# Sets the dynamic library path on the target cluster.
+# Stops the target cluster.
+# Backs up the target master.
+# Waits for the cluster to be ready.
+# Runs the pg_upgrade checks.
+
+# 03
+# Prepare for gpupgrade initialize
+# Note
+# In order to significantly reduce the duration of gpupgrade initialize, ensure that the catalog tables statistics are up to date by running analyzedb -a -s pg_catalog -d <database_name> against each database before starting the upgrade.
+# Additionally, turn off all background processes that may affect the cluster or upgrade process such as DCA processes that auto archives segment logs.
+# The gpupgrade initialize command requires a configuration file as an input. The downloaded release includes an example gpupgrade_config file located in the directory where you extracted the download.
+# Create the directory $HOME/gpupgrade, copy the example file to this location, and make edits according to your environment:
+# mkdir $HOME/gpupgrade
+# cp /usr/local/bin/greenplum/gpupgrade/gpupgrade_config  $HOME/gpupgrade/
+# Set the source_master_port, source_gphome, and target_gphome parameters according to your environment’s values.
+# Set mode and disk_free_ratio based on your choice of upgrade mode and calculations of disk space requirements.
+# If you are upgrading with supported extensions whose install location is outside of the default $GPHOME directory, which means it will be outside of target_gphome after the upgrade, set the dynamic_library_path parameter, and specify the extension locations accordingly.
+# For details and examples see the gpupgrade Configuration File reference page.
+# You may uncomment and set the value of pg_upgrade_jobs to adjust how many instances of pg_upgrade checks run simultaneously, as well as parallel schema dump and restore, and parallel tablespace transfer, in order to improve the overall upgrade speed. The default value is 4.
+# The remaining parameters are commented out and have default values. Change these values as necessary for your upgrade scenario. See the gpupgrade Configuration File file reference page for further details.
+
+
+# 04
+# Run gpupgrade initialize
+# To initialize the upgrade run from the Greenplum master:
+# gpupgrade initialize --file | -f PATH/TO/gpupgade_config [--verbose | -v] [--pg-upgrade-verbose]
+# For example:
+# gpupgrade initialize --file $HOME/gpupgrade/gpupgrade_config --verbose
+# The utility displays a summary message and waits for user confirmation before proceeding. Then it proceeds to run the different steps and displays its progress on the screen:
+# Generating data migration SQL scripts...                           [COMPLETE]
+# Executing stats data migration SQL scripts...                      [COMPLETE]
+# Executing initialize data migration SQL scripts...                 [IN PROGRESS]
+# .....
+# The first substep in the gpupgrade process is to generate the data migration scripts, then run the ones relevant to this stage, as described below:
+# Generating data migration SQL scripts: This step generates all the SQL data migration scripts needed for the entire upgrade process and places them under $HOME/gpAdminLogs/gpupgrade/data-migration-scripts/current. These scripts are based on your specific cluster characteristics. The utility executes the different scripts during the upgrade process. For more information see gpupgrade Migration Scripts.
+# Important
+# When generating the data migration scripts, the utility takes a snapshot of the database. If you add new data or objects that cannot be upgraded after generating the scripts, the scripts will miss them. In such scenario, re-run gpupgrade initialize and select Archive and re-generate scripts when prompted, in order to detect the new data and objects.
+# Executing stats data migration SQL scripts: These scripts collect cluster and database-specific characteristics, such as segment configuration and the number and type of tables in each database, that your Technical Support representative can use to help them estimate the duration of an upgrade or further improve the product. The utility provides the option to generate all, some (cluster or database) or none of the scripts scripts that generate statistics. The generated statistics are logged in $HOME/gpAdminLogs/gpupgrade/apply_stats.log.
+# Executing initialize data migration SQL scripts: These scripts address catalog inconsistencies between source and target cluster. The utility displays all the scripts that it needs to apply, which depend on your cluster, along with an explanation of what they do. Addressing the issues is a prerequisite to perform the upgrade. However, you do not need to apply the scripts at this specific time. You may choose to pause the upgrade process, review the scripts, and apply them at an appropriate time based on your cluster’s activity. The tool provides several options: none, some and all:
+# none: Select this option if you are running the gpupgrade initialize command outside the upgrade window, in order to review any inconsistencies found by the script.
+# some: Select this option if you are running the gpupgrade initialize during a shorter maintenance window you have scheduled to run selected scripts, before the upgrade window. When you select this option, the tool prompts you to select a subset of the scripts to run.
+# all: Select this option if you are running the whole upgrade process and you are in the upgrade window.
+# You can iterate over this step until you are ready to enter the upgrade window.
+# Caution
+# Executing the initialize data migration scripts can affect the performance and operations of your cluster. If you choose to apply some scripts before the upgrade window starts, be sure to plan downtime accordingly.
+# After running the initialize data migration scripts, the utility prompts you to continue with the upgrade. If you decide to continue, it proceeds with the rest of the substeps.
+
+# 05
+# pg_upgrade Checks
+# The final substep, Running pg_upgrade checks, runs a thorough list of Greenplum Database checks using the pg_upgrade --check command. If you chose not to apply some of the initialize data migration SQL scripts, this substep will fail. Additionally, some migration issues that are not handled with the initialize data migration SQL scripts will be caught during this substep. The utility provides an explanation of what the check has found, and provides a file where the conflicting objects are listed, along with actions to take. You may increase the verbose logging by running gpupgrade initialize --pg-upgrade-verbose --verbose for more detailed output. See pg_upgrade Checks for more information about the issues that it detects and potential workarounds.
+# To resolve any [FAILED] substeps, review the screen error comments and recommendations, and visit Troubleshooting and Debugging.
+
+# 06
+# First Run of gpupgrade initialize With Greenplum Extensions
+# If your cluster has preinstalled Greenplum extensions, the first time you run gpupgrade initialize it will generate an error on substep Running pg_upgrade checks, similar to:
+# Running pg_upgrade checks...                                       [FAILED]
+# Error: initialize create cluster: InitializeCreateCluster: rpc error: code = Unknown desc = substep "CHECK_UPGRADE": 4 errors occurred:
+#    * check master: Checking for presence of required libraries                 fatal
+# Your installation references loadable libraries that are missing from the
+# new installation.  You can add these libraries to the new installation,
+# or remove the functions using them from the old installation.  A list of
+# problem libraries is in the file:
+#     /home/gpadmin/.gpupgrade/pg_upgrade/seg-1/loadable_libraries.txt
+# This error is expected when upgrading with Greenplum extensions. This is because the new target cluster does not yet have the extensions installed. The utility cannot locate these libraries and fails. In order to proceed, install all missing Greenplum extensions in the target cluster and re-run gpupgrade initialize as detailed below.
+# At this stage, although the command failed, the target cluster is initialized. Follow these steps to address the error:
+# Open a new terminal and set up the target cluster environment variables.
+# source /usr/local/greenplum-db-<target-version>/greenplum_path.sh
+# export MASTER_DATA_DIRECTORY=$(gpupgrade config show --target-datadir)
+# export PGPORT=$(gpupgrade config show --target-port)
+# Start the target cluster, which was initialized and stopped when gpupgrade initialize run:
+# gpstart -a
+# Install on the target cluster the same Greenplum extensions versions as on the source cluster, and follow the additional tasks listed below for each extension:
+# GPText
+# Copy the below files from the source $MASTER_DATA_DIRECTORY to the internal backup directory, set by parent_backup_dirs, by default:
+# cp $MASTER_DATA_DIRECTORY/{gptext.conf,gptxtenvs.conf,zoo_cluster.conf} $MASTER_DATA_DIRECTORY/../.gpupgrade/master-pre-upgrade-backup/
+# Do NOT alter any of the files in the .gpupgrade directory.
+# For installation details see Installing Tanzu Greenplum Text.
+# MADlib
+# For installation details refer to Installing MADlib.
+# PostGIS
+# Connect to the source cluster and run the following workaround to schema qualify the raster_hash function. This prevents an error when gpupgrade finalize runs ANALYZE:
+# CREATE OR REPLACE FUNCTION raster_eq(raster, raster)
+# RETURNS bool
+# AS $$ SELECT public.raster_hash($1) = public.raster_hash($2) $$
+# LANGUAGE 'sql' IMMUTABLE STRICT;
+# For installation details refer to Enabling PostGIS Support.
+# PXF
+# Perform the PXF Pre-gpupgrade Actions
+# For installation details refer to Installing Tanzu Greenplum Platform Extension Framework.
+# Stop the target cluster:
+# gpstop -a
+# Switch back to the original shell and re-run the gpupgrade initialize command:
+# gpupgrade initialize --file | -f PATH/TO/gpupgade_config [--verbose | -v] [--pg-upgrade-verbose]
+
+# 07
+# About Target Cluster Directories
+# When the gpupgrade initialize command creates the target Greenplum cluster, it creates data directories for the target master segment instance and primary segment instances on the master and segment hosts, alongside the source cluster data directories. This applies both to copy or link mode.
+# The target cluster data directory names have this format:
+#
+#<segmentPrefix>.<upgradeID>.<contentID>
+#Where:
+
+# <segmentPrefix> is the segment prefix string specified when the source Greenplum Database system was initialized. This is typically gpseg.
+# <upgradeID> is a 10-character string generated by gpupgrade. The hash code is the same for all segment data directories belonging to the new target Greenplum cluster. In addition to distinguishing target directories from the source data directories, the unique hash code tags all data directories belonging to the current gpupgrade instance.
+# <contentID> is the database content ID for the segment. The master segment instance content id is always −1. The primary segment content ids are numbered consecutively from 0 to the number of primary segments.
+# For example, /data/master/gpseg.AAAAAAAAAA.-1. The gpupgrade utility subcommand config show is useful to identify the target cluster directories, as well as other parameters during the upgrade process.
+#
