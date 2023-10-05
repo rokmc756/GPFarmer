@@ -33,7 +33,7 @@
 - set_fact:
     gppkg_install_cmd: "gppkg -a install"
     check_dsr_installed: "gppkg query | grep DataScienceR | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
-    dsr_package_name: DataScienceR-{{ dsr_major_version }}.{{ dsr_minor_version }}-{{ dsr_patch_version }}-gp{{ dsr_gpdb_version }}-{{ dsr_os_version }}_{{ dsr_arch_type }}.gppkg
+    dsr_package_name: DataScienceR-{{ dsr_major_version }}.{{ dsr_minor_version }}.{{ dsr_patch_version }}-gp{{ dsr_gpdb_version }}-{{ dsr_os_version }}_{{ dsr_arch_type }}.gppkg
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ( dsr_gpdb_version|int >= 7 and dsr_os_version|regex_replace('[^0-9]','')|int >= 8 )
 
 #

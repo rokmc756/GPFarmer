@@ -5,7 +5,7 @@
 # for now fail if it's not a Red Hat based system
 - name: Check OS (PGCC v2)
   fail: msg="Not a Red Hat based system!"
-  when: ansible_os_family != 'RedHat'
+  when: ansible_os_family != 'RedHat' or ansible_os_family != 'CentOS' or ansible_os_family != 'Rocky'
 
 #
 - name: Setup Kafka

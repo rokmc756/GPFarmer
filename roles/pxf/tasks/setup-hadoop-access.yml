@@ -83,10 +83,11 @@
 - name: Initial connecton to avoid Host Verfication failed
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh-copy-id -i ~/.ssh/id_rsa.pub hadoop@co7-master )
+  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh-copy-id -i ~/.ssh/id_rsa.pub hadoop@{{ hadoop_master_hostname }} )
   args:
     executable: /bin/bash
   register: ssh_initial_connection
+  ignore_errors: true
   when:
     - with_hadoop_access
     - inventory_hostname in groups['master']
@@ -125,10 +126,11 @@
 - name: Copy configuration files of Hadoop
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && sshpass -p 'changeme' scp hadoop@co7-master:/home/hadoop/hadoop-{{ hadoop_version }}/etc/hadoop/{{ item }} {{ pxf_base_dir_with_hadoop }}/servers/default )
+  shell: ( source ~/.bashrc && sshpass -p 'changeme' scp hadoop@{{ hadoop_master_hostname }}:/home/hadoop/hadoop-{{ hadoop_version }}/etc/hadoop/{{ item }} {{ pxf_base_dir_with_hadoop }}/servers/default/{{ item }} )
   args:
     executable: /bin/bash
   register: hadoop_configuratinos_copied
+  ignore_errors: true
   with_items:
     - "core-site.xml"
     - "hdfs-site.xml"

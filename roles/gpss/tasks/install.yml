@@ -36,19 +36,19 @@
 #
 - name: Copy GPSS tarball file
   become_user: gpadmin
-  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:  inventory_hostname in groups['master'] and install_gpss_tar
 
 #
 - name: Untar GPSS tarball archive
   become_user: gpadmin
-  unarchive: src={{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} copy=no owner=gpadmin group=gpadmin
+  unarchive: src={{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} copy=no owner=gpadmin group=gpadmin
   when: inventory_hostname in groups['master'] and install_gpss_tar
 
 #
 - name: Install GPSS tarball in {{ gpdb_base_dir }}
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && cd {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64/ ; ./install_gpdb_component )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && cd {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64/ ; ./install_gpdb_component )
   async: 120
   poll: 5
   when: inventory_hostname in groups['master'] and install_gpss_tar
@@ -75,14 +75,14 @@
 #
 - name: Copy GPSS gppkg file
   become_user: gpadmin
-  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_gpdb }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
     - inventory_hostname in groups['master']  # At GPDB Master
 
 #
 - name: Install GPSS gppkg package
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_gpdb }}-x86_64.gppkg )
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-x86_64.gppkg )
   when:
     - inventory_hostname in groups['master']  # At GPDB Master
 
@@ -128,7 +128,7 @@
 #
 - name: Copy GPSS rpm package
   become_user: gpadmin                              # ETL user
-  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.rpm dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64.rpm dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
     - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
 
@@ -136,7 +136,7 @@
 - name: Install GPSS rpm package in {{ gpdb_base_dir }}
   become: yes
   yum:
-    name: /home/gpadmin/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.rpm
+    name: /home/gpadmin/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64.rpm
     state: present
   async: 60
   poll: 5

@@ -1,9 +1,12 @@
 ---
+gpdb_base_dir: "/usr/local"
+gpadmin_home_dir: "/home/gpadmin"
+
 pljava_prefix_major_version:
 pljava_major_version: 2
 pljava_minor_version: 0
-pljava_patch_version: 4
-pljava_gpdb_version: 6
+pljava_patch_version: 8
+pljava_gpdb_version: 7
 
 pljava_os_version: rhel8
 # pljava_os_version: ubuntu18.04

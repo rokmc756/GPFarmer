@@ -1,0 +1,22 @@
+#- hosts: rh7-master,rh7-slave
+#  become: true
+#  become_user: gpadmin
+#  roles:
+#    - { role: gpcc }
+
+- hosts: all
+  become: true
+  roles:
+   - { role: gpss }
+#   - { role: plr }
+#   - { role: plcontainer }
+#   - { role: pxf }
+#    - { role: gpdb }               # Need to check if get_facts: true is required
+#    - { role: init-hosts }
+#   - { role: gpupgrade }
+#   - { role: madlib }            # Failed on ubuntu 18.04
+#   - { role: postgis }
+#   - { role: pljava }
+#   - { role: DataSciencePython }
+#   - { role: DataScienceR }
+#   - { role: gptext }

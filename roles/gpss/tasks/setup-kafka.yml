@@ -50,7 +50,7 @@
 #
 - name: Copy GPSS rpm package
   become_user: gpadmin                              # ETL user
-  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.rpm dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64.rpm dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
     - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
 
@@ -58,7 +58,7 @@
 - name: Install GPSS rpm package in {{ gpdb_base_dir }}
   become: yes
   yum:
-    name: /home/gpadmin/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.rpm
+    name: /home/gpadmin/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64.rpm
     state: present
   async: 60
   poll: 5

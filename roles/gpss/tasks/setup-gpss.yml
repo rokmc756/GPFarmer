@@ -1,5 +1,5 @@
 ---
-
+#
 # Install Greenplum Streaming Server on both GPDB Master and Kafka Broker
 # Configure data loading with sample data between them
 #
@@ -25,6 +25,50 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
 #
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    check_gpss_installed: "gppkg query | grep gpss | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
+    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int >= 7 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int >= 8 )
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    check_gpss_installed: "gppkg -q --all | grep gpss | cut -d . -f 1 | sed 's/[0-9]$//g'"
+    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int <= 6 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int <= 8 )
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    check_gpss_installed: "gppkg query | grep gpss | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
+    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int >= 7 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int >= 8 )
+
+#
+- name: Verify if GPSS gppkg is installed
+  become_user: gpadmin
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ check_gpss_installed }} )
+  args:
+    executable: /bin/bash
+  ignore_errors: true
+  register: gpss_installed
+  changed_when: False
+  when: inventory_hostname in groups['master']
+
+#  #ignore_warnings: True
+#  ## command: '/usr/bin/rpm -qa custom-rpm --queryformat %{VERSION}'
+
+#
+- debug: msg={{ gpss_installed.stdout }}
+  when: inventory_hostname in groups['master']
+
+#
+- name: Stop if GPSS gppkg package is installed
+  fail: msg="GPSS gppkg package is already installed!"
+  when: ( inventory_hostname in groups['master'] and 'gpss' in gpss_installed.stdout )
+
+#
 - name: yum install daemonize
   become: yes
   yum:
@@ -35,55 +79,36 @@
 #
 - name: Copy GPSS tarball file
   become_user: gpadmin
-  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:  inventory_hostname in groups['master'] and gpss_install_tar
 
 #
 - name: Untar GPSS tarball archive
   become_user: gpadmin
-  unarchive: src={{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} copy=no owner=gpadmin group=gpadmin
+  unarchive: src={{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} copy=no owner=gpadmin group=gpadmin
   when: inventory_hostname in groups['master'] and gpss_install_tar
 
 #
 - name: Install GPSS tarball in {{ gpdb_base_dir }}
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && cd {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_kafka }}-x86_64/ ; ./install_gpdb_component )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && cd {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64/ ; ./install_gpdb_component )
   async: 120
   poll: 5
   when: inventory_hostname in groups['master'] and gpss_install_tar
 
 #
-- name: Verify if GPSS gppkg is installed
-  become_user: gpadmin
-  command: 'rpm -q gpss --dbpath /usr/local/greenplum-db/share/packages/database'
-  register: select_gpss_version
-  when:
-    - inventory_hostname in groups['master']
-  failed_when:
-    - select_gpss_version.rc != 1
-#  #ignore_warnings: True
-#  ## command: '/usr/bin/rpm -qa custom-rpm --queryformat %{VERSION}'
-
-#
-- name: Stop if GPSS gppkg package is installed
-  fail: msg="GPSS gppkg package is alredy installed!"
-  when:
-    - inventory_hostname in groups['master']
-    - "'package gpss is not installed' not in select_gpss_version.stdout"
-
-#
 - name: Copy GPSS gppkg file
   become_user: gpadmin
-  copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_gpdb }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-  when:
-    - inventory_hostname in groups['master']  # At GPDB Master
+  copy: src={{ gpss_package_name }} dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  args:
+    executable: /bin/bash
+  when: ( inventory_hostname in groups['master'] and 'gpss' not in gpss_installed.stdout )
 
 #
 - name: Install GPSS gppkg package
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_gpdb }}-x86_64.gppkg )
-  when:
-    - inventory_hostname in groups['master']  # At GPDB Master
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpadmin_home_dir }}/{{ gpss_package_name }} )
+  when: inventory_hostname in groups['master']  # At GPDB Master
 
 #
 - name: Verify that database for GPSS extention is installed

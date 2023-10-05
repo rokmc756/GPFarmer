@@ -4,12 +4,13 @@ remote_machine_username="jomoon"
 remote_machine_password="changeme"
 
 [master]
-rh7-master ansible_ssh_host=192.168.0.61
+rh7-master ansible_ssh_host=192.168.0.71
 
 [standby]
-rh7-slave ansible_ssh_host=192.168.0.62
+rh7-slave ansible_ssh_host=192.168.0.72
 
 [segments]
-rh7-node01 ansible_ssh_host=192.168.0.63
-rh7-node02 ansible_ssh_host=192.168.0.64
-rh7-node03 ansible_ssh_host=192.168.0.65
+rh7-node01 ansible_ssh_host=192.168.0.73
+rh7-node02 ansible_ssh_host=192.168.0.74
+rh7-node03 ansible_ssh_host=192.168.0.75
+

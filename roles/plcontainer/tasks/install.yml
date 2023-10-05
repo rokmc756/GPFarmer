@@ -370,21 +370,20 @@
 
 #
 - name: Copy plcontainer python docker image
-  copy: src=plcontainer-python-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_docker_minor_version }}-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=plcontainer-python-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   register: python_docker_image_copied
-  when: inventory_hostname in groups['master']
-
+  when: inventory_hostname in groups['master'] and {{ plcontainer_gpdb_version }} <= 6
 #
-- name: Copy plcontainer python3 docker gppkg file
-  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_docker_minor_version }}-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+- name: Copy plcontainer python3 docker image
+  copy: src=plcontainer-python3-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   register: python3_docker_image_copied
-  when: inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master'] and {{ plcontainer_gpdb_version }} >= 7
 
 #
-- name: Copy plcontainer R docker image
-  copy: src=plcontainer-r-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_docker_minor_version }}-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-  register: r_docker_image_copied
-  when: inventory_hostname in groups['master']
+#- name: Copy plcontainer R docker image
+#  copy: src=plcontainer-r-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_docker_minor_version }}-gp{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+#  register: r_docker_image_copied
+#  when: inventory_hostname in groups['master']
 
 # - name: Copy plcontainer R beta docker image
 #  copy: src=plcontainer-r-image-{{ plcontainer_prefix_major_version }}{{ plcontainer_major_version }}.{{ plcontainer_minor_version }}.{{ plcontainer_patch_version }}-{{ plcontainer_gpdb_version }}.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
@@ -420,13 +419,13 @@
   when: ( inventory_hostname in groups['master'] and  installed_docker_images_listed.stdout.find('plc_python3_shared') != -1 )
 
 #
-- name: Add an R based runtime
-  become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && plcontainer runtime-add -r plc_r_shared -i pivotaldata/plcontainer_r_shared:devel -l r )
-  args:
-    executable: /bin/bash
-  register: r_based_runtime_added
-  when: ( inventory_hostname in groups['master'] and installed_docker_images_listed.stdout.find('plc_r_shared') != -1 )
+#- name: Add an R based runtime
+#  become_user: gpadmin
+#  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && plcontainer runtime-add -r plc_r_shared -i pivotaldata/plcontainer_r_shared:devel -l r )
+#  args:
+#    executable: /bin/bash
+#  register: r_based_runtime_added
+#  when: ( inventory_hostname in groups['master'] and installed_docker_images_listed.stdout.find('plc_r_shared') != -1 )
 
 #
 - name: List the names of the runtimes your created and added to the PL/Container XML file

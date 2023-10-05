@@ -1,5 +1,4 @@
 ---
-
 # Install PXF on GPDB for RHEL, CentOS, Rocky Linux
 
 - name: Check if any version of Greenplum Database is installed
@@ -109,7 +108,7 @@
     line: "{{ item }}"
     insertafter: EOF
   with_items:
-    - "export PATH=$PATH:/usr/local/pxf-gp{{ pxf_major_version }}/bin"
+    - "export PATH=$PATH:/usr/local/pxf-{{ pxf_gpdb_version }}/bin"
     - "export JAVA_HOME={{ java_home }}"
 
 #
@@ -129,7 +128,7 @@
   become: yes
   become_user: gpadmin
   lineinfile:
-    dest: /usr/local/pxf-gp6/conf/pxf-env.sh
+    dest: /usr/local/pxf-{{ pxf_gpdb_version }}/conf/pxf-env.sh
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
     state: "{{ item.state }}"

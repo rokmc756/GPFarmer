@@ -12,7 +12,7 @@
 
 #
 - name: Check if the Greenplum Database version is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}
+  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
   register: gpdb_dir_existed
   # register: gpdb_version_installed
 
@@ -24,7 +24,7 @@
 #
 - name: Set name for binary installer file (name includes build number)
   set_fact:
-    binary_installer_file: greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}-{{ gpdb_os_name }}-{{ gpdb_arch_name }}
+    binary_installer_file: greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}-{{ gpdb_os_name }}-{{ gpdb_arch_name }}
   when: gpdb_build_version is defined and gpdb_build_version != None
 
 #
@@ -261,8 +261,8 @@
     - { regexp: '^agreed=', line: 'agreed=1', state: present, backrefs: yes }
     - { regexp: '^pathVerification=', line: 'pathVerification=1', state: present, backrefs: yes }
     - { regexp: '^validMigrateDecision=', line: 'validMigrateDecision=1', state: present, backrefs: yes }
-    - { regexp: '^user_specified_installPath=', line: 'user_specified_installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}', state: present, backrefs: yes }
-    - { regexp: '^installPath=', line: 'installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}', state: present, backrefs: yes }
+    - { regexp: '^user_specified_installPath=', line: 'user_specified_installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}', state: present, backrefs: yes }
+    - { regexp: '^installPath=', line: 'installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}', state: present, backrefs: yes }
     - { regexp: '^    agreed=', line: '    agreed=1', state: present, backrefs: yes }
   when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_binary_type != 'rpm' and gpdb_binary_type != 'deb' )
 
@@ -317,7 +317,7 @@
 
 #
 - name: Check again if the Greenplum Database version is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}
+  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
   register: gpdb_installed_verify
 
 #
@@ -388,21 +388,9 @@
     - { regexp: '^MASTER_HOSTNAME=', line: 'MASTER_HOSTNAME={{ ansible_hostname }}', state: present }
     - { regexp: '^MASTER_DIRECTORY=', line: 'MASTER_DIRECTORY={{ gpdb_data_dir }}/master', state: present }
     - { regexp: '^#?DATABASE_NAME=', line: 'DATABASE_NAME=gpadmin', state: present }
+    - { regexp: '^COORDINATOR_HOSTNAME=', line: "COODINATOR_HOSTNAME={{ hostvars[groups['master'][0]]['ansible_hostname'] }}", state: present }
+    - { regexp: '^COORDINATOR_DIRECTORY=', line: 'MASTER_DIRECTORY={{ gpdb_data_dir }}/master', state: present }
   when: ( inventory_hostname in groups['master'] and gpdb_install == True )
-
-#
-- name: Fix settings in gpinitsystem config file when enabling mirror
-  lineinfile:
-    dest: /home/gpadmin/gpinitsystem_config
-    regexp: "{{ item.regexp }}"
-    line: "{{ item.line }}"
-    state: "{{ item.state }}"
-  with_items:
-    - { regexp: '^#MIRROR_PORT_BASE=', line: 'MIRROR_PORT_BASE=21000', state: present }
-    - { regexp: '^#REPLICATION_PORT_BASE=', line: 'REPLICATION_PORT_BASE=22000', state: present }
-    - { regexp: '^#MIRROR_REPLICATION_PORT_BASE=', line: 'MIRROR_REPLICATION_PORT_BASE=23000', state: present }
-    - { regexp: '^#declare -a MIRROR_DATA_DIRECTORY=', line: 'declare -a MIRROR_DATA_DIRECTORY=( {{ mirror_data_dirs }} )', state: present }
-  when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_mirror_enable == True )
 
 #
 - name: Change permission of Greenplum Database directory
@@ -416,7 +404,7 @@
     group: gpadmin
     recurse: "{{ item.recurse }}"
   with_items:
-    - { "state": "directory", "perm": "0755", "recurse": "yes", "dir": "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}" }
+    - { "state": "directory", "perm": "0755", "recurse": "yes", "dir": "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}" }
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 #    - { "state": "link", "perm": "0777", "recurse": "no", "dir": "{{ gpdb_base_dir }}/greenplum-db" }
 
@@ -505,7 +493,7 @@
 - name: Add MASTER_DATA_DIRECTORY to greenplum_path.sh
   become_user: gpadmin
   lineinfile:
-    dest: "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}/greenplum_path.sh"
+    dest: "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}/greenplum_path.sh"
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
     state: "{{ item.state }}"
@@ -652,6 +640,17 @@
     state: present
 
 #
+- name: Verify that Greenplum Database is up and running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  args:
+    executable: /bin/bash
+  register: select_version
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+#
 - name: Change gpadmin password to check remote login via SSL
   become_user: gpadmin
   changed_when: False
@@ -663,25 +662,13 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
 #
-- name: Verify that Greenplum Database is up and running
-  become_user: gpadmin
-  changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
-  args:
-    executable: /bin/bash
-  register: select_version
-  when: inventory_hostname in groups['master']
-  failed_when: "'(Greenplum Database ' not in select_version.stdout"
-
-
-#
 - name: Greenplum Database Installation
-  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }} installed"
+  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }} installed"
   when: gpdb_install == True
 
 #
 - name: Greenplum Database Version switched
-  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }} is active"
+  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }} is active"
   when: gpdb_linkchange == True
 
 # Status: Greenplum Database up and running

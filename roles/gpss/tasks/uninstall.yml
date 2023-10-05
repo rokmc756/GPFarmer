@@ -108,7 +108,7 @@
 #
 - name: Uninstall GPSS gppkg package
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -r gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_rhel_version_gpdb }}-x86_64 )
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -r gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-x86_64 )
   when:
     - inventory_hostname in groups['master']  # At GPDB Master
     - "'package gpss is not installed' not in select_gpss_version.stdout"

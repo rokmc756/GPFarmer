@@ -4,8 +4,8 @@
 # MASTER_HOST=171
 # HOSTS_RANGE="171 172 173 174 175"
 
-MASTER_HOST="61"
-HOSTS_RANGE="61 67"
+MASTER_HOST="71"
+HOSTS_RANGE="71 75"
 
 #
 MASTER_HOST_IP=192.168.0.$MASTER_HOST
@@ -24,3 +24,4 @@ ssh gpadmin@$MASTER_HOST_IP "source /usr/local/greenplum-db/greenplum_path.sh &&
 ssh gpadmin@$MASTER_HOST_IP "source /usr/local/greenplum-db/greenplum_path.sh && gpstop -ra"
 ssh gpadmin@$MASTER_HOST_IP "rm -rf $MASTER_DATA_DIRECTORY/gpperfmon/data/* $MASTER_DATA_DIRECTORY/gpperfmon/logs/* /home/gpadmin/.pgpass"
 ssh gpadmin@$MASTER_HOST_IP "source /usr/local/greenplum-db/greenplum_path.sh && dropdb gpperfmon"
+

@@ -35,8 +35,9 @@
     gppkg_install_cmd: "gppkg -a install"
     remote_copy_cmd: "gpsync"
     check_pljava_installed: "gppkg query | grep pljava | awk '{print $1}'"
-    pljava_package_name: pljava-{{ pljava_major_version }}.{{ pljava_minor_version }}.{{ pljava_patch_version }}-gp{{ pljava_gpdb_version }}-{{ pljava_os_version }}-{{ pljava_arch_type }}.gppkg
+    pljava_package_name: pljava-{{ pljava_major_version }}.{{ pljava_minor_version }}.{{ pljava_patch_version }}-gp{{ pljava_gpdb_version }}-{{ pljava_os_version }}_{{ pljava_arch_type }}.gppkg
   when: inventory_hostname in groups['master'] and pljava_gpdb_version|int >= 7
+  #  pljava_package_name: pljava-{{ pljava_major_version }}.{{ pljava_minor_version }}.{{ pljava_patch_version }}-gp{{ pljava_gpdb_version }}-{{ pljava_os_version }}-{{ pljava_arch_type }}.gppkg
 
 #
 - set_fact:

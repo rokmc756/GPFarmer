@@ -1,12 +1,16 @@
 ---
+gpdb_base_dir: "/usr/local"
+gpadmin_home_dir: "/home/gpadmin"
 gpss_major_version: 1
-gpss_minor_version: 9.0
+gpss_minor_version: 10.3
 gpss_patch_version:
-gpss_gpdb_version: gpdb6
-gpss_rhel_version_kafka: rhel7
-gpss_rhel_version_gpdb: rhel8
+gpss_gpdb_version: gpdb7
+gpss_os_version_kafka: rhel8
+gpss_os_version_gpdb: rhel8
+gpss_arch_type: x86_64
 gpss_database_name: testdb
-gpss_mdw_hostname: rk8-master
+gpss_mdw_hostname: "{{ hostvars[groups['master'][0]].ansible_hostname }}"
+
 gpss_setup_action: "{{ setup_action }}"
 #  gpss-gpdb6-1.6.0-rhel7-x86_64.tar.gz
 
@@ -24,8 +28,8 @@ kafka_table_name: json_from_kafka
 kafka_install_dir: /usr/local/kafka
 kafka_replication_factor: 3
 kafka_partitions: 3
-zookeeper_hosts: "co7-node01:2181,co7-node02:2181,co7-node03:2181"
-kafka_broker_hosts: "co7-node01:9092,co7-node02:9092,co7-node03:9092"
+zookeeper_hosts: "{{ hostvars[groups['kafka-brokers'][0]].ansible_hostname }}:2181,{{ hostvars[groups['kafka-brokers'][1]].ansible_hostname }}:2181,{{ hostvars[groups['kafka-brokers'][2]].ansible_hostname }}:2181"
+kafka-broker_hosts: "{{ hostvars[groups['kafka-brokers'][0]].ansible_hostname }}:9092,{{ hostvars[groups['kafka-brokers'][1]].ansible_hostname }}:9092,{{ hostvars[groups['kafka-brokers'][2]].ansible_hostname }}:9092"
 print_debug: true
 
 gpss_file_vars:

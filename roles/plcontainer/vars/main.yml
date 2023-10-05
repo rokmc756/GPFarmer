@@ -13,11 +13,15 @@
 # plcontainer-python3-image-2.1.3-gp6.tar.gz
 # plcontainer-r-image-2.1.3-gp6.tar.gz
 
+gpdb_base_dir: "/usr/local"
+gpadmin_home_dir: "/home/gpadmin"
+
 plcontainer_prefix_major_version:
 plcontainer_major_version: 2
-plcontainer_minor_version: 2
-plcontainer_patch_version: 0
-plcontainer_gpdb_version: 6
+plcontainer_minor_version: 3
+plcontainer_patch_version: 1
+plcontainer_python_version: 3
+plcontainer_gpdb_version: 7
 plcontainer_os_version: rhel8
 # plcontainer_os_version: ubuntu18.04
 plcontainer_arch_type: x86_64
@@ -29,9 +33,9 @@ plcontainer_schema_name: plcontainer_test_scheme
 
 plr_prefix_major_version:
 plr_major_version: 3
-plr_minor_version: 0
-plr_patch_version: 4
-plr_gpdb_version: 6
+plr_minor_version: 1
+plr_patch_version: 2
+plr_gpdb_version: 7
 plr_os_version: rhel8
 plr_arch_type: x86_64
 # plr_os_version: rhel8
