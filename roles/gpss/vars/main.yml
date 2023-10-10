@@ -22,14 +22,14 @@ gpss_job_name: kafkajson2gp
 gpss_install_tar: false
 
 kafka_base_dir: /home/gpadmin/kafka-base
-# kafka_major_version: 2
+# kafka_major_version: 3
 kafka_topic_name: topic-json-gpkafka
 kafka_table_name: json_from_kafka
 kafka_install_dir: /usr/local/kafka
 kafka_replication_factor: 3
 kafka_partitions: 3
 zookeeper_hosts: "{{ hostvars[groups['kafka-brokers'][0]].ansible_hostname }}:2181,{{ hostvars[groups['kafka-brokers'][1]].ansible_hostname }}:2181,{{ hostvars[groups['kafka-brokers'][2]].ansible_hostname }}:2181"
-kafka-broker_hosts: "{{ hostvars[groups['kafka-brokers'][0]].ansible_hostname }}:9092,{{ hostvars[groups['kafka-brokers'][1]].ansible_hostname }}:9092,{{ hostvars[groups['kafka-brokers'][2]].ansible_hostname }}:9092"
+kafka_broker_hosts: "{{ hostvars[groups['kafka-brokers'][0]].ansible_hostname }}:9092,{{ hostvars[groups['kafka-brokers'][1]].ansible_hostname }}:9092,{{ hostvars[groups['kafka-brokers'][2]].ansible_hostname }}:9092"
 print_debug: true
 
 gpss_file_vars:

@@ -2,7 +2,6 @@
 #
 # Install Greenplum Streaming Server on both GPDB Master and Kafka Broker
 # Configure data loading with sample data between them
-#
 - name: Check if the GPDB software is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
@@ -56,9 +55,6 @@
   changed_when: False
   when: inventory_hostname in groups['master']
 
-#  #ignore_warnings: True
-#  ## command: '/usr/bin/rpm -qa custom-rpm --queryformat %{VERSION}'
-
 #
 - debug: msg={{ gpss_installed.stdout }}
   when: inventory_hostname in groups['master']
@@ -108,6 +104,7 @@
 - name: Install GPSS gppkg package
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpadmin_home_dir }}/{{ gpss_package_name }} )
+  ignore_errors: true
   when: inventory_hostname in groups['master']  # At GPDB Master
 
 #
@@ -178,6 +175,7 @@
   register: gpss_table_created
   when: inventory_hostname in groups['master']
 
+#
 - debug: msg={{ gpss_table_created }}
   when: inventory_hostname in groups['master'] and print_debug
 
@@ -188,7 +186,6 @@
   shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && daemonize $GPHOME/bin/gpss {{ gpss_base_dir }}/gpss_config.json --verbose --log-dir {{ gpss_log_dir }} )
   register: gpss_daemon_started
   when: inventory_hostname in groups['master']
-  # command: "daemonize /usr/local/greenplum-db/bin/gpss {{ gpss_base_dir }}/gpss_config.json --verbose --log-dir {{ gpss_log_dir }}"
 
 #
 - debug: msg={{ gpss_daemon_started }}

@@ -160,11 +160,12 @@
   when:
     - inventory_hostname in groups['master']  # At GPDB Master
 
+
 #
 - name: Delete Kafka Topic
   become: yes
   shell:
-    "/usr/local/kafka/bin/kafka-topics.sh --bootstrap-server co7-node01:9092 --topic {{ kafka_topic_name }} --delete"
+    "/usr/local/kafka/bin/kafka-topics.sh --bootstrap-server {{ hostvars[groups['kafka-brokers'][0]].ansible_hostname }}:9092 --topic {{ kafka_topic_name }} --delete"
   ignore_errors: yes
   when: inventory_hostname in groups['kafka-brokers']
 
@@ -188,3 +189,11 @@
     path: "{{ gpss_base_dir }}"
     state: absent
   when: inventory_hostname in groups['master']
+
+#
+- name: Delete gpkafka duplicated in greenplum base directory
+  file:
+    owner: gpadmin
+    group: gpadmin
+    path: "/usr/local/greenplum-db/bin/gpkafka"
+    state: absent
