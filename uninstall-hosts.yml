@@ -7,12 +7,12 @@
 - hosts: all
   become: true
   roles:
-   - { role: gpss }
+    - { role: gpdb }               # Need to check if get_facts: true is required
+#    - { role: init-hosts }
+#   - { role: gpss }
 #   - { role: plr }
 #   - { role: plcontainer }
 #   - { role: pxf }
-#    - { role: gpdb }               # Need to check if get_facts: true is required
-#    - { role: init-hosts }
 #   - { role: gpupgrade }
 #   - { role: madlib }            # Failed on ubuntu 18.04
 #   - { role: postgis }

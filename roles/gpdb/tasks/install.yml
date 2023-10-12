@@ -343,20 +343,31 @@
 #
 - name: Create hostfile file for single node
   become_user: root
-  shell: "rm -f {{ playbook_dir }}/hostfile; sed -n $(( $( grep -n master {{ playbook_dir }}/ansible-hosts | cut -d ':' -f 1 ) + 1 ))p {{ playbook_dir }}/ansible-hosts | awk '{print $1}' > {{ playbook_dir }}/hostfile"
+  shell: "rm -f {{ playbook_dir }}/hostfile; sed -n $(( $( grep -n master {{ playbook_dir }}/ansible-hosts | head -1 | cut -d ':' -f 1 ) + 1 ))p {{ playbook_dir }}/ansible-hosts | awk '{print $1}' > {{ playbook_dir }}/hostfile"
   delegate_to: 127.0.0.1
-  when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_initdb_single == True )
+  when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == True or gpdb_initdb_with_standby == False )
 
 #
 - name: Create hostfile file for multiple nodes
   become_user: "{{ local_machine_user }}"        # It was pivotal previously
   shell: "rm -f {{ playbook_dir }}/hostfile; tail -n +$(($( grep -n segments {{ playbook_dir }}/ansible-hosts | cut -d ':' -f 1 ) + 1)) {{ playbook_dir }}/ansible-hosts | awk '{print $1}' >> {{ playbook_dir }}/hostfile"
   delegate_to: 127.0.0.1
-  when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_initdb_single == False )
+  when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == False or gpdb_initdb_with_standby == True )
+
+#
+- name: Create hostfile_all file for all nodes
+  become_user: "{{ local_machine_user }}"        # It was pivotal previously
+  shell: "rm -f {{ playbook_dir }}/hostfile_all; sed -n $(($(grep -n master {{ playbook_dir }}/ansible-hosts | head -1 | cut -d ':' -f 1) + 1 )),$\p {{ playbook_dir }}/ansible-hosts | grep -v '^\[' | sed '/^[[:space:]]*$/d' | awk '{print $1}' >> {{ playbook_dir }}/hostfile_all"
+  delegate_to: 127.0.0.1
+  when: ( inventory_hostname in groups['master'] and gpdb_install == True )
+  # shell: "rm -f {{ playbook_dir }}/hostfile_all; tail -n +$(($(grep -n master {{ playbook_dir }}/ansible-hosts | head -1 | cut -d ':' -f 1) + 1 )),$\\p {{ playbook_dir }}/ansible-hosts | grep -v '\\[' | sed '/^[[:space:]]*$/d' | awk '{print $1}' >> {{ playbook_dir }}/hostfile_all"
 
 #
 - name: Copy hostfile files
-  copy: src={{ playbook_dir }}/hostfile dest=/home/gpadmin/hostfile owner=gpadmin group=gpadmin mode=0644
+  copy: src={{ playbook_dir }}/hostfile dest=/home/gpadmin/{{ item }} owner=gpadmin group=gpadmin mode=0644
+  with_items:
+    - hostfile
+    - hostfile_all
   when: ( inventory_hostname in groups['master'] and gpdb_install == True )
 
 #
@@ -390,6 +401,7 @@
     - { regexp: '^#?DATABASE_NAME=', line: 'DATABASE_NAME=gpadmin', state: present }
     - { regexp: '^COORDINATOR_HOSTNAME=', line: "COODINATOR_HOSTNAME={{ hostvars[groups['master'][0]]['ansible_hostname'] }}", state: present }
     - { regexp: '^COORDINATOR_DIRECTORY=', line: 'MASTER_DIRECTORY={{ gpdb_data_dir }}/master', state: present }
+    - { regexp: '^SEG_PREFIX=', line: 'SEG_PREFIX=gpseg', state: present }
   when: ( inventory_hostname in groups['master'] and gpdb_install == True )
 
 #
@@ -406,7 +418,6 @@
   with_items:
     - { "state": "directory", "perm": "0755", "recurse": "yes", "dir": "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}" }
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
-#    - { "state": "link", "perm": "0777", "recurse": "no", "dir": "{{ gpdb_base_dir }}/greenplum-db" }
 
 #
 - name: Change permission of Greenplum Database link since above task does not work for link
@@ -446,14 +457,22 @@
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
 #
+- name: Create {{ gpdb_data_dir }}/primary and mirror directories for only master
+  file: path={{ item.path }} state=directory owner=gpadmin group=gpadmin mode=0770
+  with_items:
+    - { path: '{{ gpdb_data_dir }}/primary' }
+    - { path: '{{ gpdb_data_dir }}/mirror' }
+  when: ( inventory_hostname in groups['master'] and gpdb_initdb_single == True ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
+
+#
 - name: Create {{ gpdb_data_dir }} segment directories
   file: path={{ gpdb_data_dir }}/primary state=directory owner=gpadmin group=gpadmin mode=0770
-  when: inventory_hostname in groups['segments'] and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
+  when: ( inventory_hostname in groups['segments'] and gpdb_initdb_single == False ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
 #
 - name: Create {{ gpdb_data_dir }} segment directories
   file: path={{ gpdb_data_dir }}/mirror state=directory owner=gpadmin group=gpadmin mode=0770
-  when: inventory_hostname in groups['segments'] and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True ) and gpdb_mirror_enable == True
+  when: ( inventory_hostname in groups['segments'] and gpdb_initdb_single == False ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
 #
 - name: Install greeplum binary into segment nodes by running gpseginstall
@@ -572,7 +591,6 @@
 #
 - name: Create SSL key to connect intoo Greenplum Database
   shell: ( openssl req -newkey rsa:2048 -x509 -keyout {{ gpdb_ssl_dir }}/cert.pem -new -text -out {{ gpdb_ssl_dir }}/server.req -days {{ gpdb_ssl_days }} -nodes -subj "/C={{ gpdb_ssl_country }}/ST={{ gpdb_ssl_state }}/L={{ gpdb_ssl_location }}/O={{ gpdb_ssl_organization }}/CN={{ gpdb_ssl_common_name }}/emailAddress={{ gpdb_ssl_email }}" )
-  # shell: ( openssl req -newkey rsa:2048 -x509 -keyout {{ gpdb_ssl_dir }}/cert.pem -out {{ gpdb_ssl_dir }}/server.req -days {{ gpdb_ssl_days }} -nodes -subj "/C={{ gpdb_ssl_country }}/ST={{ gpdb_ssl_state }}/L={{ gpdb_ssl_location }}/O={{ gpdb_ssl_organization }}/CN={{ gpdb_ssl_common_name }}/emailAddress={{ gpdb_ssl_email }}" )
   args:
     executable: /bin/bash
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and enable_ssl == True
@@ -584,7 +602,6 @@
     executable: /bin/bash
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and enable_ssl == True
 
-# rm cert.pem
 
 #
 - name: Turn the certificate into a self-signed certificate so that the server will look for them.

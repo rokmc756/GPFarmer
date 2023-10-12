@@ -10,7 +10,7 @@
 
 #
 - name: Check if the Greenplum Database version is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}
+  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
   register: gpdb_dir_existed
 
 #
@@ -54,7 +54,6 @@
 
 
 # Database Uninstallation
-
 #
 - name: Check if database is running
   stat: path=/tmp/.s.PGSQL.5432
@@ -86,7 +85,7 @@
     state: absent
   async: 60
   poll: 5
-  when: ( inventory_hostname in groups['master'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['segments'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
 #
 - name: Delete Greenplum Database directories
@@ -96,7 +95,7 @@
   with_items:
     - "{{ gpdb_base_dir }}/greenplum-db"
     - "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}"
-  when: gpdb_unlinkchange == True and gpdb_uninstall == True
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['segments'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
 #
 - name: Delete {{ master_data_dir }} for master data directories
@@ -128,16 +127,16 @@
   when: inventory_hostname in groups['master'] and ( gpdb_uninstall == True or gpdb_unlinkchange == True )
 
 #
-- name: Delete ssh public keys in all hosts
-  become: true
-  become_user: "{{ item }}"
-  file:
-    path: ~/.ssh/known_hosts
-    state: absent
-  with_items:
-    - "gpadmin"
-    - "root"
-  when: gpdb_uninstall == True or gpdb_unlinkchange == True
+#- name: Delete ssh public keys in all hosts
+#  become: true
+#  become_user: "{{ item }}"
+#  file:
+#    path: ~/.ssh/known_hosts
+#    state: absent
+#  with_items:
+#    - "gpadmin"
+#    - "root"
+#  when: gpdb_uninstall == True or gpdb_unlinkchange == True
 
 # Need to check if it works
 - name: Enable and start iptables
@@ -147,6 +146,7 @@
 
 #
 - name: Enable and Start firewalld
+
   service: name=firewalld state=started enabled=yes
   changed_when: False
   when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' ) and hostvars[inventory_hostname].ansible_distribution_major_version|int >= 7
