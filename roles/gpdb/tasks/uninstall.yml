@@ -4,6 +4,7 @@
 # Uninstallation: {{ gpdb_base_dir }}/greenplum-db must not exist
 # Unlinkchange: {{ gpdb_base_dir }} /greenplum-db points to another directory
 #
+
 - name: Check if any version of Greenplum Database is already linked
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_link_existed
@@ -66,6 +67,7 @@
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
   register: select_version
+  ignore_errors: true
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
@@ -76,6 +78,7 @@
   async: 60
   poll: 5
   register: shutdown_database
+  ignore_errors: true
   when: ( inventory_hostname in groups['master'] and gpdb_running.stat.exists == True ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
 #
@@ -85,7 +88,7 @@
     state: absent
   async: 60
   poll: 5
-  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['segments'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
 #
 - name: Delete Greenplum Database directories
@@ -95,14 +98,15 @@
   with_items:
     - "{{ gpdb_base_dir }}/greenplum-db"
     - "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}"
-  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['segments'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
+  # when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['segments'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
 #
 - name: Delete {{ master_data_dir }} for master data directories
   file:
     path: "{{ master_data_dir }}"
     state: absent
-  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
+  # when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
 #
 - name: Delete {{ gpdb_data_dir }} segment data directories
@@ -113,7 +117,8 @@
     - "primary"
     - "mirror"
     - ""
-  when: inventory_hostname in groups['segments'] and ( gpdb_uninstall == True or gpdb_unlinkchange == True )
+# when: ( gpdb_uninstall == True or gpdb_unlinkchange == True )
+# when: inventory_hostname in groups['segments'] and ( gpdb_uninstall == True or gpdb_unlinkchange == True )
 
 #
 - name: Delete gpinitsystem config file and hostlist file
@@ -137,6 +142,15 @@
 #    - "gpadmin"
 #    - "root"
 #  when: gpdb_uninstall == True or gpdb_unlinkchange == True
+
+#
+- name: Delete sysctl file
+  file:
+    path: "/etc/sysctl.d/98-sysctl-gpdb.conf"
+    state: absent
+  notify:
+    - Reload sysctl
+  when: ( gpdb_uninstall == True or gpdb_unlinkchange == True )
 
 # Need to check if it works
 - name: Enable and start iptables

@@ -13,7 +13,9 @@
 
 #
 - name: Reload sysctl
-  shell: /sbin/sysctl -p /etc/sysctl.conf
+  shell: |
+    /sbin/sysctl -p
+    /sbin/sysctl -p /etc/sysctl.conf
 
 #
 - name: Reload sshd

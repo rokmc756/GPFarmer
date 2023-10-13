@@ -13,3 +13,8 @@ rk8-slave ansible_ssh_host=192.168.0.82
 rk8-node01 ansible_ssh_host=192.168.0.83
 rk8-node02 ansible_ssh_host=192.168.0.84
 rk8-node03 ansible_ssh_host=192.168.0.85
+
+[kafka-brokers]
+rh8-node01 ansible_ssh_host=192.168.0.53
+rh8-node02 ansible_ssh_host=192.168.0.54
+rh8-node03 ansible_ssh_host=192.168.0.55

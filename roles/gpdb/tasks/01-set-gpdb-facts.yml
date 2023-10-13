@@ -1,0 +1,79 @@
+#
+- name: Set default values for run mode variables
+  set_fact:
+    gpdb_install: False
+    gpdb_linkchange: False
+
+# Non-existent {{ gpdb_base_dir }}/greenplum-db is a new installation
+- name: Identify Greenplum Database Installation
+  set_fact:
+    gpdb_install: True
+  when: gpdb_dir_existed.stat.exists != True and  gpdb_dir_existed.stat.exists != True
+
+# If the link points to a different existing directory, it's a link change
+- name: Identify Greenplum Database Linkchange
+  set_fact:
+    gpdb_linkchange: True
+  when: gpdb_link_existed.stat.exists != True
+
+#
+- name: Greenplum Database Installation
+  debug: msg="New Greenplum Database installation"
+  when: gpdb_install == True
+
+#
+- name: Greenplum Database Link Change
+  debug: msg="Changing link to Greenplum Database version"
+  when: gpdb_linkchange == True
+
+#
+- name: Greenplum Database - Nothing to do
+  debug: msg="Nothing to do (no installation/upgrade required)"
+  when: gpdb_install == False and gpdb_linkchange == False
+
+#
+- name: Set name for binary installer file (name includes build number)
+  set_fact:
+    binary_installer_file: greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}-{{ gpdb_os_name }}-{{ gpdb_arch_name }}
+  when: gpdb_build_version is defined and gpdb_build_version != None
+
+#
+- name: Set name for binary installer file (name does not include build number)
+  set_fact:
+    binary_installer_file: greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}-{{ gpdb_os_name }}-{{ gpdb_arch_name }}
+  when: gpdb_build_version is not defined or ( gpdb_build_version is defined and gpdb_build_version == None )
+
+#
+- set_fact:
+    gpdb_network_range: "{{ hostvars[inventory_hostname]['ansible_eth0']['ipv4']['network'] }}/{{ ( hostvars[inventory_hostname]['ansible_eth0']['ipv4']['address'] + '/' + hostvars[inventory_hostname]['ansible_eth0']['ipv4']['netmask'] ) | ansible.utils.ipaddr('prefix') }}"
+
+#
+- name: Get the specific ip address for all hosts
+  set_fact:
+    prod_ip_addr_range: "{{ item }}"
+  with_items: "{{ ansible_all_ipv4_addresses }}"
+  when: "item | ansible.utils.ipaddr( gpdb_network_range )"
+
+- name: Print the value of shmall
+  shell: "echo $(expr $(getconf _PHYS_PAGES) / 2)"
+  register: shmall_fact
+
+#
+- name: set fact for shmall
+  set_fact:
+    shmall_var: "{{ shmall_fact.stdout }}"
+
+- name: set fact for shmall
+  set_fact:
+    shmall_var: "{{ shmall_fact.stdout }}"
+
+- name: Print the value of shmmax
+  shell: "echo $(expr $(getconf _PHYS_PAGES) / 2 \\* $(getconf PAGE_SIZE))"
+  register: shmmax_fact
+
+- name: set fact for shmmax
+  set_fact:
+    shmmax_var: "{{ shmmax_fact.stdout }}"
+
+- debug: msg={{ shmall_var }}
+- debug: msg={{ shmmax_var }}

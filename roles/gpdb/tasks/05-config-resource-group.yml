@@ -1,0 +1,44 @@
+###########################################################
+# Resource Group configuration
+
+- name: Create the cgconfig.conf for all nodes
+  become: true
+  template: src=cgconfig.conf.j2 dest=/etc/cgconfig.conf owner=root group=root mode=644 force=yes
+  register: cgconfig_created
+
+#
+- name: Copy systemd configuration of cgconfig into /etc/systemd/system
+  become: true
+  template: src=cgconfig.systemd.j2 dest=/etc/systemd/system/cgconfig.service owner=root group=root mode=644 force=yes
+  register: systemd_cgconfig_created
+  when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+#
+- name: Enable and Restart cgconfig for applying config
+  become: true
+  systemd:
+    name: cgconfig
+    enabled: yes
+    state: restarted
+    daemon_reload: true
+  register: cgconfig_restarted
+
+#
+- name: Enabling Resource Groups by gpconfig
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_resource_manager -v "group" )
+  args:
+    executable: /bin/bash
+  register: resource_group_enabled
+  when: inventory_hostname in groups['master']
+
+#
+- name: Apply new changes for Resource Groups
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  args:
+    executable: /bin/bash
+  register: rs_applied
+  when: inventory_hostname in groups['master']

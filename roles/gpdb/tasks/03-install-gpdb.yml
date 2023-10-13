@@ -1,0 +1,128 @@
+# Database installation
+#
+- name: Create empty variable for data directories
+  set_fact: data_dirs=""
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
+
+#
+- name: Create empty variable for mirror data directories
+  set_fact: mirror_data_dirs=""
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
+
+#
+- name: Loop over number for primary segments
+  set_fact: data_dirs="{{ data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/primary"
+  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
+
+#
+- name: Loop over number for mirror segments
+  set_fact: mirror_data_dirs="{{ mirror_data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/mirror"
+  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
+
+#
+- name: Copy Greenplum Database {{ gpdb_major_version }} {{ gpdb_binary_type }} file
+  copy: src={{ binary_installer_file }}.{{ gpdb_binary_type }} dest=/home/gpadmin/{{ binary_installer_file }}.{{ gpdb_binary_type }} mode=0644 owner=gpadmin group=gpadmin
+
+#
+- name: Remove old temp installer directory
+  file: path=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install state=absent
+  changed_when: False
+  when: gpdb_install == True
+
+#
+- name: Create new temp installer directory
+  file: path=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install state=directory owner=gpadmin group=gpadmin
+  changed_when: False
+  when: gpdb_install == True
+
+#
+- block:
+  - name: Unzip Greenplum Database {{ gpdb_major_version }} archive (Ansible < 2.2)
+    unarchive: src=/home/gpadmin/{{ binary_installer_file }}.zip dest=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install remote_src=yes copy=no owner=gpadmin group=gpadmin
+    when: ansible_version.full is version_compare('2.2.0.0', operator='<', strict=False)
+
+  - name: Unzip Greenplum Database {{ gpdb_major_version }} archive (Ansible >= 2.2)
+    unarchive: src=/home/gpadmin/{{ binary_installer_file }}.zip dest=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install remote_src=yes owner=gpadmin group=gpadmin
+    when: ansible_version.full is version_compare('2.2.0.0', operator='>=', strict=False)
+
+  when: gpdb_install == True and (  gpdb_binary_type != 'rpm' and gpdb_binary_type != 'deb' )
+
+#
+- name: Check if database is running
+  stat: path=/tmp/.s.PGSQL.5432
+  register: gpdb_running
+  when: inventory_hostname in groups['master']
+
+#
+- name: Shutdown database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
+  args:
+    executable: /bin/bash
+  async: 60
+  poll: 5
+  when: ( inventory_hostname in groups['master'] and gpdb_running.stat.exists == True )
+
+# This will only work on the first run
+# Note: You hereby accept the license! Please see installer for remaining questions.
+- name: Accept license and make unattended installation possible
+  lineinfile:
+    dest: /home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install/{{ binary_installer_file }}.bin
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+    backrefs: "{{ item.backrefs }}"
+  with_items:
+    - { regexp: '^more << EOF', line: 'cat << EOF', state: present, backrefs: no }
+    - { regexp: '^agreed=', line: 'agreed=1', state: present, backrefs: yes }
+    - { regexp: '^pathVerification=', line: 'pathVerification=1', state: present, backrefs: yes }
+    - { regexp: '^validMigrateDecision=', line: 'validMigrateDecision=1', state: present, backrefs: yes }
+    - { regexp: '^user_specified_installPath=', line: 'user_specified_installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}', state: present, backrefs: yes }
+    - { regexp: '^installPath=', line: 'installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}', state: present, backrefs: yes }
+    - { regexp: '^    agreed=', line: '    agreed=1', state: present, backrefs: yes }
+  when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_binary_type != 'rpm' and gpdb_binary_type != 'deb' )
+
+#
+- name: Install Greenplum Database Software Binary in {{ gpdb_base_dir }}
+  become_user: gpadmin
+  command: /home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install/{{ binary_installer_file }}.bin
+  async: 120
+  poll: 5
+  when: ( gpdb_install == True and gpdb_binary_type == 'zip' )
+
+#
+- name: Install Greenplum Database Software RPM Package in {{ gpdb_base_dir }} for Red Hat / CentOS / Rocky Linux
+  yum:
+    name: /home/gpadmin/{{ binary_installer_file }}.{{ gpdb_binary_type }}
+    state: present
+    disable_gpg_check: yes
+  async: 360
+  poll: 5
+  when: ( gpdb_install == True and gpdb_binary_type == 'rpm' )
+
+#
+- name: Install Greenplum Database Software DEB Package in {{ gpdb_base_dir }} for Ubuntu / Debian
+  apt:
+    deb: /home/gpadmin/{{ binary_installer_file }}.{{ gpdb_binary_type }}
+    state: present
+  async: 360
+  poll: 5
+  when: ( gpdb_install == True and gpdb_binary_type == 'deb' )
+
+#
+- name: Remove temp installer directory
+  file: path=/home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install state=absent
+  changed_when: False
+  when: ( gpdb_install == True and gpdb_binary_type == 'zip' )
+
+#
+- name: Check again if the Greenplum Database version is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
+  register: gpdb_installed_verify
+
+#
+- name: Stop if Greenplum Database software is not installed
+  fail: msg="Installing Greenplum Database Software is currently failed!"
+  when: gpdb_installed_verify.stat.exists != True
