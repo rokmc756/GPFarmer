@@ -7,7 +7,8 @@
 - hosts: all
   become: true
   roles:
-    - { role: gpdb }               # Need to check if get_facts: true is required
+    - { role: gptext }
+#    - { role: gpdb }               # Need to check if get_facts: true is required
 #    - { role: init-hosts }
 #   - { role: gpss }
 #   - { role: plr }
@@ -19,4 +20,3 @@
 #   - { role: pljava }
 #   - { role: DataSciencePython }
 #   - { role: DataScienceR }
-#   - { role: gptext }

@@ -17,18 +17,17 @@ gpdb_initdb_with_standby: True
 # greenplum-db-7.0.0-beta.4-el8-x86_64.rpm
 # greenplum-db-6.24.3-ubuntu18.04-amd64.deb
 gpdb_major_version: 6
-gpdb_minor_version: 25.2
+gpdb_minor_version: 21.0
 gpdb_build_version:
-gpdb_os_name: 'rhel8'
+gpdb_os_name: 'rhel7'
 gpdb_arch_name: 'x86_64'
 gpdb_binary_type: 'rpm'
 # gpdb_os_name: 'ubuntu18.04'
 # gpdb_arch_name: 'amd64'
 # gpdb_binary_type: 'deb'
 
-# smdw_hostname: "rh7-slave"
-smdw_hostname: "rk8-slave"
-# smdw_hostname: "co7-slave"
+smdw_hostname: "rh7-slave"
+# smdw_hostname: "rk8-slave"
 
 gpdb_network_range: "192.168.0.0"
 gpdb_admin_password: "changeme"

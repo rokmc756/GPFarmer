@@ -1,8 +1,9 @@
 - hosts: all
   become: true
   roles:
-    - { role: gpdb }                 # Need to check if get_facts: true is required
+    - { role: gptext }
 #    - { role: init-hosts }
+#    - { role: gpdb }                 # Need to check if get_facts: true is required
 #   - { role: gpss }
 #   - { role: plcontainer }
 #   - { role: DataSciencePython }
@@ -13,7 +14,6 @@
 #   - { role: gpupgrade }
 #   - { role: madlib }               # Failed on ubuntu 18.04
 #   - { role: postgis }
-#   - { role: gptext }
 #   - { role: plr }
 
 #
