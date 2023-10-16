@@ -64,3 +64,18 @@
     path: "{{ gpdb_base_dir }}/greenplum-text-{{ gptext_major_version }}.{{ gptext_minor_version }}"
     state: absent
   when: gptext_version_installed.stat.isdir is defined and gptext_version_installed.stat.isdir
+
+#
+- name: Verify that database for GPTEXT is installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ gptext_database_name }}'" )
+  register: gptext_database_installed
+  when: ( inventory_hostname in groups['master'] and '(Greenplum Database ' in select_version.stdout )
+
+#
+- name: Drop database for GPTEXT
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ gptext_database_name }} )
+  register: gptext_database_dropped
+  when: ( inventory_hostname in groups['master'] and '100' in gptext_database_installed.stdout )
+
