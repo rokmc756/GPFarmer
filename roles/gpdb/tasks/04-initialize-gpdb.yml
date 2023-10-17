@@ -12,26 +12,67 @@
   when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_initdb_with_standby == True )
 
 #
-- name: Create hostfile file for single node
-  become_user: root
-  shell: "rm -f {{ playbook_dir }}/hostfile; sed -n $(( $( grep -n master {{ playbook_dir }}/ansible-hosts | head -1 | cut -d ':' -f 1 ) + 1 ))p {{ playbook_dir }}/ansible-hosts | awk '{print $1}' > {{ playbook_dir }}/hostfile"
-  delegate_to: 127.0.0.1
-  when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == True or gpdb_initdb_with_standby == False )
+#- name: Create hostfile file for single node
+#  become_user: root
+#  shell: "rm -f {{ playbook_dir }}/hostfile; sed -n $(( $( grep -n master {{ playbook_dir }}/ansible-hosts | head -1 | cut -d ':' -f 1 ) + 1 ))p {{ playbook_dir }}/ansible-hosts | awk '{print $1}' > {{ playbook_dir }}/hostfile"
+#  delegate_to: 127.0.0.1
+#  when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == True or gpdb_initdb_with_standby == False )
 
 #
-- name: Create hostfile file for multiple nodes
-  become_user: "{{ local_machine_user }}"        # It was pivotal previously
-  shell: "rm -f {{ playbook_dir }}/hostfile; tail -n +$(($( grep -n segments {{ playbook_dir }}/ansible-hosts | cut -d ':' -f 1 ) + 1)) {{ playbook_dir }}/ansible-hosts | awk '{print $1}' >> {{ playbook_dir }}/hostfile"
-  delegate_to: 127.0.0.1
-  when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == False or gpdb_initdb_with_standby == True )
+- name: Create hostfile file for master node
+  lineinfile:
+    path: "/home/gpadmin/hostfile"
+    line: "{{ hostvars[item]['ansible_hostname'] }}"
+    state: present
+    create: yes
+  register: hostfile_created
+  with_items: "{{ groups['master'] }}"
+  when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == True and gpdb_initdb_with_standby == False )
+  # when: ansible_hostname != "{{ item }}" or ansible_hostname == "{{ item }}"
+
+#
+#- name: Create hostfile file for multiple nodes
+#  become_user: "{{ local_machine_user }}"        # It was pivotal previously
+#  shell: "rm -f {{ playbook_dir }}/hostfile; tail -n +$(($( grep -n segments {{ playbook_dir }}/ansible-hosts | cut -d ':' -f 1 ) + 1)) {{ playbook_dir }}/ansible-hosts | awk '{print $1}' >> {{ playbook_dir }}/hostfile"
+#  delegate_to: 127.0.0.1
+#  when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == False or gpdb_initdb_with_standby == True )
+
+#
+- name: Create hostfile file for segment nodes
+  lineinfile:
+    path: "/home/gpadmin/hostfile"
+    line: "{{ hostvars[item]['ansible_hostname'] }}"
+    state: present
+    create: yes
+  register: hostfile_created
+  with_items: "{{ groups['segments'] }}"
+  when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == False and gpdb_initdb_with_standby == True )
+  # when: inventory_hostname in groups['master']
+  # when: ( ansible_hostname != "{{ item }}" or ansible_hostname == "{{ item }}" ) and ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == False or gpdb_initdb_with_standby == True )
 
 #
 - name: Create hostfile_all file for all nodes
-  become_user: "{{ local_machine_user }}"        # It was pivotal previously
-  shell: "rm -f {{ playbook_dir }}/hostfile_all; sed -n $(($(grep -n master {{ playbook_dir }}/ansible-hosts | head -1 | cut -d ':' -f 1) + 1 )),$\\p {{ playbook_dir }}/ansible-hosts | grep -v '^\\[' | sed '/^[[:space:]]*$/d' | awk '{print $1}' >> {{ playbook_dir }}/hostfile_all"
-  delegate_to: 127.0.0.1
-  when: ( inventory_hostname in groups['master'] and gpdb_install == True )
-  # shell: "rm -f {{ playbook_dir }}/hostfile_all; tail -n +$(($(grep -n master {{ playbook_dir }}/ansible-hosts | head -1 | cut -d ':' -f 1) + 1 )),$\\p {{ playbook_dir }}/ansible-hosts | grep -v '\\[' | sed '/^[[:space:]]*$/d' | awk '{print $1}' >> {{ playbook_dir }}/hostfile_all"
+  lineinfile:
+    path: "/home/gpadmin/hostfile_all"
+    line: "{{ hostvars[item]['ansible_hostname'] }}"
+    state: present
+    create: yes
+  register: hostfile_all_created
+  with_items:
+    - "{{ groups['all'] }}"
+  when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == False and gpdb_initdb_with_standby == True )
+  # when: inventory_hostname in groups['master']
+  # when: ( ansible_hostname != "{{ item }}" or ansible_hostname == "{{ item }}" ) and ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == False or gpdb_initdb_with_standby == True )
+
+#   "{{ hostvars[groups['master'][0]]['ansible_hostname'] }}", state: present }
+
+#
+#- name: Create hostfile_all file for all nodes
+#  become_user: "{{ local_machine_user }}"        # It was pivotal previously
+#  shell: "rm -f {{ playbook_dir }}/hostfile_all; sed -n $(($(grep -n master {{ playbook_dir }}/ansible-hosts | head -1 | cut -d ':' -f 1) + 1 )),$\\p {{ playbook_dir }}/ansible-hosts | grep -v '^\\[' | sed '/^[[:space:]]*$/d' | awk '{print $1}' >> {{ playbook_dir }}/hostfile_all"
+#  delegate_to: 127.0.0.1
+#  when: ( inventory_hostname in groups['master'] and gpdb_install == True )
+#  # shell: "rm -f {{ playbook_dir }}/hostfile_all; tail -n +$(($(grep -n master {{ playbook_dir }}/ansible-hosts | head -1 | cut -d ':' -f 1) + 1 )),$\\p {{ playbook_dir }}/ansible-hosts | grep -v '\\[' | sed '/^[[:space:]]*$/d' | awk '{print $1}' >> {{ playbook_dir }}/hostfile_all"
 
 #
 - name: Copy hostfile files

@@ -5,6 +5,20 @@
 # Unlinkchange: {{ gpdb_base_dir }} /greenplum-db points to another directory
 #
 
+#
+- name: Create hostfile_all file for all nodes
+  lineinfile:
+    path: "/tmp/hostfile_all"
+    line: "{{ hostvars[item]['ansible_hostname'] }}"
+    state: present
+    create: yes
+  register: hostfile_all_created
+  with_items: "{{ groups['all'] }}"
+  when: ( inventory_hostname in groups['master'] )
+
+# when: ( ansible_hostname != "{{ item }}" or ansible_hostname == "{{ item }}" ) and ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == False or gpdb_initdb_with_standby == True )
+# - meta: end_play
+
 - name: Check if any version of Greenplum Database is already linked
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_link_existed
@@ -53,6 +67,15 @@
   debug: msg="Nothing to do (Uo uninstall/delete link required)"
   when: gpdb_uninstall == False and gpdb_unlinkchange == False
 
+# Backup SRs directory
+#
+- name: Backup SRs directories
+  become_user: gpadmin
+  changed_when: False
+  shell: ( sudo rsync -arv /home/gpadmin/SRs/* /root/SRs/ )
+  register: backup_sr
+  ignore_errors: true
+  when: inventory_hostname in groups['master']
 
 # Database Uninstallation
 #
@@ -123,12 +146,13 @@
 #
 - name: Delete gpinitsystem config file and hostlist file
   file:
-    path: "/home/gpadmin/{{ item }}"
+    path: "{{ item }}"
     state: absent
   with_items:
-    - "gpinitsystem_config"
-    - "hostfile"
-    - "{{ binary_installer_file }}.{{ gpdb_binary_type }}"
+    - "/home/gpadmin/gpinitsystem_config"
+    - "/home/gpadmin/hostfile"
+    - "/home/gpadmin/hostfile_all"
+    - "/home/gpadmin/{{ binary_installer_file }}.{{ gpdb_binary_type }}"
   when: inventory_hostname in groups['master'] and ( gpdb_uninstall == True or gpdb_unlinkchange == True )
 
 #

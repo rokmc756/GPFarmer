@@ -6,8 +6,9 @@
 
 - hosts: all
   become: true
+  gather_facts: no
   roles:
-    - { role: gpdb }               # Need to check if get_facts: true is required
+    - { role: gpdb }               # Need to check if gather_facts: no is required
 #    - { role: gptext }
 #    - { role: init-hosts }
 #   - { role: gpss }
