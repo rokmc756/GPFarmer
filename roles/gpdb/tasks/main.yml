@@ -37,6 +37,7 @@
 - name: xx
   import_tasks: 06-enable-ssl.yml
   tags: install
+  when: enable_ssl == true
 
 - name: xx
   import_tasks: 07-finalize-gpdb.yml

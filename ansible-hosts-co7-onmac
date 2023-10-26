@@ -1,15 +1,15 @@
 [all:vars]
 ssh_key_filename="id_rsa"
-remote_machine_username="gpadmin"
+remote_machine_username="jomoon"
 remote_machine_password="changeme"
 
 [master]
-co7-master ansible_ssh_host=192.168.56.171
+co7-master ansible_ssh_host=192.168.0.171
 
 [standby]
-co7-slave ansible_ssh_host=192.168.56.172
+co7-slave ansible_ssh_host=192.168.0.172
 
 [segments]
-co7-node01 ansible_ssh_host=192.168.56.173
-co7-node02 ansible_ssh_host=192.168.56.174
-co7-node03 ansible_ssh_host=192.168.56.175
+co7-node01 ansible_ssh_host=192.168.0.173
+co7-node02 ansible_ssh_host=192.168.0.174
+co7-node03 ansible_ssh_host=192.168.0.175

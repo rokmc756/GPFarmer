@@ -4,11 +4,23 @@
 #  roles:
 #    - { role: gpcc }
 
-- hosts: all
+#
+- hosts: rk9-minio
   become: true
-  gather_facts: no
+  gather_facts: true
+  vars:
+    use_nginx: true
+    minio_download: false
   roles:
-    - { role: gpdb }               # Need to check if gather_facts: no is required
+    - { role: minio }               # Need to check if gather_facts: no is required
+
+#
+#- hosts: all
+#  become: true
+#  gather_facts: true
+#  roles:
+#    - { role: init-hosts }               # Need to check if gather_facts: no is required
+#    - { role: gpdb }               # Need to check if gather_facts: no is required
 #    - { role: gptext }
 #    - { role: init-hosts }
 #   - { role: gpss }
@@ -16,7 +28,7 @@
 #   - { role: plcontainer }
 #   - { role: pxf }
 #   - { role: gpupgrade }
-#   - { role: madlib }            # Failed on ubuntu 18.04
+#   - { role: madlib }             # Failed on ubuntu 18.04
 #   - { role: postgis }
 #   - { role: pljava }
 #   - { role: DataSciencePython }

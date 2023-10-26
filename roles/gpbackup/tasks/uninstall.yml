@@ -1,0 +1,81 @@
+---
+# Uninstall GPDB Backup and Restore binary and tarball files
+
+- name: Check if the Greenplum Database software is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db
+  register: gpdb_installed
+
+#
+- name: Stop if database software is not installed
+  fail: msg="Greenplum Database software is not installed!"
+  when:
+    - gpdb_installed.stat.exists != True
+
+#
+- name: Verify that database for pgcrypto is installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ database_name }}'" )
+  register: test_database_installed
+  when: inventory_hostname in groups['master']
+
+#
+- name: Drop pgcrypto extension
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ database_name }} -c 'DROP EXTENSION pgcrypto;' )
+  register: pgcrypto_extension_dropped
+  ignore_errors: yes
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' in test_database_installed.stdout"
+
+- name: Drop test database for pgcrypto extension
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ database_name }} )
+  register: test_database_dropped
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' in test_database_installed.stdout"
+
+#
+- name: Check if the gpbackup is already installed
+  stat: path={{ gpdb_base_dir }}/greenplum-db/bin/gpbackup
+  register: gpbackup_installed
+
+#
+- name: Stop if GPBackup is not installed yet
+  fail: msg="GPBackup is not installed yet"
+  when:
+    - gpbackup_installed.stat.exists != True
+
+#
+- name: Delete gpbackup and gprestore files
+  file:
+    path: "/usr/local/greenplum-db/{{ item }}"
+    state: absent
+  with_items:
+    - "bin/gpbackup"
+    - "bin/gpbackup_ddboost_plugin"
+    - "bin/gpbackup_helper"
+    - "bin/gpbackup_manager"
+    - "bin/gpbackup_s3_plugin"
+    - "bin/gprestore"
+    - "lib/libDDBoost.so"
+  when:
+    - gpbackup_installed.stat.exists != False
+
+#
+- name: Delete GPDB Backup and Restore utility file
+  file:
+    path: "{{ gpadmin_home_dir }}/{{ package_name }}-{{ major_version }}.{{ minor_version }}.{{ patch_version }}.tar.gz"
+    state: absent
+  when:
+    - gpbackup_installed.stat.exists != False
+
+#
+- name: Restart the Greenplum Database
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when:
+    - inventory_hostname in groups['master']

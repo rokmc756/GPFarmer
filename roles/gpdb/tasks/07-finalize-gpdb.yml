@@ -30,16 +30,21 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
 #
-- name: Greenplum Database Installation
-  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }} installed"
-  when: gpdb_install == True
-
-#
-- name: Greenplum Database Version switched
-  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }} is active"
-  when: gpdb_linkchange == True
-
-# Status: Greenplum Database up and running
+#- name: Create hostfile_all file for all nodes
+#  lineinfile:
+#    path: "/home/gpadmin/hostfile_all"
+#    line: "{{ hostvars[item]['ansible_hostname'] }}"
+#    state: present
+#    owner: gpadmin
+#    group: gpadmin
+#    mode: '0644'
+#    create: yes
+#  register: hostfile_all_created
+#  with_items:
+#    - "{{ groups['master'] }}"
+#    - "{{ groups['standby'] }}"
+#    - "{{ groups['segments'] }}"
+#  when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == False and gpdb_initdb_with_standby == True )
 
 # Copy SRs directories
 - name: Copy SRs directory
@@ -50,3 +55,15 @@
     executable: /bin/bash
   register: copy_sr
   when: inventory_hostname in groups['master']
+
+#
+- name: Greenplum Database Installation
+  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }} installed"
+  when: gpdb_install == True
+
+#
+- name: Greenplum Database Version switched
+  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }} is active"
+  when: gpdb_linkchange == True
+
+# Status: Greenplum Database up and running
