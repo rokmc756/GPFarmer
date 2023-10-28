@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# HOSTS_RANGE="81 85"
+HOSTS_RANGE="81 85"
 # HOSTS_RANGE="61 65"
 # HOSTS_RANGE="171 175"
-HOSTS_RANGE="71 75"
+# HOSTS_RANGE="71 75"
 NETWORK_RANGE="192.168.0"
 USER="root"
 
@@ -24,7 +24,8 @@ do
         echo "" > /etc/sysctl.conf;
         systemctl stop cgconfig;
         systemctl disable cgconfig;
+        rm -rf /root/.ssh
+        rm -rf /home/gpadmin;
         rm -f /etc/cgconfig.conf;
         "
 done
-        # rm -rf /home/gpadmin;

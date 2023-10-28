@@ -10,37 +10,51 @@
 # - name: Install Greenplum Database
 #  import_tasks: install.yml
 
+#
 - name: xx
   import_tasks: 00-check-gpdb-installed.yml
   tags: install
 
+#
 - name: xx
   import_tasks: 01-set-gpdb-facts.yml
   tags: install
 
+#
 - name: xx
   import_tasks: 02-prepare-os-parameters.yml
   tags: install
 
+#
 - name: xx
   import_tasks: 03-install-gpdb.yml
   tags: install
 
+#
 - name: xx
   import_tasks: 04-initialize-gpdb.yml
   tags: install
 
+#
 - name: xx
-  import_tasks: 05-config-resource-group.yml
+  import_tasks: 05-enable-ldap.yml
+  tags: install
+  when: enable_ldap == true
+
+#
+- name: xx
+  import_tasks: 06-config-resource-group.yml
   tags: install
 
+#
 - name: xx
-  import_tasks: 06-enable-ssl.yml
+  import_tasks: 07-enable-ssl.yml
   tags: install
   when: enable_ssl == true
 
+#
 - name: xx
-  import_tasks: 07-finalize-gpdb.yml
+  import_tasks: 08-finalize-gpdb.yml
   tags: install
 
 #

@@ -1,25 +1,25 @@
 # Database installation
 #
-- name: Create empty variable for data directories
-  set_fact: data_dirs=""
-  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
+#- name: Create empty variable for data directories
+#  set_fact: data_dirs=""
+#  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
 
 #
-- name: Create empty variable for mirror data directories
-  set_fact: mirror_data_dirs=""
-  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
+#- name: Create empty variable for mirror data directories
+#  set_fact: mirror_data_dirs=""
+#  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
 
 #
-- name: Loop over number for primary segments
-  set_fact: data_dirs="{{ data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/primary"
-  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
-  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
+#- name: Loop over number for primary segments
+#  set_fact: data_dirs="{{ data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/primary"
+#  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
+#  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
 
 #
-- name: Loop over number for mirror segments
-  set_fact: mirror_data_dirs="{{ mirror_data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/mirror"
-  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
-  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
+#- name: Loop over number for mirror segments
+#  set_fact: mirror_data_dirs="{{ mirror_data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/mirror"
+#  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
+#  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
 
 #
 - name: Copy Greenplum Database {{ gpdb_major_version }} {{ gpdb_binary_type }} file

@@ -1,26 +1,16 @@
-#- hosts: rh7-master,rh7-slave
+#- hosts: rk8-master,rk8-slave
 #  become: true
 #  become_user: gpadmin
 #  roles:
 #    - { role: gpcc }
 
 #
-- hosts: rk9-minio
+- hosts: all
   become: true
   gather_facts: true
-  vars:
-    use_nginx: true
-    minio_download: false
   roles:
-    - { role: minio }               # Need to check if gather_facts: no is required
-
-#
-#- hosts: all
-#  become: true
-#  gather_facts: true
-#  roles:
+    - { role: gpdb }               # Need to check if gather_facts: no is required
 #    - { role: init-hosts }               # Need to check if gather_facts: no is required
-#    - { role: gpdb }               # Need to check if gather_facts: no is required
 #    - { role: gptext }
 #    - { role: init-hosts }
 #   - { role: gpss }
@@ -33,3 +23,13 @@
 #   - { role: pljava }
 #   - { role: DataSciencePython }
 #   - { role: DataScienceR }
+
+#- hosts: rk9-minio
+#  become: true
+#  gather_facts: true
+#  vars:
+#    use_nginx: true
+#    minio_download: false
+#  roles:
+#    - { role: minio }               # Need to check if gather_facts: no is required
+

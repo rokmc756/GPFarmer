@@ -19,6 +19,7 @@
 # when: ( ansible_hostname != "{{ item }}" or ansible_hostname == "{{ item }}" ) and ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == False or gpdb_initdb_with_standby == True )
 # - meta: end_play
 
+#
 - name: Check if any version of Greenplum Database is already linked
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_link_existed
@@ -86,6 +87,7 @@
 
 #
 - name: Verify that Greenplum Database is up and running
+  become: true
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
@@ -96,6 +98,7 @@
 
 #
 - name: Shutdown database
+  become: true
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
   async: 60
@@ -106,6 +109,7 @@
 
 #
 - name: Uninstall Greenplum Database software package
+  become: true
   package:
     name: "{{ gpdb_package_name }}"
     state: absent
@@ -115,16 +119,18 @@
 
 #
 - name: Delete Greenplum Database directories
+  become: true
   file:
     path: "{{ item }}"
     state: absent
   with_items:
     - "{{ gpdb_base_dir }}/greenplum-db"
     - "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}"
-  # when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['segments'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
+   # when: ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
 #
 - name: Delete {{ master_data_dir }} for master data directories
+  become: true
   file:
     path: "{{ master_data_dir }}"
     state: absent
@@ -133,6 +139,7 @@
 
 #
 - name: Delete {{ gpdb_data_dir }} segment data directories
+  become: true
   file:
     path: "{{ gpdb_data_dir }}/{{ item }}"
     state: absent
@@ -145,6 +152,7 @@
 
 #
 - name: Delete gpinitsystem config file and hostlist file
+  become: true
   file:
     path: "{{ item }}"
     state: absent
@@ -184,7 +192,6 @@
 
 #
 - name: Enable and Start firewalld
-
   service: name=firewalld state=started enabled=yes
   changed_when: False
   when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' ) and hostvars[inventory_hostname].ansible_distribution_major_version|int >= 7

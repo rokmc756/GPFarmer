@@ -2,6 +2,28 @@
 ###########################################################
 # Database initialization
 #
+- name: Create empty variable for data directories
+  set_fact: data_dirs=""
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
+
+
+- name: Create empty variable for mirror data directories
+  set_fact: mirror_data_dirs=""
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
+
+#
+- name: Loop over number for primary segments
+  set_fact: data_dirs="{{ data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/primary"
+  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
+
+#
+- name: Loop over number for mirror segments
+  set_fact: mirror_data_dirs="{{ mirror_data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/mirror"
+  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
+
+#
 - name: Copy gpinitsystem config file for single node
   command: creates=/home/gpadmin/gpinitsystem_config cp -a {{ gpdb_base_dir }}/greenplum-db/docs/cli_help/gpconfigs/gpinitsystem_singlenode /home/gpadmin/gpinitsystem_config
   when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_initdb_single == True )
@@ -80,6 +102,8 @@
   with_items:
     - { regexp: '^MACHINE_LIST_FILE=', line: 'MACHINE_LIST_FILE=/home/gpadmin/hostfile', state: present }
     - { regexp: '^declare -a DATA_DIRECTORY=', line: 'declare -a DATA_DIRECTORY=({{ data_dirs }} )', state: present }
+    - { regexp: '^#declare -a MIRROR_DATA_DIRECTORY=', line: 'declare -a MIRROR_DATA_DIRECTORY=({{ mirror_data_dirs }} )', state: present }
+    - { regexp: '^MIRROR_PORT_BASE=', line: 'MIRROR_PORT_BASE=7000', state: present }
     - { regexp: '^MASTER_HOSTNAME=', line: 'MASTER_HOSTNAME={{ ansible_hostname }}', state: present }
     - { regexp: '^MASTER_DIRECTORY=', line: 'MASTER_DIRECTORY={{ gpdb_data_dir }}/master', state: present }
     - { regexp: '^#?DATABASE_NAME=', line: 'DATABASE_NAME=gpadmin', state: present }
@@ -149,14 +173,12 @@
   when: ( inventory_hostname in groups['master'] and gpdb_initdb_single == True ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
 #
-- name: Create {{ gpdb_data_dir }} segment directories
-  file: path={{ gpdb_data_dir }}/primary state=directory owner=gpadmin group=gpadmin mode=0770
-  when: ( inventory_hostname in groups['segments'] and gpdb_initdb_single == False ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
-
-#
-- name: Create {{ gpdb_data_dir }} segment directories
-  file: path={{ gpdb_data_dir }}/mirror state=directory owner=gpadmin group=gpadmin mode=0770
-  when: ( inventory_hostname in groups['segments'] and gpdb_initdb_single == False ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
+- name: Create {{ gpdb_data_dir }}/primary and mirror directories for only segments
+  file: path={{ item.path }} state=directory owner=gpadmin group=gpadmin mode=0770
+  with_items:
+    - { path: '{{ gpdb_data_dir }}/primary' }
+    - { path: '{{ gpdb_data_dir }}/mirror' }
+  when: ( inventory_hostname in groups['segments'] and gpdb_initdb_with_standby == true ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
 #
 - name: Install greeplum binary into segment nodes by running gpseginstall

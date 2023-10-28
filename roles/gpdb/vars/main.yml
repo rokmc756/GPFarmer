@@ -17,7 +17,7 @@ gpdb_initdb_with_standby: True
 # greenplum-db-7.0.0-beta.4-el8-x86_64.rpm
 # greenplum-db-6.24.3-ubuntu18.04-amd64.deb
 gpdb_major_version: 6
-gpdb_minor_version: 25.3
+gpdb_minor_version: 23.1
 gpdb_build_version:
 gpdb_os_name: 'rhel7'
 gpdb_arch_name: 'x86_64'
@@ -29,9 +29,7 @@ gpdb_binary_type: 'rpm'
 gpdb_network_range: "192.168.0.0"
 gpdb_admin_password: "changeme"
 
-#  - { "state": "present",  "param" : "kernel.shmmax",                             "value" : "500000000" }
-#  - { "state": "present",  "param" : "kernel.shmall",                             "value" : "4000000000" }
-
+#
 common_gpdb_kernel_parameters:
   - { "state": "present",  "param" : "kernel.shmmax",                             "value" : "{{ shmmax_var }}" }
   - { "state": "present",  "param" : "kernel.shmmni",                             "value" : "4096" }
@@ -68,7 +66,7 @@ common_gpdb_kernel_parameters:
 rhel7_gpdb_kernel_parameters:
   - { "state": "present",  "param" : "net.ipv4.tcp_tw_recycle",                   "value" : "1" }
 
-enable_ssl: false
+enable_ssl: true
 # SSL Key configuration
 gpdb_ssl_dir: "{{ master_data_dir }}"
 gpdb_ssl_days: 3660
@@ -78,3 +76,16 @@ gpdb_ssl_location: "GangNam"
 gpdb_ssl_organization: "Pivotal"
 gpdb_ssl_common_name: "jtest.pivotal.io"
 gpdb_ssl_email: "jomoon@pivotal.io"
+
+enable_ldap: true
+
+gpdb_ldap_users:
+  - { username: jmoon,  password : changeme }
+  - { username: rmoon,  password : changeme }
+
+gpdb_ldap_database: "all"
+gpdb_ldap_server: "192.168.0.101"
+gpdb_ldap_cn: "cn=users,cn=accounts"
+gpdb_ldap_dn: "dc=jtest,dc=pivotal,dc=io"
+
+# host 	all 	all     192.168.0.0/24 ldap ldapurl=ldap://192.168.0.101 ldapprefix="uid=" ldapsuffix=",cn=users,cn=accounts,dc=jtest,dc=pivotal,dc=io"
