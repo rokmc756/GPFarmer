@@ -17,7 +17,7 @@ gpdb_initdb_with_standby: True
 # greenplum-db-7.0.0-beta.4-el8-x86_64.rpm
 # greenplum-db-6.24.3-ubuntu18.04-amd64.deb
 gpdb_major_version: 6
-gpdb_minor_version: 23.1
+gpdb_minor_version: 25.1
 gpdb_build_version:
 gpdb_os_name: 'rhel7'
 gpdb_arch_name: 'x86_64'
@@ -77,7 +77,7 @@ gpdb_ssl_organization: "Pivotal"
 gpdb_ssl_common_name: "jtest.pivotal.io"
 gpdb_ssl_email: "jomoon@pivotal.io"
 
-enable_ldap: true
+enable_ldap: false
 
 gpdb_ldap_users:
   - { username: jmoon,  password : changeme }

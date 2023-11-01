@@ -16,16 +16,16 @@ gpdb_data_dir: "/data"
 gpcc_base_dir: "/usr/local"
 
 gpdb_major_version: 6
-gpdb_minor_version: 23.4
+gpdb_minor_version: 25.1
 gpdb_build_version:
 gpcc_major_version: 6
 gpcc_minor_version: 9.1
 
 gpdb_metric_major_version: 6
-gpdb_metric_minor_version: 23.4
+gpdb_metric_minor_version: 25.1
 gpdb_metric_build_version:
 gpcc_metric_arch: 'x86_64'
-gpcc_os_name: 'rhel8'
+gpcc_os_name: 'rhel7'
 # gpcc_metric_arch: 'amd64'
 # gpcc_os_name: 'ubuntu18.04'
 
