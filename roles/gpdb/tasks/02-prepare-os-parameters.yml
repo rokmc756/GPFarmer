@@ -21,8 +21,8 @@
   changed_when: False
 
 #
-- name: Fix ownership for {{ gpdb_base_dir }}
-  file: path={{ gpdb_base_dir }} state=directory mode=0755 owner=gpadmin group=gpadmin
+- name: Fix ownership for {{ gpdb.base_dir }}
+  file: path={{ gpdb.base_dir }} state=directory mode=0755 owner=gpadmin group=gpadmin
 
 #
 - name: Stop and disable iptables for RHEL / CentOS 6.x and lower versions

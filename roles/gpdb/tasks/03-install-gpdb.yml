@@ -11,13 +11,13 @@
 
 #
 #- name: Loop over number for primary segments
-#  set_fact: data_dirs="{{ data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/primary"
+#  set_fact: data_dirs="{{ data_dirs | replace('^ *', '') }} {{ gpdb.data_dir }}/primary"
 #  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
 #  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
 
 #
 #- name: Loop over number for mirror segments
-#  set_fact: mirror_data_dirs="{{ mirror_data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/mirror"
+#  set_fact: mirror_data_dirs="{{ mirror_data_dirs | replace('^ *', '') }} {{ gpdb.data_dir }}/mirror"
 #  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
 #  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
 
@@ -58,7 +58,7 @@
 #
 - name: Shutdown database
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
   args:
     executable: /bin/bash
   async: 60
@@ -79,13 +79,13 @@
     - { regexp: '^agreed=', line: 'agreed=1', state: present, backrefs: yes }
     - { regexp: '^pathVerification=', line: 'pathVerification=1', state: present, backrefs: yes }
     - { regexp: '^validMigrateDecision=', line: 'validMigrateDecision=1', state: present, backrefs: yes }
-    - { regexp: '^user_specified_installPath=', line: 'user_specified_installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}', state: present, backrefs: yes }
-    - { regexp: '^installPath=', line: 'installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}', state: present, backrefs: yes }
+    - { regexp: '^user_specified_installPath=', line: 'user_specified_installPath={{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}', state: present, backrefs: yes }
+    - { regexp: '^installPath=', line: 'installPath={{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}', state: present, backrefs: yes }
     - { regexp: '^    agreed=', line: '    agreed=1', state: present, backrefs: yes }
   when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_binary_type != 'rpm' and gpdb_binary_type != 'deb' )
 
 #
-- name: Install Greenplum Database Software Binary in {{ gpdb_base_dir }}
+- name: Install Greenplum Database Software Binary in {{ gpdb.base_dir }}
   become_user: gpadmin
   command: /home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install/{{ binary_installer_file }}.bin
   async: 120
@@ -93,7 +93,7 @@
   when: ( gpdb_install == True and gpdb_binary_type == 'zip' )
 
 #
-- name: Install Greenplum Database Software RPM Package in {{ gpdb_base_dir }} for Red Hat / CentOS / Rocky Linux
+- name: Install Greenplum Database Software RPM Package in {{ gpdb.base_dir }} for Red Hat / CentOS / Rocky Linux
   yum:
     name: /home/gpadmin/{{ binary_installer_file }}.{{ gpdb_binary_type }}
     state: present
@@ -103,7 +103,7 @@
   when: ( gpdb_install == True and gpdb_binary_type == 'rpm' )
 
 #
-- name: Install Greenplum Database Software DEB Package in {{ gpdb_base_dir }} for Ubuntu / Debian
+- name: Install Greenplum Database Software DEB Package in {{ gpdb.base_dir }} for Ubuntu / Debian
   apt:
     deb: /home/gpadmin/{{ binary_installer_file }}.{{ gpdb_binary_type }}
     state: present
@@ -119,7 +119,7 @@
 
 #
 - name: Check again if the Greenplum Database version is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
+  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
   register: gpdb_installed_verify
 
 #

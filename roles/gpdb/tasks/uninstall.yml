@@ -21,16 +21,16 @@
 
 #
 - name: Check if any version of Greenplum Database is already linked
-  stat: path={{ gpdb_base_dir }}/greenplum-db
+  stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_link_existed
 
 #
 - name: Check if the Greenplum Database version is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
+  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
   register: gpdb_dir_existed
 
 #
-- name: Sanity check for {{ gpdb_base_dir }}/greenplum-db
+- name: Sanity check for {{ gpdb.base_dir }}/greenplum-db
   fail: msg="Greenplum Database Software is not existed"
   when: gpdb_dir_existed.stat.exists != True or gpdb_link_existed.stat.islnk != True
 
@@ -90,7 +90,7 @@
   become: true
   become_user: gpadmin
   changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
   register: select_version
   ignore_errors: true
   when: inventory_hostname in groups['master']
@@ -100,7 +100,7 @@
 - name: Shutdown database
   become: true
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
   async: 60
   poll: 5
   register: shutdown_database
@@ -124,24 +124,24 @@
     path: "{{ item }}"
     state: absent
   with_items:
-    - "{{ gpdb_base_dir }}/greenplum-db"
-    - "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}"
+    - "{{ gpdb.base_dir }}/greenplum-db"
+    - "{{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}"
    # when: ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
 #
-- name: Delete {{ master_data_dir }} for master data directories
+- name: Delete {{ gpdb.master_data_dir }} for master data directories
   become: true
   file:
-    path: "{{ master_data_dir }}"
+    path: "{{ gpdb.master_data_dir }}"
     state: absent
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
   # when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
 #
-- name: Delete {{ gpdb_data_dir }} segment data directories
+- name: Delete {{ gpdb.data_dir }} segment data directories
   become: true
   file:
-    path: "{{ gpdb_data_dir }}/{{ item }}"
+    path: "{{ gpdb.data_dir }}/{{ item }}"
     state: absent
   with_items:
     - "primary"

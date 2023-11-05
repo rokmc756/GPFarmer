@@ -1,20 +1,20 @@
 ---
 # Install Greenplum Database on Red Hat / CentOS / Rocky / Ubuntu / Debian
 
-# installation: {{ gpdb_base_dir }}/greenplum-db must not exist
-#   linkchange: {{ gpdb_base_dir }}/greenplum-db points to another directory
+# installation: {{ gpdb.base_dir }}/greenplum-db must not exist
+#   linkchange: {{ gpdb.base_dir }}/greenplum-db points to another directory
 
 #
 - name: Check if any version of Greenplum Database is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db
+  stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_link_existed
 
 #
 - name: Check if the Greenplum Database version is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
+  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
   register: gpdb_dir_existed
 
 #
-- name: Sanity check for {{ gpdb_base_dir }}/greenplum-db
-  fail: msg="{{ gpdb_base_dir }}/greenplum-db is supposed to be a symlink!"
+- name: Sanity check for {{ gpdb.base_dir }}/greenplum-db
+  fail: msg="{{ gpdb.base_dir }}/greenplum-db is supposed to be a symlink!"
   when: gpdb_link_existed.stat.exists == True and gpdb_link_existed.stat.islnk != True

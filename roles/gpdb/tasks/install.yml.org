@@ -207,13 +207,13 @@
 
 #
 - name: Loop over number for primary segments
-  set_fact: data_dirs="{{ data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/primary"
+  set_fact: data_dirs="{{ data_dirs | replace('^ *', '') }} {{ gpdb.data_dir }}/primary"
   with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
 
 #
 - name: Loop over number for mirror segments
-  set_fact: mirror_data_dirs="{{ mirror_data_dirs | replace('^ *', '') }} {{ gpdb_data_dir }}/mirror"
+  set_fact: mirror_data_dirs="{{ mirror_data_dirs | replace('^ *', '') }} {{ gpdb.data_dir }}/mirror"
   with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
 
@@ -395,10 +395,10 @@
     - { regexp: '^MACHINE_LIST_FILE=', line: 'MACHINE_LIST_FILE=/home/gpadmin/hostfile', state: present }
     - { regexp: '^declare -a DATA_DIRECTORY=', line: 'declare -a DATA_DIRECTORY=({{ data_dirs }} )', state: present }
     - { regexp: '^MASTER_HOSTNAME=', line: 'MASTER_HOSTNAME={{ ansible_hostname }}', state: present }
-    - { regexp: '^MASTER_DIRECTORY=', line: 'MASTER_DIRECTORY={{ gpdb_data_dir }}/master', state: present }
+    - { regexp: '^MASTER_DIRECTORY=', line: 'MASTER_DIRECTORY={{ gpdb.data_dir }}/master', state: present }
     - { regexp: '^#?DATABASE_NAME=', line: 'DATABASE_NAME=gpadmin', state: present }
     - { regexp: '^COORDINATOR_HOSTNAME=', line: "COODINATOR_HOSTNAME={{ hostvars[groups['master'][0]]['ansible_hostname'] }}", state: present }
-    - { regexp: '^COORDINATOR_DIRECTORY=', line: 'MASTER_DIRECTORY={{ gpdb_data_dir }}/master', state: present }
+    - { regexp: '^COORDINATOR_DIRECTORY=', line: 'MASTER_DIRECTORY={{ gpdb.data_dir }}/master', state: present }
     - { regexp: '^SEG_PREFIX=', line: 'SEG_PREFIX=gpseg', state: present }
   when: ( inventory_hostname in groups['master'] and gpdb_install == True )
 
@@ -437,39 +437,39 @@
 
 #
 - name: Check if the database is already initialized
-  stat: path={{ gpdb_data_dir }}
+  stat: path={{ gpdb.data_dir }}
   register: gpdb_initialized
 
 #
-- name: Create {{ gpdb_data_dir }} directories
+- name: Create {{ gpdb.data_dir }} directories
   file: path={{ item.path }} state=directory owner=gpadmin group=gpadmin mode=0770
   with_items:
-    - { path: '{{ gpdb_data_dir }}' }
+    - { path: '{{ gpdb.data_dir }}' }
   when: gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True
 
 #
-- name: Create {{ gpdb_data_dir }}/master directories for master and standby
+- name: Create {{ gpdb.data_dir }}/master directories for master and standby
   file: path={{ item.path }} state=directory owner=gpadmin group=gpadmin mode=0770
   with_items:
-    - { path: '{{ gpdb_data_dir }}/master' }
+    - { path: '{{ gpdb.data_dir }}/master' }
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
 #
-- name: Create {{ gpdb_data_dir }}/primary and mirror directories for only master
+- name: Create {{ gpdb.data_dir }}/primary and mirror directories for only master
   file: path={{ item.path }} state=directory owner=gpadmin group=gpadmin mode=0770
   with_items:
-    - { path: '{{ gpdb_data_dir }}/primary' }
-    - { path: '{{ gpdb_data_dir }}/mirror' }
+    - { path: '{{ gpdb.data_dir }}/primary' }
+    - { path: '{{ gpdb.data_dir }}/mirror' }
   when: ( inventory_hostname in groups['master'] and gpdb_initdb_single == True ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
 #
-- name: Create {{ gpdb_data_dir }} segment directories
-  file: path={{ gpdb_data_dir }}/primary state=directory owner=gpadmin group=gpadmin mode=0770
+- name: Create {{ gpdb.data_dir }} segment directories
+  file: path={{ gpdb.data_dir }}/primary state=directory owner=gpadmin group=gpadmin mode=0770
   when: ( inventory_hostname in groups['segments'] and gpdb_initdb_single == False ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
 #
-- name: Create {{ gpdb_data_dir }} segment directories
-  file: path={{ gpdb_data_dir }}/mirror state=directory owner=gpadmin group=gpadmin mode=0770
+- name: Create {{ gpdb.data_dir }} segment directories
+  file: path={{ gpdb.data_dir }}/mirror state=directory owner=gpadmin group=gpadmin mode=0770
   when: ( inventory_hostname in groups['segments'] and gpdb_initdb_single == False ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
 #
@@ -515,7 +515,7 @@
     line: "{{ item.line }}"
     state: "{{ item.state }}"
   with_items:
-    - { regexp: '^export MASTER_DATA_DIRECTORY=', line: 'export MASTER_DATA_DIRECTORY={{ gpdb_data_dir }}/master/gpseg-1', state: present }
+    - { regexp: '^export MASTER_DATA_DIRECTORY=', line: 'export MASTER_DATA_DIRECTORY={{ gpdb.data_dir }}/master/gpseg-1', state: present }
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_install == True or gpdb_linkchange == True )
 
 #
@@ -626,7 +626,7 @@
 #
 - name: Add ssl configuration file to authenticate ssl user into Greenplum Database
   lineinfile:
-    dest: "{{ master_data_dir }}/{{ item.file }}"
+    dest: "{{ gpdb.master_data_dir }}/{{ item.file }}"
     line: "{{ item.line }}"
     state: "{{ item.state }}"
   with_items:

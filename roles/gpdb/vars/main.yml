@@ -5,10 +5,6 @@ gpdb_number_segments: 4
 gpdb_mirror_enable: true
 gpdb_spread_mirrors: ""
 
-gpdb_base_dir: "/usr/local"
-master_data_dir: "/data/master/gpseg-1"
-gpdb_data_dir: "/data"
-
 seg_serialized_install: False
 gpdb_initdb_single: False
 gpdb_initdb_with_standby: True
@@ -22,12 +18,12 @@ gpdb_build_version:
 gpdb_os_name: 'rhel7'
 gpdb_arch_name: 'x86_64'
 gpdb_binary_type: 'rpm'
+
 # gpdb_os_name: 'ubuntu18.04'
 # gpdb_arch_name: 'amd64'
 # gpdb_binary_type: 'deb'
-
-gpdb_network_range: "192.168.0.0"
-gpdb_admin_password: "changeme"
+# gpdb_network_range: "192.168.0.0"
+# gpdb_admin_password: "changeme"
 
 #
 common_gpdb_kernel_parameters:
@@ -66,26 +62,14 @@ common_gpdb_kernel_parameters:
 rhel7_gpdb_kernel_parameters:
   - { "state": "present",  "param" : "net.ipv4.tcp_tw_recycle",                   "value" : "1" }
 
+#
+check_install_gpdb: true
+set_gpdb_facts: true
+prepare_os_parameters: true
+install_gpdb: true
+initialize_gpdb: true
+config_rg: true
 enable_ssl: true
-# SSL Key configuration
-gpdb_ssl_dir: "{{ master_data_dir }}"
-gpdb_ssl_days: 3660
-gpdb_ssl_country: "KR"
-gpdb_ssl_state: "Seoul"
-gpdb_ssl_location: "GangNam"
-gpdb_ssl_organization: "Pivotal"
-gpdb_ssl_common_name: "jtest.pivotal.io"
-gpdb_ssl_email: "jomoon@pivotal.io"
-
+finalize_gpdb: true
 enable_ldap: false
-
-gpdb_ldap_users:
-  - { username: jmoon,  password : changeme }
-  - { username: rmoon,  password : changeme }
-
-gpdb_ldap_database: "all"
-gpdb_ldap_server: "192.168.0.101"
-gpdb_ldap_cn: "cn=users,cn=accounts"
-gpdb_ldap_dn: "dc=jtest,dc=pivotal,dc=io"
-
-# host 	all 	all     192.168.0.0/24 ldap ldapurl=ldap://192.168.0.101 ldapprefix="uid=" ldapsuffix=",cn=users,cn=accounts,dc=jtest,dc=pivotal,dc=io"
+enable_kerberos: false

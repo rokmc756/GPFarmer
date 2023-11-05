@@ -1,8 +1,8 @@
-- hosts: rh7-master,rh7-slave
-  become: true
-  become_user: gpadmin
-  roles:
-    - { role: gpcc }
+#- hosts: rh7-master,rh7-slave
+#  become: true
+#  become_user: gpadmin
+#  roles:
+#    - { role: gpcc }
 
 #
 - hosts: all

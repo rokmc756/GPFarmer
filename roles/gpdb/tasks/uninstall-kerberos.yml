@@ -1,0 +1,142 @@
+---
+#
+- name: Verify that Greenplum Database is up and running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  args:
+    executable: /bin/bash
+  register: select_version
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+#
+- name: Drop database for Krb5 Users
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb "{{ freeipa.kerberos.database }}" )
+  args:
+    executable: /bin/bash
+  register: ldap_database_created
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+#
+- name: Delete a service for rh7-master.jtest.pivotal.io
+  become: true
+  shell: |
+    echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
+    ipa service-del postgres/{{ freeipa.client_fqdn }}.{{ freeipa.client_domain }}@{{ freeipa.client_realm }}
+    ipa host-del {{ freeipa.client_fqdn }}.{{ freeipa.client_domain }}
+  args:
+    executable: /bin/bash
+  register: gpdb_service_deleted
+  ignore_errors: true
+  when: inventory_hostname in groups['master']
+
+#
+- name: Drop role for Kerberos Users
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "DROP USER {{ item.username }}" )
+  args:
+    executable: /bin/bash
+  register: kerberos_users_dropped
+  with_items: "{{ freeipa.kerberos.users }}"
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+#
+- name: Delte user in FreeIPA Server
+  become: yes
+  shell: |
+    echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
+    echo {{ item.passwd }} | ipa user-del {{ item.username }}
+  args:
+    executable: /bin/bash
+  register: ipa_user_deleted
+  with_items: "{{ freeipa.kerberos.users }}"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Uninstall FreeIPA Client
+  become: yes
+  shell: ipa-client-install --uninstall -U
+  args:
+    executable: /bin/bash
+  register: ipa_client_uninstalled
+  when: inventory_hostname in groups['master']
+
+# State is set to Absent to remove if the Searching Line is found
+- name: Remove krb5 configuration file to authenticate Kerberos user into Greenplum Database
+  become_user: gpadmin
+  lineinfile:
+    path: "{{ gpdb.master_data_dir }}/{{ item.file }}"
+    regexp: "{{ item.regexp }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { file: "pg_hba.conf", regexp: "krb_realm", state: absent }
+  register: gpdb_krb5_config_removed
+  when: inventory_hostname in groups['master']
+
+#
+- name: Disable keytab file location replacing it with empty
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c krb_server_keyfile -v  '' )
+  args:
+    executable: /bin/bash
+  register: ldap_database_created
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+
+#
+- name: Remove keytab file
+  become: yes
+  shell: |
+    rm -f {{ freeipa.kerberos.client_gpdb_keytab }}  {{ freeipa.kerberos.client_keytab }}
+  args:
+    executable: /bin/bash
+  register: keytabl_file_removed
+  when: inventory_hostname in groups['master']
+
+#
+- name: Uninstall FreeIPA Client Package
+  become: true
+  package:
+    name: ipa-client
+    state: absent
+  async: 360
+  poll: 5
+  register: ipa_client_pkgs_uninstalled
+  when: inventory_hostname in groups['master']
+
+#
+#- name: Add IP address of FreeIPA Server
+#  become: true
+#  lineinfile:
+#    dest: /etc/hosts
+#    line: "{{ freeipa.client_ipaddr }}   {{ freeipa.client_server }}  {{ ( freeipa.client_server | split('.') )[0] }}"
+#    state: present
+
+#
+- name: Remove hostname and ip address entries in /etc/hosts
+  become: true
+  lineinfile:
+    path: "{{ item.file }}"
+    regexp: "{{ item.regexp }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { file: "/etc/hosts", regexp: "{{ freeipa.client_server }}", state: absent }
+  register: hostname_ipaddr_entries_removed
+
+#
+- name: Restart Greenplum Database to apply changes
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  args:
+    executable: /bin/bash
+  register: gpdb_restarted
+  when: inventory_hostname in groups['master']
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"

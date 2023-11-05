@@ -11,51 +11,76 @@
 #  import_tasks: install.yml
 
 #
-- name: xx
+- name: Check if Greenplum is installed already
   import_tasks: 00-check-gpdb-installed.yml
   tags: install
+  when: check_install_gpdb == true
 
 #
-- name: xx
+- name: Set facts for Greenplum
   import_tasks: 01-set-gpdb-facts.yml
   tags: install
+  when: set_gpdb_facts == true
 
 #
-- name: xx
+- name: Prepare OS parameters
   import_tasks: 02-prepare-os-parameters.yml
   tags: install
+  when: prepare_os_parameters == true
 
 #
-- name: xx
+- name: Install Greenplum
   import_tasks: 03-install-gpdb.yml
   tags: install
+  when: install_gpdb == true
 
 #
-- name: xx
+- name: Initialize Greenplum
   import_tasks: 04-initialize-gpdb.yml
   tags: install
+  when: initialize_gpdb == true
 
 #
-- name: xx
+- name: Enable LDAP Authentication
   import_tasks: 05-enable-ldap.yml
   tags: install
   when: enable_ldap == true
 
 #
-- name: xx
+- name: Configure Resource Group
   import_tasks: 06-config-resource-group.yml
   tags: install
+  when: config_rg == true
 
 #
-- name: xx
+- name: Enable SSL
   import_tasks: 07-enable-ssl.yml
   tags: install
   when: enable_ssl == true
 
 #
-- name: xx
-  import_tasks: 08-finalize-gpdb.yml
+- name: Enable Kerberos Authentication
+  import_tasks: 08-enable-kerberos.yml
   tags: install
+  when: enable_kerberos == true
+
+#
+- name: Finalize Greenplum
+  import_tasks: 09-finalize-gpdb.yml
+  tags: install
+  when: finalize_gpdb == true
+
+#
+- name: Uninstall LDAP Authentication
+  import_tasks: uninstall-ldap.yml
+  tags: uninstall
+  when: enable_ldap == true
+
+#
+- name: Uninstall Kerberos Authentication
+  import_tasks: uninstall-kerberos.yml
+  tags: uninstall
+  when: enable_kerberos == true
 
 #
 - name: Uninstall Greenplum Database

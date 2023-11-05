@@ -11,7 +11,7 @@
 - name: Verify that Greenplum Database is up and running
   become_user: gpadmin
   changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
   args:
     executable: /bin/bash
   register: select_version
@@ -22,7 +22,7 @@
 - name: Change gpadmin password to check remote login via SSL
   become_user: gpadmin
   changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "alter user gpadmin with password 'changeme'" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "alter user gpadmin with password 'changeme'" )
   args:
     executable: /bin/bash
   register: gpadmin_password_changed

@@ -4,7 +4,7 @@
     gpdb_install: False
     gpdb_linkchange: False
 
-# Non-existent {{ gpdb_base_dir }}/greenplum-db is a new installation
+# Non-existent {{ gpdb.base_dir }}/greenplum-db is a new installation
 - name: Identify Greenplum Database Installation
   set_fact:
     gpdb_install: True
