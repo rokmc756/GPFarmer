@@ -3,9 +3,6 @@
 # plr-3.0.4-gp6-rhel8-x86_64.gppkg
 # plr-3.0.4-gp6-ubuntu18-amd64.gppkg
 
-gpdb_base_dir: "/usr/local"
-gpadmin_home_dir: "/home/gpadmin"
-
 plr_prefix_major_version:
 plr_major_version: 3
 plr_minor_version: 1

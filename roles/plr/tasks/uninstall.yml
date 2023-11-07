@@ -3,7 +3,7 @@
 
 #
 - name: Check if the GPDB software is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db
+  stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_installed
 
 #
@@ -14,29 +14,29 @@
 #
 - name: Verify that database for plr is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plr_database_name }}'" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plr_database_name }}'" )
   register: plr_database_installed
   when: inventory_hostname in groups['master']
 
 #
 - name: Remove PL/R Support far a Database of GPDB 4.x
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && droplang plr -d {{ plr_database_name }}; )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && droplang plr -d {{ plr_database_name }}; )
   register: plr_support_removed
   when: ( inventory_hostname in groups['master'] and plr_gpdb_version == "4.3" and '100' in plr_database_installed.stdout )
 
 #
 - name: Remove PL/R Support far a Database of GPDB 6.x
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c 'DROP EXTENSION plr CASCADE;' )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c 'DROP EXTENSION plr CASCADE;' )
   register: plr_support_removed
   when: ( inventory_hostname in groups['master'] and plr_gpdb_version|int == 6 and '100' in plr_database_installed.stdout )
-  # shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c 'DROP EXTENSION plcontainer CASCADE;' )
+  # shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c 'DROP EXTENSION plcontainer CASCADE;' )
 
 #
 - name: Drop database for plr
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plr_database_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plr_database_name }} )
   register: plr_database_deleted
   when: ( inventory_hostname in groups['master'] and '100' in plr_database_installed.stdout )
 
@@ -55,7 +55,7 @@
 #
 - name: Uninstall the PL/R language extension
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ plr_package_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ plr_package_name }} )
   register: plr_package_uninstalled
   ignore_errors: true
   until: plr_package_uninstalled is succeeded
@@ -69,7 +69,7 @@
 #
 - name: Restart the Greenplum Database
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
   when: inventory_hostname in groups['master']

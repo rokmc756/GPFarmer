@@ -9,17 +9,16 @@
 #  become: true
 #  gather_facts: true
 #  roles:
-#    - { role: gpdb }               # Need to check if gather_facts: no is required
-#    - { role: init-hosts }               # Need to check if gather_facts: no is required
-#    - { role: gptext }
-#    - { role: init-hosts }
+#    - { role: madlib }             # Failed on ubuntu 18.04
+#    - { role: plr }
+#   - { role: postgis }
+#   - { role: gpdb }               # Need to check if gather_facts: no is required
+#   - { role: init-hosts }               # Need to check if gather_facts: no is required
+#   - { role: gptext }
 #   - { role: gpss }
-#   - { role: plr }
 #   - { role: plcontainer }
 #   - { role: pxf }
 #   - { role: gpupgrade }
-#   - { role: madlib }             # Failed on ubuntu 18.04
-#   - { role: postgis }
 #   - { role: pljava }
 #   - { role: DataSciencePython }
 #   - { role: DataScienceR }

@@ -1,10 +1,13 @@
 ---
+gpdb_base_dir: "/usr/local"
+gpadmin_home_dir: "/home/gpadmin"
+
 madlib_prefix_major_version:
-madlib_major_version: 1
-madlib_minor_version: 21
+madlib_major_version: 2
+madlib_minor_version: 0
 madlib_patch_version: 0
-madlib_build_version: 1
-madlib_gpdb_version: 6
+madlib_build_version:
+madlib_gpdb_version: 7
 
 # madlib_os_version: ubuntu18
 madlib_os_version: rhel8
@@ -13,7 +16,7 @@ madlib_os_version: rhel8
 madlib_arch_type: x86_64
 
 madlib_database_name: madlib_testdb
-madlib_mdw_hostname: rk8-master
+madlib_mdw_hostname: rh8-master
 
 # madlib-1.21.0+1-gp6-rhel8-x86_64.tar.gz
 # madlib-1.20.0+1-gp6-rhel8-x86_64.tar.gz

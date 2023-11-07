@@ -2,7 +2,7 @@
 # Uninstall PostGIS Extention on Greenplum database
 #
 - name: Check if the GPDB software is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db
+  stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_installed
 
 #
@@ -14,7 +14,7 @@
 - name: Verify that database is up and running
   become_user: gpadmin
   changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
   register: select_version
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
   when: inventory_hostname in groups['master']
@@ -22,7 +22,7 @@
 #
 - name: Verify that database for PostGIS extention is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ postgis_database_name }}'" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ postgis_database_name }}'" )
   register: postgis_database_installed
   when: inventory_hostname in groups['master']
 
@@ -45,7 +45,7 @@
 #
 - name: Verify if PostGIS gppkg is installed
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ check_postgis_installed }} )
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_postgis_installed }} )
   ignore_errors: true
   register: postgis_installed
   changed_when: False
@@ -65,7 +65,7 @@
 #
 - name: Drop Extensions of PostGIS
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis_database_name }} -c "{{ item }}" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis_database_name }} -c "{{ item }}" )
   register: postgis_database_installed
   with_items:
     - "DROP EXTENSION IF EXISTS address_standardizer_data_us;"
@@ -80,7 +80,7 @@
 #
 - name: Drop database for PostGIS
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ postgis_database_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ postgis_database_name }} )
   register: postgis_database_dropped
   when:
     - inventory_hostname in groups['master']
@@ -88,7 +88,7 @@
 #
 - name: Uninstall the GPDB PostGIS Pakcage
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ postgis_package_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ postgis_package_name }} )
   register: postgis_package_uninstalled
   ignore_errors: true
   until: postgis_package_uninstalled is succeeded
@@ -100,7 +100,7 @@
 
 #
 - name: Check if the directory of PostGIS Package is still remained
-  stat: path={{ gpdb_base_dir }}/greenplum-db/postgis
+  stat: path={{ gpdb.base_dir }}/greenplum-db/postgis
   register: postgis_dir_remained
   when:
     - inventory_hostname in groups['master']
@@ -109,7 +109,7 @@
 #  file:
 #    owner: gpadmin
 #    group: gpadmin
-#    path: "{{ gpdb_base_dir }}/greenplum-db/postgis"
+#    path: "{{ gpdb.base_dir }}/greenplum-db/postgis"
 #    state: absent
 #  when:
 #    - inventory_hostname in groups['master']
@@ -118,7 +118,7 @@
 #
 - name: Delete lines enabled in greenplum_path.sh for GDAL raster drivers
   lineinfile:
-    path: "{{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh"
+    path: "{{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh"
     regexp: "{{ item }}"
     state: absent
     backup: yes
@@ -131,7 +131,7 @@
 #
 - name: Restart GPDB after removing PostGIS Extension
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
   when: inventory_hostname in groups['master']

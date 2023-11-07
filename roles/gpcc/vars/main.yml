@@ -11,10 +11,10 @@
 # Ubuntu
 # greenplum-cc-web-6.8.4-gp6-ubuntu18.04-x86_64.zip
 
-gpadmin_home_dir: "/home/gpadmin"
-gpdb_base_dir: "/usr/local"
-gpdb_data_dir: "/data"
-gpcc_base_dir: "/usr/local"
+# gpadmin_home_dir: "/home/gpadmin"
+# gpdb_base_dir: "/usr/local"
+# gpdb_data_dir: "/data"
+# gpcc_base_dir: "/usr/local"
 
 gpdb_major_version: 7
 gpdb_minor_version: 0.0

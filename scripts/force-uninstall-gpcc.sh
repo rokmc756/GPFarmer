@@ -24,9 +24,9 @@ MASTER_HOST_IP=192.168.0.$MASTER_HOST
 
 for i in $HOSTS_RANGE
 do
-    ssh $ROOT_USER@192.168.0.$i "rm -rf /usr/local/greenplum-cc* /usr/local/greenplum-solr /home/gpadmin/.pgpass /home/gpadmin/certs"
     ssh $ROOT_USER@192.168.0.$i "killall ccagent"
     ssh $ROOT_USER@192.168.0.$i "killall gpccws"
+    ssh $ROOT_USER@192.168.0.$i "rm -rf /usr/local/greenplum-cc* /usr/local/greenplum-solr /home/gpadmin/.pgpass /home/gpadmin/certs"
 done
 
 #ssh gpadmin@$MASTER_HOST_IP "source /usr/local/greenplum-db/greenplum_path.sh && psql template1 -c 'DROP ROLE gpmon'"

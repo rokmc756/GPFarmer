@@ -6,10 +6,10 @@ gptext_base_dir: "/usr/local"
 gpdb_base_dir: "/usr/local"
 
 gptext_major_version: 3
-gptext_minor_version: 11.0
+gptext_minor_version: 10.0
 gptext_patch_version:
 gptext_build_version:
 gptext_gpdb_version:
 gptext_java_version: 1.8.0
-gptext_rhel_name: rhel7
+gptext_rhel_name: rhel8
 gptext_database_name: gptext_testdb
