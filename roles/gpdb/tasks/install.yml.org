@@ -1,22 +1,22 @@
 ---
 # Install Greenplum Database on Red Hat / CentOS / Rocky / Ubuntu / Debian
-#   installation: {{ gpdb_base_dir }}/greenplum-db must not exist
-#   linkchange: {{ gpdb_base_dir }}/greenplum-db points to another directory
+#   installation: {{ gpdb.base_dir }}/greenplum-db must not exist
+#   linkchange: {{ gpdb.base_dir }}/greenplum-db points to another directory
 
 #
 - name: Check if any version of Greenplum Database is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db
+  stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_link_existed
   # register: gpdb_installed
 
 #
 - name: Check if the Greenplum Database version is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
+  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
   register: gpdb_dir_existed
 
 #
-- name: Sanity check for {{ gpdb_base_dir }}/greenplum-db
-  fail: msg="{{ gpdb_base_dir }}/greenplum-db is supposed to be a symlink!"
+- name: Sanity check for {{ gpdb.base_dir }}/greenplum-db
+  fail: msg="{{ gpdb.base_dir }}/greenplum-db is supposed to be a symlink!"
   when: gpdb_link_existed.stat.exists == True and gpdb_link_existed.stat.islnk != True
 
 #
@@ -48,7 +48,7 @@
     gpdb_install: False
     gpdb_linkchange: False
 
-# Non-existent {{ gpdb_base_dir }}/greenplum-db is a new installation
+# Non-existent {{ gpdb.base_dir }}/greenplum-db is a new installation
 - name: Identify Greenplum Database Installation
   set_fact:
     gpdb_install: True
@@ -99,8 +99,8 @@
   changed_when: False
 
 #
-- name: Fix ownership for {{ gpdb_base_dir }}
-  file: path={{ gpdb_base_dir }} state=directory mode=0755 owner=gpadmin group=gpadmin
+- name: Fix ownership for {{ gpdb.base_dir }}
+  file: path={{ gpdb.base_dir }} state=directory mode=0755 owner=gpadmin group=gpadmin
 
 #
 - name: Stop and disable iptables
@@ -259,8 +259,8 @@
     - { regexp: '^agreed=', line: 'agreed=1', state: present, backrefs: yes }
     - { regexp: '^pathVerification=', line: 'pathVerification=1', state: present, backrefs: yes }
     - { regexp: '^validMigrateDecision=', line: 'validMigrateDecision=1', state: present, backrefs: yes }
-    - { regexp: '^user_specified_installPath=', line: 'user_specified_installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}', state: present, backrefs: yes }
-    - { regexp: '^installPath=', line: 'installPath={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}', state: present, backrefs: yes }
+    - { regexp: '^user_specified_installPath=', line: 'user_specified_installPath={{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}', state: present, backrefs: yes }
+    - { regexp: '^installPath=', line: 'installPath={{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}', state: present, backrefs: yes }
     - { regexp: '^    agreed=', line: '    agreed=1', state: present, backrefs: yes }
   when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_binary_type != 'rpm' and gpdb_binary_type != 'deb' )
 
@@ -273,7 +273,7 @@
 #
 - name: Shutdown database
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
   args:
     executable: /bin/bash
   async: 60
@@ -281,7 +281,7 @@
   when: ( inventory_hostname in groups['master'] and gpdb_running.stat.exists == True )
 
 #
-- name: Install Greenplum Database Software Binary in {{ gpdb_base_dir }}
+- name: Install Greenplum Database Software Binary in {{ gpdb.base_dir }}
   become_user: gpadmin
   command: /home/gpadmin/gpdb{{ gpdb_major_version }}-tmp-install/{{ binary_installer_file }}.bin
   async: 120
@@ -289,7 +289,7 @@
   when: ( gpdb_install == True and gpdb_initdb_single == False and seg_serialized_install == False and gpdb_binary_type == 'zip' )
 
 #
-- name: Install Greenplum Database Software RPM Package in {{ gpdb_base_dir }} for Red Hat / CentOS / Rocky Linux
+- name: Install Greenplum Database Software RPM Package in {{ gpdb.base_dir }} for Red Hat / CentOS / Rocky Linux
   yum:
     name: /home/gpadmin/{{ binary_installer_file }}.{{ gpdb_binary_type }}
     state: present
@@ -299,7 +299,7 @@
   when: ( gpdb_install == True and seg_serialized_install == False and  gpdb_binary_type == 'rpm' )
 
 #
-- name: Install Greenplum Database Software DEB Package in {{ gpdb_base_dir }} for Ubuntu / Debian
+- name: Install Greenplum Database Software DEB Package in {{ gpdb.base_dir }} for Ubuntu / Debian
   apt:
     deb: /home/gpadmin/{{ binary_installer_file }}.{{ gpdb_binary_type }}
     state: present
@@ -315,7 +315,7 @@
 
 #
 - name: Check again if the Greenplum Database version is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
+  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
   register: gpdb_installed_verify
 
 #
@@ -330,12 +330,12 @@
 
 #
 - name: Copy gpinitsystem config file for single node
-  command: creates=/home/gpadmin/gpinitsystem_config cp -a {{ gpdb_base_dir }}/greenplum-db/docs/cli_help/gpconfigs/gpinitsystem_singlenode /home/gpadmin/gpinitsystem_config
+  command: creates=/home/gpadmin/gpinitsystem_config cp -a {{ gpdb.base_dir }}/greenplum-db/docs/cli_help/gpconfigs/gpinitsystem_singlenode /home/gpadmin/gpinitsystem_config
   when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_initdb_single == True )
 
 #
 - name: Copy gpinitsystem config file for multiple nodes
-  command: creates=/home/gpadmin/gpinitsystem_config cp -a {{ gpdb_base_dir }}/greenplum-db/docs/cli_help/gpconfigs/gpinitsystem_config /home/gpadmin/gpinitsystem_config
+  command: creates=/home/gpadmin/gpinitsystem_config cp -a {{ gpdb.base_dir }}/greenplum-db/docs/cli_help/gpconfigs/gpinitsystem_config /home/gpadmin/gpinitsystem_config
   when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_initdb_single == False )
 
 #
@@ -414,14 +414,14 @@
     group: gpadmin
     recurse: "{{ item.recurse }}"
   with_items:
-    - { "state": "directory", "perm": "0755", "recurse": "yes", "dir": "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}" }
+    - { "state": "directory", "perm": "0755", "recurse": "yes", "dir": "{{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}" }
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 #
 - name: Change permission of Greenplum Database link since above task does not work for link
   become: true
   become_user: root
-  shell: "chown -R gpadmin:gpadmin {{ gpdb_base_dir }}/greenplum-db"
+  shell: "chown -R gpadmin:gpadmin {{ gpdb.base_dir }}/greenplum-db"
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 # Status: Config files ready, initialize database if required.
@@ -475,7 +475,7 @@
 #
 - name: Install greeplum binary into segment nodes by running gpseginstall
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpseginstall -f /home/gpadmin/hostfile )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpseginstall -f /home/gpadmin/hostfile )
   async: 120
   poll: 5
   register: gpseginstall_installed
@@ -485,7 +485,7 @@
 #
 - name: Initialize Greenplum Database Cluster
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -a -c /home/gpadmin/gpinitsystem_config -h /home/gpadmin/hostfile {{ gpdb_spread_mirrors }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -a -c /home/gpadmin/gpinitsystem_config -h /home/gpadmin/hostfile {{ gpdb_spread_mirrors }} )
   args:
     executable: /bin/bash
   async: 600
@@ -497,7 +497,7 @@
 #
 - name: Initialize Greenplum Database Cluster with Standby Master
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -c /home/gpadmin/gpinitsystem_config -a {{ gpdb_spread_mirrors }} -h /home/gpadmin/hostfile -s {{ smdw_hostname }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -c /home/gpadmin/gpinitsystem_config -a {{ gpdb_spread_mirrors }} -h /home/gpadmin/hostfile -s {{ smdw_hostname }} )
   args:
     executable: /bin/bash
   async: 600
@@ -510,7 +510,7 @@
 - name: Add MASTER_DATA_DIRECTORY to greenplum_path.sh
   become_user: gpadmin
   lineinfile:
-    dest: "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}/greenplum_path.sh"
+    dest: "{{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}/greenplum_path.sh"
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
     state: "{{ item.state }}"
@@ -521,7 +521,7 @@
 #
 - name: Restart Greenplum Database after initialization
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
   when: inventory_hostname in groups['master'] and ( gpdb_install == True or gpdb_linkchange == True )
@@ -535,7 +535,7 @@
 #
 - name: Start database
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstart -a )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstart -a )
   async: 60
   poll: 5
   when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_linkchange == True and gpdb_running_nothing.stat.exists != True )
@@ -567,7 +567,7 @@
 - name: Enabling Resource Groups by gpconfig
   become_user: gpadmin
   changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_resource_manager -v "group" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_resource_manager -v "group" )
   args:
     executable: /bin/bash
   register: resource_group_enabled
@@ -640,7 +640,7 @@
 - name: Apply new changes for Resource Groups
   become_user: gpadmin
   changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   args:
     executable: /bin/bash
   register: rs_applied
@@ -659,7 +659,7 @@
 - name: Verify that Greenplum Database is up and running
   become_user: gpadmin
   changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
   args:
     executable: /bin/bash
   register: select_version
@@ -670,7 +670,7 @@
 - name: Change gpadmin password to check remote login via SSL
   become_user: gpadmin
   changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "alter user gpadmin with password 'changeme'" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "alter user gpadmin with password 'changeme'" )
   args:
     executable: /bin/bash
   register: gpadmin_password_changed

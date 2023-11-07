@@ -68,6 +68,18 @@
   register: select_gpperfmon
   when: inventory_hostname in groups['master']
 
+
+#
+- name: Set fact for the status of gpperfmon database
+  set_fact:
+    gpperfmon_status: "{{ ( select_gpperfmon.stdout.find('    0') ) }}"
+  delegate_to: "{{ item }}"
+  delegate_facts: True
+  with_items: "{{ groups['all'] }}"
+  when: inventory_hostname in groups['master']
+
+# - debug: msg={{ gpperfmon_status }}
+
 #
 - name: Add gpmon user to pg_hba.conf to authenticate Greenplum Command Center
   lineinfile:
@@ -81,7 +93,8 @@
     - { line: "host     all         gpmon         {{ prod_ip_addr_range }}/24 md5", state: present }
     - { line: "host     all         gpmon         {{ gpdb_network_range }} md5",    state: present }
   register: gpmon_pg_hba_config
-  when: ( inventory_hostname in groups['master'] and select_gpperfmon.stdout.find('    0') != -1 ) or inventory_hostname in groups['standby']
+  when: ( inventory_hostname in groups['master'] and gpperfmon_status|int != -1 ) or ( inventory_hostname in groups['standby'] and gpperfmon_status|int != -1 )
+  # when: ( inventory_hostname in groups['master'] and select_gpperfmon.stdout.find('    0') != -1 ) or ( inventory_hostname in groups['standby'] and select_gpperfmon.stdout.find('    0') != -1 )
 
 #
 - name: Reload Greenplum Database

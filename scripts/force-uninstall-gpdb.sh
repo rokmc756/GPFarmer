@@ -27,6 +27,7 @@ do
         rm -f /etc/sysctl.d/99-sysctl.conf
         systemctl stop cgconfig;
         systemctl disable cgconfig;
+        userdel gpadmin
         rm -rf /home/gpadmin/.ssh;
         rm -rf /home/gpadmin/*;
         rm -rf /home/gpadmin;
