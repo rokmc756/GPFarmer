@@ -1,15 +1,15 @@
-#- hosts: rh7-master,rh7-slave
-#  become: true
-#  become_user: gpadmin
-#  roles:
-#    - { role: gpcc }
+- hosts: rh8-master,rh8-slave
+  become: true
+  become_user: gpadmin
+  roles:
+    - { role: gpcc }
 
 #
-- hosts: all
-  become: true
-  gather_facts: true
-  roles:
-    - { role: gpdb }               # Need to check if gather_facts: no is required
+#- hosts: all
+#  become: true
+#  gather_facts: true
+#  roles:
+#    - { role: gpdb }               # Need to check if gather_facts: no is required
 #    - { role: init-hosts }               # Need to check if gather_facts: no is required
 #    - { role: gptext }
 #    - { role: init-hosts }

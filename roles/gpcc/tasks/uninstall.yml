@@ -18,7 +18,7 @@
 #
 - name: Set prefix directory for installation path of Greenplum Command Center
   set_fact: gpcc_prefix_dir=/usr/local/greenplum-cc
-  when: gpcc_major_version|int >= 6 and gpcc_minor_version|int >= 2
+  when: ( gpcc_major_version|int >= 6 and gpcc_minor_version|int >= 2 ) or ( gpcc_major_version|int >= 7 and gpcc_minor_version|int >= 0 )
 
 #
 - name: Check if the Greenplum Command Center Software is already installed

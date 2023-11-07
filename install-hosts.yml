@@ -1,9 +1,9 @@
-- hosts: all
-  become: true
-  gather_facts: true
-  roles:
-    - { role: gpdb }                 # Need to check if get_facts: true is required
-#   - { role: init-hosts }
+#- hosts: all
+#  become: true
+#  gather_facts: true
+#  roles:
+#    - { role: init-hosts }
+#    - { role: gpdb }                 # Need to check if get_facts: true is required
 #   - { role: gptext }
 #   - { role: gpss }
 #   - { role: plcontainer }
@@ -18,11 +18,11 @@
 #   - { role: plr }
 
 #
-#- hosts: rh7-master,rh7-slave
-#  become: true
-#  become_user: gpadmin
-#  roles:
-#    - { role: gpcc }
+- hosts: rh8-master,rh8-slave
+  become: true
+  become_user: gpadmin
+  roles:
+    - { role: gpcc }
 
 #- hosts: rk9-minio
 #  become: true

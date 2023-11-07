@@ -2,8 +2,9 @@
 
 # HOSTS_RANGE="61 65"
 # HOSTS_RANGE="171 175"
-HOSTS_RANGE="71 75"
+# HOSTS_RANGE="71 75"
 # HOSTS_RANGE="81 85"
+HOSTS_RANGE="51 55"
 
 NETWORK_RANGE="192.168.0"
 USER="root"
@@ -23,9 +24,11 @@ do
         killall postgres python > /dev/null 2>&1;
         rm -f /etc/cgconfig.d/gpdb.conf;
         echo "" > /etc/sysctl.conf;
+        rm -f /etc/sysctl.d/99-sysctl.conf
         systemctl stop cgconfig;
         systemctl disable cgconfig;
-        rm -rf /root/.ssh
+        rm -rf /home/gpadmin/.ssh;
+        rm -rf /home/gpadmin/*;
         rm -rf /home/gpadmin;
         rm -f /etc/cgconfig.conf;
         "

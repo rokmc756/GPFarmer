@@ -190,6 +190,12 @@
   # changed_when: False
   when: inventory_hostname in groups['master'] and ( gpdb_initialized.stat.exists != True and gpdb_initdb_single == False and seg_serialized_install == True )
 
+
+# pip2 install pip
+# python -m pip install --upgrade pip
+#
+#python -m pip install psutil
+
 #
 - name: Initialize Greenplum Database Cluster
   become_user: gpadmin

@@ -6,6 +6,7 @@
 # greenplum-cc-web-4.14.0-gp5-rhel7-x86_64.zip
 # greenplum-cc-web-6.9.0-gp6-rhel7-x86_64.zip
 # greenplum-cc-web-6.9.0-gp6-rhel8-x86_64.zip
+# greenplum-cc-web-7.0.0-gp7-el8-x86_64.zip
 
 # Ubuntu
 # greenplum-cc-web-6.8.4-gp6-ubuntu18.04-x86_64.zip
@@ -15,17 +16,17 @@ gpdb_base_dir: "/usr/local"
 gpdb_data_dir: "/data"
 gpcc_base_dir: "/usr/local"
 
-gpdb_major_version: 6
-gpdb_minor_version: 25.1
+gpdb_major_version: 7
+gpdb_minor_version: 0.0
 gpdb_build_version:
-gpcc_major_version: 6
-gpcc_minor_version: 9.1
+gpcc_major_version: 7
+gpcc_minor_version: 0.0
 
-gpdb_metric_major_version: 6
-gpdb_metric_minor_version: 25.1
+gpdb_metric_major_version: 7
+gpdb_metric_minor_version: 0.0
 gpdb_metric_build_version:
 gpcc_metric_arch: 'x86_64'
-gpcc_os_name: 'rhel7'
+gpcc_os_name: 'el8'
 # gpcc_metric_arch: 'amd64'
 # gpcc_os_name: 'ubuntu18.04'
 
