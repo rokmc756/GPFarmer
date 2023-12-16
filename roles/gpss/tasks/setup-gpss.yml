@@ -35,7 +35,7 @@
     gppkg_install_cmd: "gppkg -i"
     check_gpss_installed: "gppkg -q --all | grep gpss | cut -d . -f 1 | sed 's/[0-9]$//g'"
     gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
-  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int <= 6 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int <= 8 )
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int >= 6 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int >= 7 )
 
 #
 - set_fact:
@@ -43,6 +43,13 @@
     check_gpss_installed: "gppkg query | grep gpss | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
     gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
   when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int >= 7 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int >= 8 )
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    check_gpss_installed: "gppkg -q --all | grep gpss | cut -d . -f 1 | sed 's/[0-9]$//g'"
+    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int <= 6 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int <= 8 )
 
 #
 - name: Verify if GPSS gppkg is installed
@@ -65,7 +72,7 @@
   when: ( inventory_hostname in groups['master'] and 'gpss' in gpss_installed.stdout )
 
 #
-- name: yum install daemonize
+- name: Install daemonize
   become: yes
   yum:
     name: daemonize
@@ -96,8 +103,6 @@
 - name: Copy GPSS gppkg file
   become_user: gpadmin
   copy: src={{ gpss_package_name }} dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-  args:
-    executable: /bin/bash
   when: ( inventory_hostname in groups['master'] and 'gpss' not in gpss_installed.stdout )
 
 #
@@ -162,18 +167,39 @@
   template: src=gpss/{{ item }}.j2 dest={{ gpss_base_dir }}/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
   register: create_table_query_copied
   with_items:
-    - "create_table.sql"
     - "gpss_config.json"
+    - "gpss_load_test_config.json"
+    - "gpss_delete_test_config.json"
+    - "create_table.sql"
+    - "create_table_load_test.sql"
+    - "create_table_delete_test.sql"
+    - "create_temp_table_delete_test.sql"
     - "jsonload_cfg.yaml"
+    - "jsonload_cfg_load_test.yaml"
+    - "jsonload_cfg_delete_test.yaml"
+    - "check-gpss-mem.sh"
+    - "01-start-gpss-daemon.sh"
+    - "02-submit-jobs.sh"
+    - "03-list-all-jobs.sh"
+    - "04-start-gpss-jobs.sh"
+    - "05-print-new-contents.sh"
+    - "06-print-status-gpss-jobs.sh"
+    - "07-get-off-shell-set.sh"
+    - "delete-test-query.sh"
   when: inventory_hostname in groups['master']
 
 #
 - name: Create table
   become: yes
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -f {{ gpss_base_dir }}/create_table.sql )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -f {{ gpss_base_dir }}/{{ item }} )
   register: gpss_table_created
+  with_items:
+    - "create_table.sql"
+    - "create_table_load_test.sql"
+    - "create_table_delete_test.sql"
   when: inventory_hostname in groups['master']
+  #  - "create_temp_table_delete_test.sql"
 
 #
 - debug: msg={{ gpss_table_created }}
@@ -183,8 +209,12 @@
 - name: Start GPSS daemon
   become: yes
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && daemonize $GPHOME/bin/gpss {{ gpss_base_dir }}/gpss_config.json --verbose --log-dir {{ gpss_log_dir }} )
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && daemonize $GPHOME/bin/gpss {{ gpss_base_dir }}/{{ item }} --verbose --log-dir {{ gpss_log_dir }} )
   register: gpss_daemon_started
+  with_items:
+    - "gpss_config.json"
+    - "gpss_load_test_config.json"
+    - "gpss_delete_test_config.json"
   when: inventory_hostname in groups['master']
 
 #
@@ -195,8 +225,12 @@
 - name: Sumit Job
   become: yes
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli submit --verbose --name {{ gpss_job_name }} --gpss-port {{ gpss_port }} {{ gpss_base_dir }}/jsonload_cfg.yaml )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli submit --verbose --name {{ item.gpss_job_name }} --gpss-port {{ item.gpss_port }} {{ gpss_base_dir }}/{{ item.gpss_config }} )
   register: gpss_job_submitted
+  with_items:
+    - { gpss_job_name: "{{ gpss_job_name }}", gpss_port: "{{ gpss_port }}", gpss_config: "jsonload_cfg.yaml" }
+    - { gpss_job_name: "{{ gpss_load_test_job_name }}", gpss_port: "{{ gpss_load_test_port }}", gpss_config: "jsonload_cfg_load_test.yaml" }
+    - { gpss_job_name: "{{ gpss_delete_test_job_name }}", gpss_port: "{{ gpss_delete_test_port }}", gpss_config: "jsonload_cfg_delete_test.yaml" }
   when: inventory_hostname in groups['master']
 
 #
@@ -207,8 +241,12 @@
 - name: List all jobs
   become: yes
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli list --verbose --all --gpss-port {{ gpss_port }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli list --verbose --all --gpss-port {{ item }} )
   register: gpss_all_jobs_listed
+  with_items:
+    - "{{ gpss_port }}"
+    - "{{ gpss_load_test_port }}"
+    - "{{ gpss_delete_test_port }}"
   when: inventory_hostname in groups['master']
 
 #
@@ -216,11 +254,20 @@
   when: inventory_hostname in groups['master'] and print_debug
 
 #
+#- name: Pause for 1 minutes to wait for compleiting inserting data in Kafka brokers
+#  pause:
+#    minutes: 1
+
+#
 - name: Start GPSS job
   become: yes
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli start {{ gpss_job_name }} --verbose --gpss-port {{ gpss_port }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli start {{ item.gpss_job_name }} --verbose --gpss-port {{ item.gpss_port }} )
   register: gpss_job_started
+  with_items:
+    - { gpss_job_name: "{{ gpss_job_name }}", gpss_port: "{{ gpss_port }}", gpss_config: "jsonload_cfg.yaml" }
+    - { gpss_job_name: "{{ gpss_load_test_job_name }}", gpss_port: "{{ gpss_load_test_port }}", gpss_config: "jsonload_cfg_load_test.yaml" }
+    - { gpss_job_name: "{{ gpss_delete_test_job_name }}", gpss_port: "{{ gpss_delete_test_port }}", gpss_config: "jsonload_cfg_delete_test.yaml" }
   when: inventory_hostname in groups['master']
 
 #
@@ -231,9 +278,14 @@
 - name: Print new contents
   become: yes
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -c "SELECT * FROM public.json_from_kafka;" )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -c "SELECT count(*) FROM public.{{ item }};" )
   register: gpss_new_contents_printed
+  with_items:
+    - "{{ kafka_table_name }}"
+    - "{{ kafka_load_test_table_name }}"
+    - "{{ kafka_delete_test_table_name }}"
   when: inventory_hostname in groups['master']
+  #  - "{{ kafka_delete_test_temp_table_name }}"
 
 #
 - debug: msg={{ gpss_new_contents_printed }}
@@ -243,8 +295,12 @@
 - name: Print the status of GPSS job
   become: yes
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli status {{ gpss_job_name }} --gpss-port {{ gpss_port }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpsscli status {{ item.gpss_job_name }} --gpss-port {{ item.gpss_port }} )
   register: gpss_job_status_printed
+  with_items:
+    - { gpss_job_name: "{{ gpss_job_name }}", gpss_port: "{{ gpss_port }}", gpss_config: "jsonload_cfg.yaml" }
+    - { gpss_job_name: "{{ gpss_load_test_job_name }}", gpss_port: "{{ gpss_load_test_port }}", gpss_config: "jsonload_cfg_load_test.yaml" }
+    - { gpss_job_name: "{{ gpss_delete_test_job_name }}", gpss_port: "{{ gpss_delete_test_port }}", gpss_config: "jsonload_cfg_delete_test.yaml" }
   when: inventory_hostname in groups['master']
 
 #
@@ -262,3 +318,4 @@
 #
 #- debug: msg={{ gpss_job_progress_printed }}
 #  when: inventory_hostname in groups['master'] and print_debug
+

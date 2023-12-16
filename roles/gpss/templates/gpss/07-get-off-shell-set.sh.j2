@@ -1,0 +1,11 @@
+/usr/local/kafka/bin/kafka-run-class.sh kafka.tools.GetOffsetShell \
+--bootstrap-server {{ kafka_broker_hosts }} \
+--topic {{ kafka_topic_name }} --time -2
+
+/usr/local/kafka/bin/kafka-run-class.sh kafka.tools.GetOffsetShell \
+--bootstrap-server {{ kafka_broker_hosts }} \
+--topic {{ kafka_load_test_topic_name }} --time -2
+
+/usr/local/kafka/bin/kafka-run-class.sh kafka.tools.GetOffsetShell \
+--bootstrap-server {{ kafka_broker_hosts }} \
+--topic {{ kafka_delete_test_topic_name }} --time -2

@@ -1,0 +1,8 @@
+source /usr/local/greenplum-db/greenplum_path.sh && \
+psql -d testdb -c "SELECT count(*) FROM public.{{ kafka_table_name }};"
+
+source /usr/local/greenplum-db/greenplum_path.sh && \
+psql -d testdb -c "SELECT count(*) FROM public.{{ kafka_load_test_table_name }};"
+
+source /usr/local/greenplum-db/greenplum_path.sh && \
+psql -d testdb -c "SELECT count(*) FROM public.{{ kafka_delete_test_table_name }};"

@@ -134,17 +134,6 @@
 #    - "'gpss' not in ansible_facts.packages"
 
 #
-- name: Uninstall GPSS rpm package
-  become_user: root
-  yum:
-    name: gpss
-    state: absent
-  async: 60
-  poll: 5
-  when:
-    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
-
-#
 - name: Check file list of GPSS tarball
   stat:
     path: "/usr/local/greenplum-db/{{ gpss_tarball_loop }}"
@@ -165,31 +154,6 @@
   loop: "{{ gpss_tarball_stat_var.results }}"
   when:
     - inventory_hostname in groups['master']  # At GPDB Master
-
-
-#
-- name: Delete Kafka Topic
-  become: yes
-  shell:
-    "/usr/local/kafka/bin/kafka-topics.sh --bootstrap-server {{ kafka_broker_hosts }}:9092 --topic {{ item }} --delete"
-  ignore_errors: yes
-  with_items:
-    - "{{ kafka_topic_name }}"
-    - "{{ kafka_load_test_topic_name }}"
-    - "{{ kafka_delete_test_topic_name }}"
-  when: inventory_hostname == hostvars[groups['kafka_brokers'][0]].ansible_hostname
-  #  "/usr/local/kafka/bin/kafka-topics.sh --bootstrap-server {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }} --delete"
-
-
-#
-- name: Delete Kafka working base directory
-  become: yes
-  file:
-    owner: root
-    group: root
-    path: "{{ kafka_base_dir }}"
-    state: absent
-  when: inventory_hostname in groups['kafka_brokers']
 
 #
 - name: Delete GPSS working base directory

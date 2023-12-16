@@ -1,5 +1,5 @@
 ---
-
+#
 # Install Greenplum Streaming Server on both GPDB Master and Kafka Broker
 # Configure data loading with sample data between them
 
@@ -31,7 +31,7 @@
   yum:
     name: daemonize
     state: latest
-  when: inventory_hostname in groups['master'] or inventory_hostname in groups['kafka-brokers']
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['kafka_brokers']
 
 #
 - name: Copy GPSS tarball file
@@ -76,15 +76,13 @@
 - name: Copy GPSS gppkg file
   become_user: gpadmin
   copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-  when:
-    - inventory_hostname in groups['master']  # At GPDB Master
+  when: inventory_hostname in groups['master']  # At GPDB Master
 
 #
 - name: Install GPSS gppkg package
   become_user: gpadmin
   shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-x86_64.gppkg )
-  when:
-    - inventory_hostname in groups['master']  # At GPDB Master
+  when: inventory_hostname in groups['master']  # At GPDB Master
 
 #
 - name: Verify that database for GPSS extention is installed
@@ -116,13 +114,13 @@
   package_facts:
     manager: "auto"
   when:
-    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
 #
 - name: Stop if GPSS rpm package is installed
   fail: msg="GPSS rpm package is already installed!"
   when:
-   - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+   - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
    - "'gpss' in ansible_facts.packages"
 
 #
@@ -130,7 +128,7 @@
   become_user: gpadmin                              # ETL user
   copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64.rpm dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
-    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
 #
 - name: Install GPSS rpm package in {{ gpdb_base_dir }}
@@ -141,7 +139,7 @@
   async: 60
   poll: 5
   when:
-    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
 - name: Chown gpamdin for GPSS install directory
   become: yes
@@ -152,7 +150,7 @@
     mode: u=rwX,g=rX,o=rX
     state: directory
     recurse: yes
-  when: inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+  when: inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
 #
 - name: Creates working base directory for kafka and gpss
@@ -165,7 +163,7 @@
   with_items:
     - "{{ kafka_base_dir }}"
     - "{{ gpss_base_dir }}"
-  when: inventory_hostname in groups['master'] or inventory_hostname in groups['kafka-brokers']
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['kafka_brokers']
 
 #
 - name: Copy scripts to manage kafka topics
@@ -179,21 +177,21 @@
     - "04-list-topics.sh"
     - "05-check-replica.sh"
     - "06-delete-topic.sh"
-  when: inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+  when: inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
 - name: Create Kafka Topic
   become: yes
   shell:
     "{{ kafka_install_dir }}//bin/kafka-topics.sh --create --bootstrap-server {{ kafka_broker_hostname }}:9092 --replication-factor {{ kafka_replication_factor }} --partitions {{ kafka_partitions }} --topic {{ kafka_topic_name }}"
   when:
-    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
 - name: List Kafka Topics
   become: yes
   shell:
     "{{ kafka_install_dir }}//bin/kafka-topics.sh --list --bootstrap-server {{ kafka_broker_hostname }}:9092"
   when:
-    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
 # kafka-verifiable로 시작하는 2개의 스크립트를 사용하면 String 타입 메시지 값을 코드 없이 주고받을 수 있다. 카프카 클러스터 설치가 완료된 이후에 토픽에 데이터를 전송하여 간단한 네트워크 통신 테스트를 할 대 유용하다.
 #kafka-verifiable-producer.sh --bootstrap-server localhost:9092 \
@@ -204,14 +202,14 @@
 - name: Copy json sammple data
   template: src=sample_data.json dest=/home/gpadmin/sample_data.json owner=gpadmin group=gpadmin mode=644 force=yes
   register: json_sample_data_copied
-  when: inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+  when: inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
 #
 - name: Stream data into Kafka Topci
   become: yes
   shell:
     "{{ kafka_install_dir }}//bin/kafka-console-producer.sh --broker-list {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }} < /home/gpadmin/sample_data.json"
-  when: inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+  when: inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
 #
 - name: Check Replication factors
@@ -219,20 +217,20 @@
   shell:
     "{{ kafka_install_dir }}//bin/kafka-topics.sh --describe --bootstrap-server {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }}"
   when:
-    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
 #
 #- name: Check if data is inserting into Kafka Topic
 #  become: yes
 #  shell:
 #    "{{ kafka_install_dir }}//bin/kafka-console-consumer.sh --bootstrap-server {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }} --from-beginning"
-#  when: inventory_hostname in groups['kafka-brokers']
+#  when: inventory_hostname in groups['kafka_brokers']
 
 #- name: Before using the GPSS ETL tools
 #  become: yes
 #  shell: ( source /usr/local/gpss/gpss_path.sh )
 #  when:
-#    - inventory_hostname in groups['kafka-brokers']  # At Kafka Broker
+#    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
 - name: Copy create table query file and gpss config file and json loadcfg yml file
   template: src=gpss/{{ item }} dest=/home/gpadmin/{{ gpss_base_dir }}/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
@@ -241,7 +239,11 @@
     - "create_table.sql"
     - "gpss_config.json"
     - "jsonload_cfg.yaml"
+    - "check_gpcc_mem.sh"
+    - "ddl_gpss_from_kafka.sql"
+    - "memory_test.yaml"
   when: inventory_hostname in groups['master']
+  #  - "data_source.gz"
 
 #
 - name: Create table
@@ -249,7 +251,10 @@
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -f {{ gpss_base_dir }}/create_table.sql )
   register: gpss_table_created
+  with_items:
+    - "create_table.sql"
   when: inventory_hostname in groups['master']
+  #  - "ddl_gpss_from_kafka.sql"
 
 #
 - debug: msg={{ gpss_table_created }}

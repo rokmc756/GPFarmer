@@ -4,21 +4,20 @@
   roles:
     - { role: gpdb }                 # Need to check if get_facts: true is required
 #    - { role: init-hosts }
+#    - { role: gpss }
 #    - { role: madlib }               # Failed on ubuntu 18.04
 #    - { role: postgis }
 #    - { role: plr }
 #    - { role: init-hosts }
 #    - { role: gpdb }                 # Need to check if get_facts: true is required
-#
 #    - { role: gptext }
-#   - { role: gpss }
-#   - { role: plcontainer }
-#   - { role: DataSciencePython }
-#   - { role: DataScienceR }
-#   - { role: pljava }
-#   - { role: plr }
-#   - { role: pxf }
-#   - { role: gpupgrade }
+#    - { role: plcontainer }
+#    - { role: DataSciencePython }
+#    - { role: DataScienceR }
+#    - { role: pljava }
+#    - { role: plr }
+#    - { role: pxf }
+#    - { role: gpupgrade }
 
 #
 #- hosts: rh8-master,rh8-slave

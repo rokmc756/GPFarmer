@@ -1,0 +1,8 @@
+source /usr/local/greenplum-db/greenplum_path.sh && \
+gpsscli start {{ gpss_job_name }} --verbose --gpss-port {{ gpss_port }}
+
+source /usr/local/greenplum-db/greenplum_path.sh && \
+gpsscli start {{ gpss_load_test_job_name }} --verbose --gpss-port {{ gpss_load_test_port }}
+
+source /usr/local/greenplum-db/greenplum_path.sh && \
+gpsscli start {{ gpss_delete_test_job_name }} --verbose --gpss-port {{ gpss_delete_test_port }}

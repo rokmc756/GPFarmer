@@ -1,0 +1,14 @@
+source /usr/local/greenplum-db/greenplum_path.sh && \
+gpsscli submit --verbose --name {{ gpss_job_name }} \
+--gpss-port {{ gpss_port }} \
+/home/gpadmin/gpss-base/jsonload_cfg.yaml
+
+source /usr/local/greenplum-db/greenplum_path.sh && \
+gpsscli submit --verbose --name {{ gpss_load_test_job_name }} \
+--gpss-port {{ gpss_load_test_port }} \
+/home/gpadmin/gpss-base/jsonload_cfg_load_test.yaml
+
+source /usr/local/greenplum-db/greenplum_path.sh && \
+gpsscli submit --verbose --name {{ gpss_delete_test_job_name }} \
+--gpss-port {{ gpss_delete_test_port }} \
+/home/gpadmin/gpss-base/jsonload_cfg_delete_test.yaml

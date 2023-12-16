@@ -1,2 +1,0 @@
--- CREATE TABLE json_from_kafka( customer_id int8, month int4, amount_paid decimal(9,2) );
-CREATE TABLE json_from_kafka( customer_id int8, month int4, amount_paid decimal(9,2) ) distributed by (customer_id);

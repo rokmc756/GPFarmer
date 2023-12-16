@@ -100,46 +100,21 @@
     state: present
   when: ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
 
-# source: https://github.com/rpm-software-management/yum-utils/blob/master/needs-restarting.py
 #- name: install Red Hat version of 'needs-restarting'
 #  get_url:
 #    url: https://raw.githubusercontent.com/rpm-software-management/yum-utils/master/needs-restarting.py
 #    dest: /root/needs-restarting.py
 #    mode: 0700
-#  when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
-
-# source: https://github.com/rpm-software-management/yum-utils/blob/master/needs-restarting.py
-- name: Install Red Hat version of 'needs-restarting'
-  copy:
-    src: needs-restarting.py
-    dest: /root/needs-restarting.py
-    mode: 0700
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int <= 7
+#
 
 #
-- name: Reboot required (Red Hat) - Step 1 in RHEL/CentOS/Rocky Linux 6 and 7
-  command: /root/needs-restarting.py -r
-  register: reboot_required
-  ignore_errors: True
-  changed_when: False
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int <= 7
+- name: Import tasks of Reboot required in RHEL/CentOS/Rocky Linux 6 and 7
+  import_tasks: reboot_require_rh7.yml
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and hostvars[inventory_hostname].ansible_distribution_major_version|int <= 7
 
 #
-- name: Reboot required (Red Hat) - Step 1 in RHEL/CentOS/Rocky Linux 8
-  command: /usr/bin/needs-restarting -r
-  register: reboot_required
-  ignore_errors: True
-  changed_when: False
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 8
-
-#
-- name: Reboot required (Red Hat) - Step 2
-  shell: ( /bin/sleep 5 ; /sbin/shutdown -r now "Ansible updates triggered" ) &
-  async: 120
-  poll: 0
-  ignore_errors: true
-  notify:
-    - Waiting for server to come back after restart
-  when: ( reboot_required.rc == 1 and ansible_distribution_major_version|int <= 8 ) and ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+- name: Import tasks of Reboot required in RHEL/CentOS/Rocky Linux 8 or higher versions
+  import_tasks: reboot_require_rh8.yml
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and hostvars[inventory_hostname].ansible_distribution_major_version|int >= 8
 
 - meta: flush_handlers

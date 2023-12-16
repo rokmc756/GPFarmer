@@ -102,14 +102,14 @@
   with_items:
     - { regexp: '^MACHINE_LIST_FILE=', line: 'MACHINE_LIST_FILE=/home/gpadmin/hostfile', state: present }
     - { regexp: '^declare -a DATA_DIRECTORY=', line: 'declare -a DATA_DIRECTORY=({{ data_dirs }} )', state: present }
-    - { regexp: '^#declare -a MIRROR_DATA_DIRECTORY=', line: 'declare -a MIRROR_DATA_DIRECTORY=({{ mirror_data_dirs }} )', state: present }
-    - { regexp: '^MIRROR_PORT_BASE=', line: 'MIRROR_PORT_BASE=7000', state: present }
     - { regexp: '^MASTER_HOSTNAME=', line: 'MASTER_HOSTNAME={{ ansible_hostname }}', state: present }
     - { regexp: '^MASTER_DIRECTORY=', line: 'MASTER_DIRECTORY={{ gpdb.data_dir }}/master', state: present }
     - { regexp: '^#?DATABASE_NAME=', line: 'DATABASE_NAME=gpadmin', state: present }
     - { regexp: '^COORDINATOR_HOSTNAME=', line: "COODINATOR_HOSTNAME={{ hostvars[groups['master'][0]]['ansible_hostname'] }}", state: present }
     - { regexp: '^COORDINATOR_DIRECTORY=', line: 'MASTER_DIRECTORY={{ gpdb.data_dir }}/master', state: present }
     - { regexp: '^SEG_PREFIX=', line: 'SEG_PREFIX=gpseg', state: present }
+    - { regexp: '^#declare -a MIRROR_DATA_DIRECTORY=', line: 'declare -a MIRROR_DATA_DIRECTORY=({{ mirror_data_dirs }} )', state: present }
+    - { regexp: '^MIRROR_PORT_BASE=', line: 'MIRROR_PORT_BASE=7000', state: present }
   when: ( inventory_hostname in groups['master'] and gpdb_install == True )
 
 #
@@ -212,6 +212,7 @@
 - name: Initialize Greenplum Database Cluster with Standby Master
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -c /home/gpadmin/gpinitsystem_config -a {{ gpdb_spread_mirrors }} -h /home/gpadmin/hostfile -s {{ hostvars[groups['standby'][0]]['ansible_hostname'] }} )
+  # shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -c /home/gpadmin/gpinitsystem_config -h /home/gpadmin/hostfile -s {{ hostvars[groups['standby'][0]]['ansible_hostname'] }} )
   args:
     executable: /bin/bash
   async: 600

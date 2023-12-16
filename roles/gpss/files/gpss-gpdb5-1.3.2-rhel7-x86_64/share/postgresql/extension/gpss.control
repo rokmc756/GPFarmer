@@ -1,3 +1,0 @@
-default_version = '1.0'
-comment = 'Extension which implements kinds of gpss formaters and protocol buffer'
-relocatable = true

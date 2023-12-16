@@ -2,10 +2,11 @@
   "ListenAddress": {
     "Host": "",
     "Port": {{ gpss_port }},
-    "SSL": false
-},
-    "Gpfdist": {
-      "Host": "",
-      "Port": {{ gpfdist_port }}
-    }
+    "SSL": false,
+    "DebugPort": 9999
+  },
+  "Gpfdist": {
+    "Host": "",
+    "Port": {{ gpfdist_port }}
+  }
 }

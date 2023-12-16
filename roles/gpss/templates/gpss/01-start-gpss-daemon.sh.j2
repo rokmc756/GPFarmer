@@ -1,0 +1,17 @@
+source /usr/local/greenplum-db/greenplum_path.sh && \
+daemonize $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_config.json \
+--verbose --log-dir /home/gpadmin/gpss-base/logs
+
+source /usr/local/greenplum-db/greenplum_path.sh && \
+daemonize $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_load_test_config.json \
+--verbose --log-dir /home/gpadmin/gpss-base/logs
+
+source /usr/local/greenplum-db/greenplum_path.sh && \
+daemonize $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_delete_test_config.json \
+--verbose --log-dir /home/gpadmin/gpss-base/logs
+
+# valgrind --trace-children=yes --show-reachable=yes --track-origins=yes --read-var-info=yes \
+# --tool=memcheck --leak-check=full --num-callers=50 -v --time-stamp=yes --log-file=leaky.log \
+# $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_config.json --verbose \
+# --log-dir /home/gpadmin/gpss-base/logs
+# https://access.redhat.com/articles/17774

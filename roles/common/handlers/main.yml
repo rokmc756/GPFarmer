@@ -9,5 +9,4 @@
   shell: ( /bin/sleep 5 ; shutdown -r now "Ansible updates triggered" ) &
   async: 30
   poll: 0
-  ignore_errors: true
-
+  # ignore_errors: true
