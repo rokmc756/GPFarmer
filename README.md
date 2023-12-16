@@ -28,7 +28,7 @@ Since it only provide install GPDB on a single host GPFarmer support multiple ho
 MacOS or Fedora/CentOS/RHEL should have installed ansible as ansible host.
 Supported OS for ansible target host should be prepared with package repository configured such as yum, dnf and apt
 
-## Prepare ansible host to run gpfarmer
+## Prepare ansible host to run GPFarmer
 * MacOS
 ```
 $ xcode-select --install
@@ -44,7 +44,7 @@ $ sudo yum install ansible
 ## Prepareing OS
 Configure Yum / Local & EPEL Repostiory
 
-## Download / configure / run gpfarmer
+## Download / configure / run GPFarmer
 #### 1) Clone GPFarmer ansible playbook and go to that directory
 ```
 $ git clone https://github.com/rokmc756/GPFarmer
@@ -225,8 +225,8 @@ $ make uninstall
 ```
 
 ## Planning
-Converting Makefile.init from original project
-Adding GPCR role
-Adding SELinux role
-Adding tuned role
+Converting Makefile.init from original project\
+Adding GPCR role\
+Adding SELinux role\
+Adding tuned role\
 Adding gpupgrade
