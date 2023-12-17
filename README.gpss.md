@@ -1,5 +1,6 @@
 ## What is GPSS role?
-In order to interact with Kafka Brokers and GPSS there sho
+It's ansible playbook to deploy Greenplum Streaming Server into Greenplum Database and with Kafka Cluster.\
+This role include several sample examples with mock data to interact with Kafka Cluster.
 
 ## Where is GPSS role from and how is it changed?
 It's originated by itself
@@ -11,7 +12,7 @@ It's originated by itself
 ## Supported Platform and OS
 * Virtual Machines
 * Baremetal
-* RHEL / CentOS / Rocky Linux 7.x,8.x,9.x
+* RHEL / CentOS / Rocky Linux 7.x,8.x
 * Ubuntu 18.04
 
 ## Deploy and Destroy GPSS onto GPDB and Kafka Cluster
@@ -20,8 +21,8 @@ It's originated by itself
 $ vi ansible-hosts
 [all:vars]
 ssh_key_filename="id_rsa"
-remote_machine_username="gpadmin"             # Replace with username of gpdb administrator
-remote_machine_password="changeme"            # Replace with password of user
+remote_machine_username="jomoon"              # Replace with sudo username
+remote_machine_password="changeme"            # Replace with password of sudo user
 
 [master]
 rk8-master  ansible_ssh_host=192.168.0.171    # Change IP address of gpdb master host
@@ -35,7 +36,7 @@ rk8-node02  ansible_ssh_host=192.168.0.174    # Change IP address of gpdb segmen
 rk8-node03  ansible_ssh_host=192.168.0.175    # Change IP address of gpdb segment host
 ```
 
-#### 2) Configure variables to initialize GPDB Hosts with default user and password having whel group
+#### 2) Configure variables to initialize GPDB Hosts with root / gpadmin user and password having wheel group
 ```
 $ vi roles/init-hosts/vars/main.yml
 ansible_ssh_pass: "changeme"
