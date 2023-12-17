@@ -2,9 +2,9 @@
   become: true
   gather_facts: true
   roles:
-    - { role: gpdb }                 # Need to check if get_facts: true is required
+    - { role: gpss }
+#    - { role: gpdb }                 # Need to check if get_facts: true is required
 #    - { role: init-hosts }
-#    - { role: gpss }
 #    - { role: madlib }               # Failed on ubuntu 18.04
 #    - { role: postgis }
 #    - { role: plr }

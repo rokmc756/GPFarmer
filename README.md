@@ -63,19 +63,24 @@ ANSIBLE_TARGET_PASS="changeme"  # # It should be changed with password of sudo u
 $ vi ansible-hosts
 [all:vars]
 ssh_key_filename="id_rsa"
-remote_machine_username="gpadmin"             # Replace with username of gpdb administrator
-remote_machine_password="changeme"            # Replace with password of user
+remote_machine_username="jomoon"
+remote_machine_password="changeme"
 
 [master]
-rk8-master  ansible_ssh_host=192.168.0.171    # Change IP address of gpdb master host
+rh7-master ansible_ssh_host=192.168.0.71
 
 [standby]
-rk8-slave   ansible_ssh_host=192.168.0.172    # Change IP address of gpdb standby host
+rh7-slave ansible_ssh_host=192.168.0.72
 
 [segments]
-rk8-node01  ansible_ssh_host=192.168.0.173    # Change IP address of gpdb segment host
-rk8-node02  ansible_ssh_host=192.168.0.174    # Change IP address of gpdb segment host
-rk8-node03  ansible_ssh_host=192.168.0.175    # Change IP address of gpdb segment host
+rh7-node01 ansible_ssh_host=192.168.0.73
+rh7-node02 ansible_ssh_host=192.168.0.74
+rh7-node03 ansible_ssh_host=192.168.0.75
+
+[kafka_brokers]
+co7-node01 ansible_ssh_host=192.168.0.63
+co7-node02 ansible_ssh_host=192.168.0.64
+co7-node03 ansible_ssh_host=192.168.0.65
 ```
 
 #### 4) Configure variables for GPDB
