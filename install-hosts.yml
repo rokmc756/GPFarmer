@@ -2,9 +2,10 @@
   become: true
   gather_facts: true
   roles:
-    - { role: gpss }
-#    - { role: gpdb }                 # Need to check if get_facts: true is required
+    - { role: pxf }
 #    - { role: init-hosts }
+#    - { role: gpdb }                 # Need to check if get_facts: true is required
+#    - { role: gpss }
 #    - { role: madlib }
 #    - { role: postgis }
 #    - { role: plr }
@@ -16,7 +17,6 @@
 #    - { role: DataScienceR }
 #    - { role: pljava }
 #    - { role: plr }
-#    - { role: pxf }
 #    - { role: gpupgrade }
 
 #- hosts: rh8-master,rh8-slave

@@ -2,13 +2,14 @@
   become: true
   gather_facts: true
   roles:
-    - { role: gpss }
+    - { role: pxf }
+#    - { role: init-hosts }
 #    - { role: gpdb }                 # Need to check if get_facts: true is required
+#    - { role: gpss }
 #    - { role: init-hosts }
 #    - { role: madlib }               # Failed on ubuntu 18.04
 #    - { role: postgis }
 #    - { role: plr }
-#    - { role: init-hosts }
 #    - { role: gpdb }                 # Need to check if get_facts: true is required
 #    - { role: gptext }
 #    - { role: plcontainer }
@@ -16,7 +17,6 @@
 #    - { role: DataScienceR }
 #    - { role: pljava }
 #    - { role: plr }
-#    - { role: pxf }
 #    - { role: gpupgrade }
 
 #

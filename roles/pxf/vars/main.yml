@@ -1,14 +1,14 @@
 ---
 # pxf-gp7-6.8.0-2.el8.x86_64.rpm
 pxf_major_version: 6
-pxf_minor_version: 8.0
+pxf_minor_version: 9.0
 pxf_patch_version: 2
 pxf_gpdb_version: gp7
 # pxf_os_version: "el8"
 pxf_os_version: "el8"
 # pxf_os_version: "ubuntu18.04"
 pxf_database_name: pxf_testdb
-pxf_mdw_hostname: rk8-master
+pxf_mdw_hostname: rh8-master
 pxf_username: pxf_user
 pxf_setup_action: "{{ setup_action }}"
 
@@ -26,7 +26,7 @@ pxf_base_dir_with_nfs: /home/gpadmin/pxf-nfs-base
 nfs_share_dir: /home/gpadmin/nfsshare
 nfs_server_ip_addr: 192.168.0.2
 
-with_hadoop_access: false
+with_hadoop_access: true
 hadoop_master_hostname: rk8-master
 pxf_base_dir_with_hadoop: /home/gpadmin/pxf-hadoop-base
 

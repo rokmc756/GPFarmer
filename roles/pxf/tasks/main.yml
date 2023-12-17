@@ -51,4 +51,3 @@
 - name: Upgrade PXF
   import_tasks: upgrade.yml
   tags: upgrade.yml
-
