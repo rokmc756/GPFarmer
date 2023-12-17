@@ -1,6 +1,35 @@
 ---
 # Uninstall Greenplum Streaming Server on GPDB Master and Kafka Broker
 # Remove configuraiton and sample data, table, database
+#
+
+- set_fact:
+    gppkg_remove_cmd: "gppkg -a remove"
+    check_gpss_installed: "gppkg query | grep gpss | awk '{print $1}'"
+    gpss_package_name: gpss
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int >= 7 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int >= 8 )
+  # check_gpss_installed: "gppkg query | grep gpss | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
+
+#
+- set_fact:
+    gppkg_remove_cmd: "gppkg -r"
+    check_gpss_installed: "gppkg -q --all | grep gpss | cut -d . -f 1 | sed 's/[0-9]$//g'"
+    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int <= 6 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int <= 8 )
+
+#
+- set_fact:
+    gppkg_remove_cmd: "gppkg -a remove"
+    check_gpss_installed: "gppkg query | grep gpss | awk '{print $1}'"
+    gpss_package_name: gpss
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int >= 7 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int >= 8 )
+
+#
+- set_fact:
+    gppkg_remove_cmd: "gppkg -r"
+    check_gpss_installed: "gppkg -q --all | grep gpss | cut -d . -f 1 | sed 's/[0-9]$//g'"
+    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int <= 6 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int <= 8 )
 
 #
 - name: Check if the GPDB software is already installed
@@ -11,9 +40,27 @@
 #
 - name: Stop if GPDB software is not installed
   fail: msg="Greenplum Database software is not installed!"
-  when:
-    - inventory_hostname in groups['master']
-    - gpdb_installed.stat.exists != True
+  when: inventory_hostname in groups['master'] and  gpdb_installed.stat.exists != True
+
+#
+- name: Verify if GPSS gppkg is installed
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_gpss_installed }} )
+  ignore_errors: true
+  register: gpss_installed
+  changed_when: False
+  when: inventory_hostname in groups['master']
+
+#
+- name: Print the result if GPSS is not installed
+  debug:
+    msg: "{{ gpss_installed.stdout }}"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Stop if GPSS gppkg package is not installed
+  fail: msg="GPSS gppkg package is not installed!"
+  when: ( inventory_hostname in groups['master'] and 'gpss' not in gpss_installed.stdout )
 
 #
 - name: Verify that database is up and running
@@ -52,8 +99,7 @@
   shell: kill -9 $(pidof gpss)
   register: gpss_daemon_killed
   ignore_errors: yes
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #
 - name: Verify that database for GPSS extention is installed
@@ -62,17 +108,13 @@
   register: gpss_database_installed
   when: inventory_hostname in groups['master']
 
-
 #
 - name: Drop extension for GPSS
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ gpss_database_name }} -tAc "drop extension gpss" )
   register: gpss_extension_dropped
   ignore_errors: yes
-  when:
-    - inventory_hostname in groups['master']
-    - "'100' in gpss_database_installed.stdout"
-    # - "'100' not in gpss_database_installed.stdout"
+  when: inventory_hostname in groups['master'] and "'100' in gpss_database_installed.stdout"
 
 #
 - name: Drop database for GPSS
@@ -80,19 +122,16 @@
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ gpss_database_name }} )
   register: gpss_database_dropped
   ignore_errors: yes
-  when:
-    - inventory_hostname in groups['master']
-    - "'100' in gpss_database_installed.stdout"
-    # - "'100' not in gpss_database_installed.stdout"
+  when: inventory_hostname in groups['master'] and "'100' in gpss_database_installed.stdout"
 
 #
-- name: Verify if GPSS gppkg is installed
-  become_user: gpadmin
-  command: 'rpm -q gpss --dbpath /usr/local/greenplum-db/share/packages/database'
-  register: select_gpss_version
-  ignore_errors: yes
-  when:  inventory_hostname in groups['master']
-  # failed_when:  select_gpss_version.rc != 1
+#- name: Verify if GPSS gppkg is installed
+#  become_user: gpadmin
+#  command: 'rpm -q gpss --dbpath /usr/local/greenplum-db/share/packages/database'
+##  register: select_gpss_version
+#  ignore_errors: yes
+#  when:  inventory_hostname in groups['master']
+#  # failed_when:  select_gpss_version.rc != 1
 
 #
 #- name: Verify if GPSS gppkg is installed
@@ -114,18 +153,17 @@
 #
 - name: Uninstall GPSS gppkg package
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -r gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-x86_64 && gppkg --clean )
-  when:
-    - inventory_hostname in groups['master']  # At GPDB Master
-    - "'package gpss is not installed' not in select_gpss_version.stdout"
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ gpss_package_name }} )
+  when: ( inventory_hostname in groups['master'] and 'gpss' in gpss_installed.stdout )
+
+  #  gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-x86_64 && gppkg --clean )
 
 #
-- name: "Check if GPSS RPM package is installed"
-  package_facts:
-    manager: "auto"
-  when:
-    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
-
+#- name: "Check if GPSS RPM package is installed"
+#  package_facts:
+#    manager: "auto"
+#  when: inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
+#
 #
 #- name: Stop if GPSS rpm package is not installed
 #  fail: msg="GPSS rpm package is not installed!"
@@ -170,5 +208,9 @@
   file:
     owner: gpadmin
     group: gpadmin
-    path: "/usr/local/greenplum-db/bin/gpkafka"
+    path: "{{ item }}"
     state: absent
+  with_items:
+    - "/usr/local/greenplum-db/bin/gpkafka"
+#    - "/usr/local/greenplum-db/bin/gpss"
+#    - "/usr/local/greenplum-db/bin/gpsscli"

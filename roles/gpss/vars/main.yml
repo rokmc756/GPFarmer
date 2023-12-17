@@ -4,9 +4,9 @@ gpadmin_home_dir: "/home/gpadmin"
 gpss_major_version: 1
 gpss_minor_version: 10.4
 gpss_patch_version:
-gpss_gpdb_version: gpdb6
-gpss_os_version_kafka: rhel7
-gpss_os_version_gpdb: rhel7
+gpss_gpdb_version: gpdb7
+gpss_os_version_kafka: rhel8
+gpss_os_version_gpdb: rhel8
 gpss_arch_type: x86_64
 gpss_database_name: testdb
 gpss_mdw_hostname: "{{ hostvars[groups['master'][0]].ansible_hostname }}"

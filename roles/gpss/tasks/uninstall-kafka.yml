@@ -5,15 +5,14 @@
 - name: "Check if GPSS RPM package is installed"
   package_facts:
     manager: "auto"
-  when:
-    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
+  when: inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
 #
-#- name: Stop if GPSS rpm package is not installed
-#  fail: msg="GPSS rpm package is not installed!"
-#  when:
-#    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
-#    - "'gpss' not in ansible_facts.packages"
+- name: Stop if GPSS rpm package is not installed
+  fail: msg="GPSS rpm package is not installed!"
+  when:
+    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
+    - "'gpss' not in ansible_facts.packages"
 
 #
 - name: Uninstall GPSS rpm package
@@ -38,7 +37,6 @@
     - "{{ kafka_delete_test_topic_name }}"
   when: inventory_hostname == hostvars[groups['kafka_brokers'][0]].ansible_hostname
   #  "/usr/local/kafka/bin/kafka-topics.sh --bootstrap-server {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }} --delete"
-
 
 #
 - name: Delete Kafka working base directory

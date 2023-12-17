@@ -2,6 +2,36 @@
 #
 # Install Greenplum Streaming Server on both GPDB Master and Kafka Broker
 # Configure data loading with sample data between them
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    check_gpss_installed: "gppkg query | grep gpss | awk '{print $1}'"
+    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int >= 7 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int >= 8 )
+  #  check_gpss_installed: "gppkg query | grep gpss | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    check_gpss_installed: "gppkg -q --all | grep gpss | cut -d . -f 1 | sed 's/[0-9]$//g'"
+    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int <= 6 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int <= 8 )
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    check_gpss_installed: "gppkg query | grep gpss | awk '{print $1}'"
+    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int >= 7 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int >= 8 )
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    check_gpss_installed: "gppkg -q --all | grep gpss | cut -d . -f 1 | sed 's/[0-9]$//g'"
+    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int <= 6 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int <= 8 )
+
+
 - name: Check if the GPDB software is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
@@ -22,34 +52,6 @@
   register: select_version
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
-
-#
-- set_fact:
-    gppkg_install_cmd: "gppkg -a install"
-    check_gpss_installed: "gppkg query | grep gpss | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
-    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int >= 7 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int >= 8 )
-
-#
-- set_fact:
-    gppkg_install_cmd: "gppkg -i"
-    check_gpss_installed: "gppkg -q --all | grep gpss | cut -d . -f 1 | sed 's/[0-9]$//g'"
-    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int >= 6 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int >= 7 )
-
-#
-- set_fact:
-    gppkg_install_cmd: "gppkg -a install"
-    check_gpss_installed: "gppkg query | grep gpss | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
-    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
-  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int >= 7 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int >= 8 )
-
-#
-- set_fact:
-    gppkg_install_cmd: "gppkg -i"
-    check_gpss_installed: "gppkg -q --all | grep gpss | cut -d . -f 1 | sed 's/[0-9]$//g'"
-    gpss_package_name: gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}-{{ gpss_os_version_gpdb }}-{{ gpss_arch_type }}.gppkg
-  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ( gpss_gpdb_version|regex_replace('[^0-9]','')|int <= 6 and gpss_os_version_gpdb|regex_replace('[^0-9]','')|int <= 8 )
 
 #
 - name: Verify if GPSS gppkg is installed

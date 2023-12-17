@@ -34,16 +34,51 @@
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['kafka_brokers']
 
 #
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    check_postgis_installed: "gppkg -q --all | grep gpss | cut -d - -f 1"
+  when:
+    - inventory_hostname in groups['master']
+    - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and gpdb_major_version <= 6
+
+#
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    check_gpss_installed: "gppkg query | grep gpss | awk '{print $1}'"
+  when:
+    - inventory_hostname in groups['master']
+    - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and gpdb_major_version >= 7
+
+#
+- name: Verify if GPSS gppkg is installed in Greenplum Database
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_gpss_installed }} )
+  register: gpss_installed
+  when: inventory_hostname in groups['master']
+
+#
+- name: Print the result if GPSS is installed
+  debug:
+    msg: "{{ gpss_installed.stdout }}"
+  when: inventory_hostname in groups['master']
+
+#
+- name: Stop if GPSS gppkg package is installed
+  fail: msg="GPSS gppkg package is already installed!"
+  when: ( inventory_hostname in groups['master'] and 'gpss' in gpss_installed.stdout )
+
+#
 - name: Copy GPSS tarball file
   become_user: gpadmin
   copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-  when:  inventory_hostname in groups['master'] and install_gpss_tar
+  when:  inventory_hostname in groups['master'] and install_gpss_tar and 'gpss' not in postgis_installed.stdout
+
 
 #
 - name: Untar GPSS tarball archive
   become_user: gpadmin
   unarchive: src={{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64.tar.gz dest={{ gpadmin_home_dir }} copy=no owner=gpadmin group=gpadmin
-  when: inventory_hostname in groups['master'] and install_gpss_tar
+  when: inventory_hostname in groups['master'] and install_gpss_tar and 'gpss' not in postgis_installed.stdout
 
 #
 - name: Install GPSS tarball in {{ gpdb_base_dir }}
@@ -51,38 +86,19 @@
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && cd {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_kafka }}-x86_64/ ; ./install_gpdb_component )
   async: 120
   poll: 5
-  when: inventory_hostname in groups['master'] and install_gpss_tar
-
-#
-- name: Verify if GPSS gppkg is installed
-  become_user: gpadmin
-  command: 'rpm -q gpss --dbpath /usr/local/greenplum-db/share/packages/database'
-  register: select_gpss_version
-  when:
-    - inventory_hostname in groups['master']
-  failed_when:
-    - select_gpss_version.rc != 1
-#  #ignore_warnings: True
-#  ## command: '/usr/bin/rpm -qa custom-rpm --queryformat %{VERSION}'
-
-#
-- name: Stop if GPSS gppkg package is installed
-  fail: msg="GPSS gppkg package is alredy installed!"
-  when:
-    - inventory_hostname in groups['master']
-    - "'package gpss is not installed' not in select_gpss_version.stdout"
+  when: inventory_hostname in groups['master'] and install_gpss_tar and 'gpss' not in postgis_installed.stdout
 
 #
 - name: Copy GPSS gppkg file
   become_user: gpadmin
   copy: src=gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
-  when: inventory_hostname in groups['master']  # At GPDB Master
+  when: inventory_hostname in groups['master'] and 'gpss' not in postgis_installed.stdout
 
 #
 - name: Install GPSS gppkg package
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-x86_64.gppkg )
-  when: inventory_hostname in groups['master']  # At GPDB Master
+  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpadmin_home_dir }}/gpss-{{ gpss_gpdb_version }}-{{ gpss_major_version }}.{{ gpss_minor_version }}{{ gpss_patch_version }}-{{ gpss_os_version_gpdb }}-x86_64.gppkg )
+  when: inventory_hostname in groups['master'] and 'gpss' not in postgis_installed.stdout
 
 #
 - name: Verify that database for GPSS extention is installed

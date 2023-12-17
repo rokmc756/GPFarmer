@@ -25,15 +25,20 @@ remote_machine_username="jomoon"              # Replace with sudo username
 remote_machine_password="changeme"            # Replace with password of sudo user
 
 [master]
-rk8-master  ansible_ssh_host=192.168.0.171    # Change IP address of gpdb master host
+rh8-master  ansible_ssh_host=192.168.0.51    # Change IP address of gpdb master host
 
 [standby]
-rk8-slave   ansible_ssh_host=192.168.0.172    # Change IP address of gpdb standby host
+rh8-slave   ansible_ssh_host=192.168.0.52    # Change IP address of gpdb standby host
 
 [segments]
-rk8-node01  ansible_ssh_host=192.168.0.173    # Change IP address of gpdb segment host
-rk8-node02  ansible_ssh_host=192.168.0.174    # Change IP address of gpdb segment host
-rk8-node03  ansible_ssh_host=192.168.0.175    # Change IP address of gpdb segment host
+rh8-node01  ansible_ssh_host=192.168.0.53    # Change IP address of gpdb segment host
+rh8-node02  ansible_ssh_host=192.168.0.54    # Change IP address of gpdb segment host
+rh8-node03  ansible_ssh_host=192.168.0.55    # Change IP address of gpdb segment host
+
+[kafka_brokers]
+rk8-node01 ansible_ssh_host=192.168.0.83
+rk8-node02 ansible_ssh_host=192.168.0.84
+rk8-node03 ansible_ssh_host=192.168.0.85
 ```
 
 #### 2) Configure variables to initialize GPDB Hosts with root / gpadmin user and password having wheel group
@@ -73,9 +78,9 @@ gpadmin_home_dir: "/home/gpadmin"
 gpss_major_version: 1
 gpss_minor_version: 10.4
 gpss_patch_version:
-gpss_gpdb_version: gpdb6
-gpss_os_version_kafka: rhel7
-gpss_os_version_gpdb: rhel7
+gpss_gpdb_version: gpdb7
+gpss_os_version_kafka: rhel8
+gpss_os_version_gpdb: rhel8
 gpss_arch_type: x86_64
 gpss_database_name: testdb
 gpss_mdw_hostname: "{{ hostvars[groups['master'][0]].ansible_hostname }}"

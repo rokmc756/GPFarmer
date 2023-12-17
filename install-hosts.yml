@@ -5,7 +5,7 @@
     - { role: gpss }
 #    - { role: gpdb }                 # Need to check if get_facts: true is required
 #    - { role: init-hosts }
-#    - { role: madlib }               # Failed on ubuntu 18.04
+#    - { role: madlib }
 #    - { role: postgis }
 #    - { role: plr }
 #    - { role: init-hosts }
@@ -19,7 +19,6 @@
 #    - { role: pxf }
 #    - { role: gpupgrade }
 
-#
 #- hosts: rh8-master,rh8-slave
 #  become: true
 #  become_user: gpadmin

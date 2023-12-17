@@ -1,6 +1,6 @@
 ---
-
-# Install / Uninstall Greenplum Streaming Server v1.6
+#
+# Install / Uninstall Greenplum Streaming Server v1.x
 
 # for now fail if it's not a Red Hat based system
 - name: Check OS (PGCC v2)
@@ -8,9 +8,9 @@
   when: ansible_os_family != 'RedHat' or ansible_os_family != 'CentOS' or ansible_os_family != 'Rocky'
 
 #
-#- name: Setup Kafka
-#  import_tasks: setup-kafka.yml
-#  tags: install
+- name: Setup Kafka
+  import_tasks: setup-kafka.yml
+  tags: install
 
 #
 - name: Setup GPSS
@@ -18,16 +18,11 @@
   tags: install
 
 #
-#- name: Uninstall
-#  import_tasks: uninstall.yml
-#  tags: uninstall
-
-#
 - name: Uninstall GPSS
   import_tasks: uninstall-gpss.yml
   tags: uninstall
 
 #
-#- name: Uninstall Kafka
-#  import_tasks: uninstall-kafka.yml
-#  tags: uninstall
+- name: Uninstall Kafka
+  import_tasks: uninstall-kafka.yml
+  tags: uninstall
