@@ -1,6 +1,5 @@
 ## What is PXF role?
-It's ansible playbook to deploy Patform Extesnsion Framwork into Greenplum Database with NFS Server / Hadoop Cluster / Minio S3 Ojbect Storage / Oracle / MSSQL Database.\
-This role includes several sample examples with mock data to interact with them as well.
+It's ansible playbook to deploy Patform Extesnsion Framwork into Greenplum Database with NFS Server / Hadoop Cluster / Minio S3 Ojbect Storage / Oracle / MSSQL Database. This role includes several sample examples with mock data to interact with them as well.
 
 ## Where is PXF role from and how is it changed?
 It's originated by itself
