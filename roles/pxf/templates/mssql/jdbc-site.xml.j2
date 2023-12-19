@@ -7,17 +7,17 @@
     </property>
     <property>
         <name>jdbc.url</name>
-        <value>jdbc:sqlserver://;serverName={{ hostvars[groups['database'][1]]['ansible_eth0']['ipv4']['address'] }};databaseName={{ mssql_dbname }};portNumber=1433;integrateSecurity=true;encrypt=true;trustServerCertificate=true</value>
+        <value>jdbc:sqlserver://;serverName={{ hostvars[groups['databases'][1]]['ansible_eth0']['ipv4']['address'] }};databaseName={{ mssql.dbname }};portNumber=1433;integrateSecurity=true;encrypt=true;trustServerCertificate=true</value>
         <description>The URL that the JDBC driver can use to connect to the MSSQL database</description>
     </property>
     <property>
         <name>jdbc.user</name>
-        <value>{{ mssql_user }}</value>
+        <value>{{ mssql.user }}</value>
         <description>User name for connecting to the MSSQL database</description>
     </property>
     <property>
         <name>jdbc.password</name>
-        <value>{{ mssql_user_pass }}</value>
+        <value>{{ mssql.user_pass }}</value>
         <description>Password for connecting to the MSSQL database</description>
     </property>
 

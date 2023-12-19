@@ -40,7 +40,7 @@
 - debug: msg={{ pxf_java_processes_killed }}
   when:
     - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
-    -  oracle.access == true
+    - oracle.access == true
 
 #
 - name: Create PXF base directory for Oracle Access and query examples directory on all master and segment hosts

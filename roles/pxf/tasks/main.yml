@@ -57,7 +57,7 @@
 #
 - name: Uninstall Oracle Access
   import_tasks: uninstall-oracle.yml
-  tags: install
+  tags: uninstall
   when: oracle.access == true
 
 #

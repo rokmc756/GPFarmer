@@ -3,19 +3,17 @@
 #
 - name: Check if the PXF Cluster is runnong on each segment host for Oracle
   become_user: "{{ gpdb.user }}"
-  shell: ( source ~/.bashrc && PXF_BASE={{ nfs.base_work_dir }} pxf cluster status )
+  shell: ( source ~/.bashrc && PXF_BASE={{ oracle.base_work_dir }} pxf cluster status )
   ignore_errors: yes
   register: pxf_running_checked_oracle
-  when: oracle.access == true and inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #
 - name: Stop PXF Cluster running on each segment hosts for Oracle
   become_user: "{{ gpdb.user }}"
   shell: ( source ~/.bashrc && export PXF_BASE={{ oracle.base_work_dir }} && pxf cluster stop )
   ignore_errors: yes
-  when:
-    - inventory_hostname in groups['master'] and 'PXF is running on' in pxf_running_checked_oracle.stdout
-    - oracle.access == true
+  when: inventory_hostname in groups['master'] and 'PXF is running on' in pxf_running_checked_oracle.stdout
 
 #
 - name: Delete PXF Base directory and query examples directory for Oracle
@@ -26,4 +24,4 @@
     state: absent
   with_items:
     - "{{ oracle.base_work_dir }}"
-  when: oracle.access == true
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['segments'] or inventory_hostname in groups['standby']
