@@ -20,6 +20,7 @@
   become_user: "{{ gpdb.user }}"
   shell: ( killall java )
   ignore_errors: yes
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 #
 - name: Remove the PXF library
@@ -28,6 +29,7 @@
     path: "{{ gpdb.base_dir }}/greenplum-db/lib/postgresql/pxf.so"
     state: absent
   ignore_errors: yes
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 #
 - name: Find the PXF extension files named with pxf under extension directory
@@ -36,6 +38,7 @@
     paths: "{{ gpdb.base_dir }}/greenplum-db/share/postgresql/extension"
     patterns: "^pxf*"
   register: wildcard_files_to_delete
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 #
 - name: Remove the PXF extension files named with pxf under extension directory
@@ -45,13 +48,16 @@
     state: absent
   ignore_errors: yes
   with_items: "{{ wildcard_files_to_delete.files }}"
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 #
 - name: Remove PXF rpm package
   become: yes
   become_user: root
   yum: name=pxf-{{ pxf.gpdb_version }} state=absent
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
+  when:
+    -  inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
 
 #
 - name: Check if PXF extension is installed on GPDB

@@ -14,15 +14,5 @@ rh8-node01 ansible_ssh_host=192.168.0.53
 rh8-node02 ansible_ssh_host=192.168.0.54
 rh8-node03 ansible_ssh_host=192.168.0.55
 
-[hadoop]
-rk8-master ansible_ssh_host=192.168.0.81
-rk8-slave  ansible_ssh_host=192.168.0.82
-rk8-node01 ansible_ssh_host=192.168.0.83
-rk8-node02 ansible_ssh_host=192.168.0.84
-rk8-node03 ansible_ssh_host=192.168.0.85
-
-[hdfs_master]
-rk8-master ansible_ssh_host=192.168.0.81
-
-[hdfs_slave]
-rk8-slave  ansible_ssh_host=192.168.0.82
+[s3_storage]
+rk9-minio  ansible_ssh_host=192.168.0.98

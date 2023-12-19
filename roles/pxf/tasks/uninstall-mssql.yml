@@ -6,19 +6,19 @@
   shell: ( source ~/.bashrc && PXF_BASE={{ mssql.base_work_dir }} pxf cluster status )
   ignore_errors: yes
   register: pxf_running_checked
-  when: mssql.access == true and inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master'] and mssql.access == true
 
 #
 - name: Stop pxf cluster runnong on each segment host for MSSQL
   become_user: "{{ gpdb.user }}"
-  shell: ( source ~/.bashrc && PXF_BASE={{ mssql.base_work_dir }} pxf cluster stop )
+  shell: ( source ~/.bashrc && export PXF_BASE={{ mssql.base_work_dir }} && pxf cluster stop )
   ignore_errors: yes
   when:
-    - mssql.access == true and inventory_hostname in groups['master']
-    - "'PXF is running on' in pxf_running_checked_nfs.stdout"
+    - inventory_hostname in groups['master'] and 'PXF is running on' in pxf_running_checked_nfs.stdout
+    - mssql.access == true
 
 #
-- name: Delete PXF Base directory and query examples directory  for NFS Access
+- name: Delete PXF Base directory and query examples directory for NFS Access
   become: yes
   become_user: root
   file:
@@ -26,4 +26,5 @@
     state: absent
   with_items:
     - "{{ mssql.base_work_dir }}"
-  when: mssql.access == true and inventory_hostname in groups['master']
+  when: mssql.access == true
+

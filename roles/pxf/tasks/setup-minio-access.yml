@@ -1,5 +1,5 @@
 # Start line to configure Minio Access
-
+#
 #
 - set_fact:
     java_home: "/usr/lib/jvm/jre-1.8.0"
@@ -29,16 +29,15 @@
 - name: Killall Java process for PXF Server
   become: yes
   become_user: gpadmin
-  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && gpssh -f {{ gpdb.gpadmin_dir }}/hostfile -e 'killall java' > /dev/null 2>&1 )
+  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && gpssh -f {{ gpdb.gpadmin_home_dir }}/hostfile_all -e 'killall java' > /dev/null 2>&1 )
   args:
     executable: /bin/bash
   ignore_errors: yes
   register: pxf_java_processes_killed
-  when: minio.access
+  when: minio.access == true and inventory_hostname in groups['master']
 
-#
 #- debug: msg={{ pxf_java_processes_killed }}
-# when: inventory_hostname in groups['master']
+#when: inventory_hostname in groups['master']
 
 #
 - name: Create PXF base directory for Minio Access and query examples directory on all master and segment hosts
@@ -46,7 +45,7 @@
   file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
   register: pxf_base_dir_created
   with_items:  "{{ minio.base_work_dir }}"
-  when: minio.access and inventory_hostname in groups['master']
+  when: minio.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_base_dir_created }}
@@ -60,7 +59,7 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_minio_prepared
-  when: minio.access and inventory_hostname in groups['master']
+  when: minio.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_cluster_minio_prepared }}
@@ -71,7 +70,7 @@
   become_user: gpadmin
   template: src=minio/s3-site.xml.j2 dest={{ minio.base_work_dir }}/servers/default/s3-site.xml owner=gpadmin group=gpadmin mode=644 force=yes
   register: jdbc_site_copied
-  when: minio.access and inventory_hostname in groups['master']
+  when: minio.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ jdbc_site_copied }}
@@ -86,7 +85,7 @@
     - "create-external-table.sql"
     - "create-normal-table.sql"
     - "create-writable-external-table.sql"
-  when: minio.access and inventory_hostname in groups['master']
+  when: minio.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ query_files_copied }}
@@ -100,7 +99,7 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_minio_synced
-  when: minio.access and inventory_hostname in groups['master']
+  when: minio.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_cluster_minio_synced }}
@@ -113,7 +112,7 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_minio_started
-  when: minio.access and inventory_hostname in groups['master']
+  when: minio.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_cluster_minio_started }}
@@ -130,11 +129,26 @@
     - "create-external-table.sql"
     - "create-normal-table.sql"
     - "create-writable-external-table.sql"
-  when: inventory_hostname in groups['master']
+  when: minio.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ minio_external_table_created }}
   when: inventory_hostname in groups['master']
+
+# It works
+- name: Get and import Unauthorized SSL Key
+  become: true
+  become_user: root
+  shell: |
+    openssl x509 -in <(openssl s_client -connect {{ hostvars[groups['s3_storage'][0]]['ansible_hostname'] }}.jtest.pivotal.io:9000 -prexit 2>/dev/null) -out /root/{{ hostvars[groups['s3_storage'][0]]['ansible_hostname'] }}.jtest.pivotal.io.crt
+    keytool -importcert -file /root/{{ hostvars[groups['s3_storage'][0]]['ansible_hostname'] }}.jtest.pivotal.io.crt -alias {{ hostvars[groups['s3_storage'][0]]['ansible_hostname'] }} -keystore {{ java_home }}/lib/security/cacerts -storepass changeme
+    mv -f /root/{{ hostvars[groups['s3_storage'][0]]['ansible_hostname'] }}.jtest.pivotal.io.crt /etc/pki/ca-trust/source/anchors/
+    update-ca-trust
+  args:
+    executable: /bin/bash
+  register: ssl_key_imported
+  when: minio.access == true
+  #  - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 #
 - name: Select data from Minio Server
@@ -143,9 +157,9 @@
   args:
     executable: /bin/bash
   register: minio_data_selected
-  when: inventory_hostname in groups['master']
+  when: minio.access == true and inventory_hostname in groups['master']
 
 #
 - name: Print select data from Minio Server
   debug: msg={{ minio_data_selected }}
-  when: inventory_hostname in groups['master']
+  when: minio.access == true and inventory_hostname in groups['master']

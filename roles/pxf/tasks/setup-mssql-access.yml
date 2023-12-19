@@ -29,12 +29,12 @@
 - name: Killall java process for PXF Server
   become: yes
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum_path.sh && gpssh -f /home/gpadmin/hostfile -e 'killall java' )
+  shell: ( source {{ gpdb.base_dir }}/greenplum_path.sh && gpssh -f /home/gpadmin/hostfile_all -e 'killall java' )
   args:
     executable: /bin/bash
   ignore_errors: yes
   register: pxf_java_processes_killed
-  when: mssql.access
+  when: mssql.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_java_processes_killed }}
@@ -46,7 +46,7 @@
   file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
   register: pxf_base_dir_created
   with_items:  "{{ mssql.base_work_dir }}"
-  when: mssql.access and inventory_hostname in groups['master']
+  when: mssql.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_base_dir_created }}
@@ -60,7 +60,7 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_mssql_prepared
-  when: mssql.access and inventory_hostname in groups['master']
+  when: mssql.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_cluster_mssql_prepared }}
@@ -81,7 +81,7 @@
   become_user: gpadmin
   template: src=mssql/jdbc-site.xml.j2 dest={{ mssql.base_work_dir }}/servers/default/jdbc-site.xml owner=gpadmin group=gpadmin mode=644 force=yes
   register: jdbc_site_copied
-  when: mssql.access and inventory_hostname in groups['master']
+  when: mssql.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ jdbc_site_copied }}
@@ -94,7 +94,7 @@
   register: query_files_copied
   with_items:
     - "create-external-table.sql"
-  when: mssql.access and inventory_hostname in groups['master']
+  when: mssql.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ query_files_copied }}
@@ -108,7 +108,7 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_mssql_synced
-  when: mssql.access and inventory_hostname in groups['master']
+  when: mssql.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_cluster_mssql_synced }}
@@ -121,7 +121,7 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_mssql_started
-  when: mssql.access and inventory_hostname in groups['master']
+  when: mssql.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_cluster_mssql_started }}

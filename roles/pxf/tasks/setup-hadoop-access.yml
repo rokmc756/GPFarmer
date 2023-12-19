@@ -133,7 +133,7 @@
 - name: Killall java process for PXF Server
   become: yes
   become_user: gpadmin
-  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && gpssh -f /home/gpadmin/hostfile -e 'killall java' )
+  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && gpssh -f /home/gpadmin/hostfile_all -e 'killall java' )
   args:
     executable: /bin/bash
   ignore_errors: yes

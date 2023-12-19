@@ -5,16 +5,16 @@
   shell: ( source ~/.bashrc && PXF_BASE={{ hadoop.base_work_dir }} pxf cluster status )
   ignore_errors: yes
   register: pxf_running_checked_hadoop
-  when: hadoop.access == true and inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master'] and hadoop.access == true
 
 #
 - name: Stop PXF Cluster runnong on each segment host for Hadoop
   become_user: "{{ gpdb.user }}"
-  shell: ( source ~/.bashrc && PXF_BASE={{ hadoop.base_work_dir }} pxf cluster stop )
+  shell: ( source ~/.bashrc && export PXF_BASE={{ hadoop.base_work_dir }} && pxf cluster stop )
   ignore_errors: yes
   when:
-    - hadoop.access == true and inventory_hostname in groups['master']
-    - "'PXF is running on' in pxf_running_checked_hadoop.stdout"
+    - inventory_hostname in groups['master'] and 'PXF is running on' in pxf_running_checked_hadoop.stdout
+    - hadoop.access == true
 
 #
 - name: Delete relative files and directories in Hadoop base directory

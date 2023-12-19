@@ -11,11 +11,11 @@
 #
 - name: Stop pxf cluster runnong on each segment host
   become_user: "{{ gpdb.user }}"
-  shell: ( source ~/.bashrc && PXF_BASE={{ nfs.base_work_dir }} pxf cluster stop )
+  shell: ( source ~/.bashrc && export PXF_BASE={{ nfs.base_work_dir }} && pxf cluster stop )
   ignore_errors: yes
   when:
-    - nfs.access == true and inventory_hostname in groups['master']
-    - "'PXF is running on' in pxf_running_checked_nfs.stdout"
+    - inventory_hostname in groups['master'] and 'PXF is running on' in pxf_running_checked_nfs.stdout
+    - nfs.access == true
 
 #
 - name: Delete relative directories to the NFS share point
@@ -38,7 +38,7 @@
   with_items:
     - "{{ nfs.base_work_dir }}"
     - "{{ gpdb.gpadmin_home_dir }}/query-examples"
-  when: nfs.access == true and inventory_hostname in groups['master']
+  when: nfs.access == true
 
 #
 - name: Unmount NFS share directory on all hosts

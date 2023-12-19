@@ -1,5 +1,5 @@
 # Start line to configure Oracle Access
-
+#
 #
 - set_fact:
     java_home: "/usr/lib/jvm/jre-1.8.0"
@@ -29,16 +29,18 @@
 - name: Killall java process for PXF Server
   become: yes
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpssh -f /home/gpadmin/hostfile -e 'killall java' )
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpssh -f /home/gpadmin/hostfile_all -e 'killall java' )
   args:
     executable: /bin/bash
   ignore_errors: yes
   register: pxf_java_processes_killed
-  when: oracle.access and inventory_hostname in groups['master']
+  when: oracle.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_java_processes_killed }}
-  when: inventory_hostname in groups['master']
+  when:
+    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    -  oracle.access == true
 
 #
 - name: Create PXF base directory for Oracle Access and query examples directory on all master and segment hosts
@@ -46,7 +48,7 @@
   file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
   register: pxf_base_dir_created
   with_items:  "{{ oracle.base_work_dir }}"
-  when: oracle.access and inventory_hostname in groups['master']
+  when: oracle.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_base_dir_created }}
@@ -60,7 +62,7 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_oracle_prepared
-  when: oracle.access and inventory_hostname in groups['master']
+  when: oracle.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_cluster_oracle_prepared }}
@@ -81,7 +83,7 @@
   become_user: gpadmin
   template: src=oracle/jdbc-site.xml.j2 dest={{ oracle.base_work_dir }}/servers/default/jdbc-site.xml owner=gpadmin group=gpadmin mode=644 force=yes
   register: jdbc_site_copied
-  when: oracle.access and inventory_hostname in groups['master']
+  when: oracle.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ jdbc_site_copied }}
@@ -95,7 +97,7 @@
   with_items:
     - "create-external-table.sql"
     - "create-writable-external-table.sql"
-  when: oracle.access and inventory_hostname in groups['master']
+  when: oracle.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ query_files_copied }}
@@ -109,7 +111,7 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_oracle_synced
-  when: oracle.access and inventory_hostname in groups['master']
+  when: oracle.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_cluster_oracle_synced }}
@@ -122,7 +124,7 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_oracle_started
-  when: oracle.access and inventory_hostname in groups['master']
+  when: oracle.access == true and inventory_hostname in groups['master']
 
 #
 - debug: msg={{ pxf_cluster_oracle_started }}
