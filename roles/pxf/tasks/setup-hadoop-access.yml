@@ -11,122 +11,107 @@
   when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
 
 #
-- name: Stop the pxf cluster start command to start PXF on each segment host
+- name: Stop the pxf cluster start command to start PXF on each segment hosts
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster stop )
+  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster stop )
   args:
     executable: /bin/bash
   register: pxf_cluster_stopped
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #
 - name: Print stopping pxf cluster
   debug: msg={{ pxf_cluster_stopped }}
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #
 - name: Create PXF base directory for Hadoop Access and query examples directory on all master and segment hosts
   become_user: gpadmin
   file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
   with_items:
-    - "{{ pxf_base_dir_with_hadoop }}"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+    - "{{ hadoop.base_work_dir }}"
+  when: hadoop.access == true and inventory_hostname in groups['master']
 
 #
-- name: Prepare PXF on master for hadoop access
+- name: Prepare PXF on GPDB master for Hadoop access
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ pxf_base_dir_with_hadoop }} /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster prepare )
+  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && export PXF_BASE={{ hadoop.base_work_dir }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster prepare )
   args:
     executable: /bin/bash
   register: pxf_cluster_hadoop_prepared
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  when: hadoop.access == true and inventory_hostname in groups['master']
 
 # https://docs.vmware.com/en/VMware-Greenplum-Platform-Extension-Framework/6.6/greenplum-platform-extension-framework/client_instcfg.html
 
 #- name: Link source file to another destination
 #  become_user: gpadmin
 #  file:
-#    src: "{{ pxf_base_dir_with_hadoop }}/servers/default"
+#    src: "{{ hadoop.base_work_dir }}/servers/default"
 #    path: "{{ pxf_base_dir_with_hadoop }}/servers/co7-master"
 #    state: hard
 #  when:
-#    - with_hadoop_access
+#    - hadoop.access
 #    - inventory_hostname in groups['master']
 
 #- name: Rename directory
 #  become_user: gpadmin
 #  shell: ( mv {{ pxf_base_dir_with_hadoop }}/servers/default {{ pxf_base_dir_with_hadoop }}/servers/default )
 #  when:
-#    - with_hadoop_access
+#    - hadoop.access
 
 #
-- name: Start PXF on master for hadoop access
+- name: Start PXF on GPDB Master for Hadoop access
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ pxf_base_dir_with_hadoop }} /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster start )
+  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && export PXF_BASE={{ hadoop.base_work_dir }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start )
   args:
     executable: /bin/bash
   register: pxf_cluster_hadoop_started
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  when: hadoop.access == true and inventory_hostname in groups['master']
 
 #
-- name: Initial connecton to avoid Host Verfication failed
+- name: Initial Connecton to avoid Host Verfication failed
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh-copy-id -i ~/.ssh/id_rsa.pub hadoop@{{ hadoop_master_hostname }} )
+  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh-copy-id -i ~/.ssh/id_rsa.pub {{ hadoop.user }}@{{ hostvars[groups['hdfs_master'][0]]['ansible_hostname'] }} )
   args:
     executable: /bin/bash
   register: ssh_initial_connection
   ignore_errors: true
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  when: hadoop.access == true and inventory_hostname in groups['master']
 
 #- name: Create /data/pxf_examples directory in Hadoop Cluster
 #  become: yes
 #  become_user: gpadmin
-#  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh hadoop@co7-master 'hdfs dfs -mkdir -p /data/pxf_examples' )
+#  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh {{ hadoop.user }}@{{ hostvars[groups['hdfs_master'][0]]['ansible_hostname'] }} 'hdfs dfs -mkdir -p /data/pxf_examples' )
 #  register: hdfs_directory_created
 #  when:
-#    - with_hadoop_access
+#    - hadoop.access == true
 #    - inventory_hostname in groups['master']
 
 #
 #- name: Change owner and group for /data directory in Hadoop Cluster
 #  become: yes
 #  become_user: gpadmin
-#  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh hadoop@co7-master 'hdfs dfs -chown -R gpadmin:hadoop /data' )
+#  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh {{ hadoop.user }}@{{ hostvars[groups['hdfs_master'][0]]['ansible_hostname'] }} 'hdfs dfs -chown -R gpadmin:hadoop /data' )
 #  register: hdfs_directory_permission_changed
-#  when:
-#    - with_hadoop_access
-#    - inventory_hostname in groups['master']
-
+#  when: hadoop.access == true and inventory_hostname in groups['master']
 
 # With Hadoop
 #- name: Create PXF base directory for Hadoop Access with hostname of Hadoop Master
 #  become_user: gpadmin
 #  file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
 #  with_items:
-#    - "{{ pxf_base_dir_with_hadoop }}/servers/default"
-#  when:
-#    - with_hadoop_access
-#    - inventory_hostname in groups['master']
+#    - "{{ hadoop.base_work_dir }}/servers/default"
+#  when: hadoop.access == true and inventory_hostname in groups['master']
 
 #
 - name: Copy configuration files of Hadoop
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && sshpass -p 'changeme' scp hadoop@{{ hadoop_master_hostname }}:/home/hadoop/hadoop-{{ hadoop_version }}/etc/hadoop/{{ item }} {{ pxf_base_dir_with_hadoop }}/servers/default/{{ item }} )
+  shell: ( source ~/.bashrc && sshpass -p 'changeme' scp {{ hadoop.user }}@{{ hostvars[groups['hdfs_master'][0]]['ansible_hostname'] }}:/{{ hadoop.home_dir }}/hadoop-{{ hadoop.version }}/etc/hadoop/{{ item }} {{ hadoop.base_work_dir }}/servers/default/{{ item }} )
   args:
     executable: /bin/bash
   register: hadoop_configuratinos_copied
@@ -136,17 +121,13 @@
     - "hdfs-site.xml"
     - "mapred-site.xml"
     - "yarn-site.xml"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  when: hadoop.access == true and inventory_hostname in groups['master']
 
 #
 - name: Copy the pxf-profiles.xml template file to the default configuration directory.
   become_user: gpadmin
-  template: src=pxf-profiles.xml.j2 dest={{ pxf_base_dir_with_hadoop}}/servers/default/pxf-profiles.xml owner=gpadmin group=gpadmin mode=644 force=yes
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
+  template: src=hadoop/pxf-profiles.xml.j2 dest={{ hadoop.base_work_dir }}/servers/default/pxf-profiles.xml owner=gpadmin group=gpadmin mode=644 force=yes
+  when: nfs.access and inventory_hostname in groups['master']
 
 #
 - name: Killall java process for PXF Server
@@ -157,33 +138,27 @@
     executable: /bin/bash
   ignore_errors: yes
   register: pxf_java_processes_killed
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  when: hadoop.access == true and inventory_hostname in groups['master']
 
 #
 - name: Synchronize the PXF server configuration to the GPDB cluster
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ pxf_base_dir_with_hadoop }} /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster sync )
+  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && export PXF_BASE={{ hadoop.base_work_dir }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster sync )
   args:
     executable: /bin/bash
   register: pxf_cluster_hadoop_synced
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  when: hadoop.access == true and inventory_hostname in groups['master']
 
 #
 - name: Start PXF server configuration to the GPDB cluster
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ pxf_base_dir_with_hadoop }} /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster start )
+  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && export PXF_BASE={{ hadoop.base_work_dir }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start )
   args:
     executable: /bin/bash
   register: pxf_cluster_hadoop_synced
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  when: hadoop.access == true and inventory_hostname in groups['master']
 
 # Skip copy the following jar since currently hadoop distribution for mapr is not used.
 # gpadmin@gpmaster$ cd $PXF_BASE/lib

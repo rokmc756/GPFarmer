@@ -1,0 +1,42 @@
+---
+#
+- name: Check if the PXF Cluster is runnong on each segment host for Hadoop
+  become_user: "{{ gpdb.user }}"
+  shell: ( source ~/.bashrc && PXF_BASE={{ hadoop.base_work_dir }} pxf cluster status )
+  ignore_errors: yes
+  register: pxf_running_checked_hadoop
+  when: hadoop.access == true and inventory_hostname in groups['master']
+
+#
+- name: Stop PXF Cluster runnong on each segment host for Hadoop
+  become_user: "{{ gpdb.user }}"
+  shell: ( source ~/.bashrc && PXF_BASE={{ hadoop.base_work_dir }} pxf cluster stop )
+  ignore_errors: yes
+  when:
+    - hadoop.access == true and inventory_hostname in groups['master']
+    - "'PXF is running on' in pxf_running_checked_hadoop.stdout"
+
+#
+- name: Delete relative files and directories in Hadoop base directory
+  become: yes
+  become_user: root
+  file:
+    path: "{{ hadoop.base_work_dir }}/{{ item }}"
+    state: absent
+  with_items:
+    - "{{ hadoop.access_jar_files }}"
+    - "{{ hadoop.access_sample_data }}"
+    - "{{ hadoop.access_test_queries }}"
+    - "{{ hadoop.access_test_scripts }}"
+  when: hadoop.access == true
+
+#
+- name: Delete PXF Base directory and query examples directory  for NFS Access
+  become: yes
+  become_user: root
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ hadoop.base_work_dir }}"
+  when: hadoop.access == true

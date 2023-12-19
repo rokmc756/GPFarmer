@@ -1,6 +1,6 @@
 ---
 # Install PXF for GPDB
-
+#
 # for now fail if it's not a Red Hat based system
 - name: Check OS ( GPDB )
   fail: msg="Not a Red Hat based system!"
@@ -10,37 +10,67 @@
 - name: Install PXF
   import_tasks: install.yml
   tags: install
-  when: install_pxf == true
+  when: pxf.install == true
 
 #
 - name: Setup NFS Access
   import_tasks: setup-nfs-access.yml
   tags: install
-  when: with_nfs_access == true
+  when: nfs.access == true
 
 #
 - name: Setup HDFS Access
   import_tasks: setup-hadoop-access.yml
   tags: install
-  when: with_hadoop_access == true
+  when: hadoop.access == true
 
 #
 - name: Setup Oracle Access
   import_tasks: setup-oracle-access.yml
   tags: install
-  when: with_oracle_access == true
+  when: oracle.access == true
 
 #
 - name: Setup MS-SQL Access
   import_tasks: setup-mssql-access.yml
   tags: install
-  when: with_mssql_access == true
+  when: mssql.access == true
 
 #
 - name: Setup Minio Access
   import_tasks: setup-minio-access.yml
   tags: install
-  when: with_minio_access == true
+  when: minio.access == true
+
+#
+- name: Uninstall NFS Access
+  import_tasks: uninstall-nfs.yml
+  tags: uninstall
+  when: nfs.access == true
+
+#
+- name: Uninstall HDFS Access
+  import_tasks: uninstall-hadoop.yml
+  tags: uninstall
+  when: hadoop.access == true
+
+#
+- name: Uninstall Oracle Access
+  import_tasks: uninstall-oracle.yml
+  tags: install
+  when: oracle.access == true
+
+#
+- name: Uninstall MS-SQL Access
+  import_tasks: uninstall-mssql.yml
+  tags: uninstall
+  when: mssql.access == true
+
+#
+- name: Uninstall Minio Access
+  import_tasks: uninstall-minio.yml
+  tags: uninstall
+  when: minio.access == true
 
 #
 - name: Uninstall PXF

@@ -1,173 +1,91 @@
 ---
 # Uninstall PXF on GPDB for Red Hat
-
-- name: Check if the pxf cluster is runnong on each segment host for NFS
-  become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_nfs }} pxf cluster status )
-  ignore_errors: yes
-  register: pxf_running_checked
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
-
-- name: Check if the pxf cluster is runnong on each segment host for Hadoop
-  become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_hadoop }} pxf cluster status )
-  ignore_errors: yes
-  register: pxf_running_checked
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
-
+#
 - name: Check if the pxf cluster is runnong on each segment host
-  become_user: gpadmin
+  become_user: "{{ gpdb.user }}"
   shell: ( source ~/.bashrc && pxf cluster status )
   ignore_errors: yes
   register: pxf_running_checked
-  when:
-    - with_nfs_access != True or  with_hadoop_access != True
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
-- name: Stop pxf cluster runnong on each segment host
-  become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_nfs }} pxf cluster stop )
-  ignore_errors: yes
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
-    - "'PXF is running on' in pxf_running_checked_nfs.stdout"
-
-- name: Stop pxf cluster runnong on each segment host
-  become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_hadoop }} pxf cluster stop )
-  ignore_errors: yes
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
-    - "'PXF is running on' in pxf_running_checked_nfs.stdout"
-
-- name: Stop pxf cluster runnong on each segment host
-  become_user: gpadmin
+#
+- name: Stop PXF Cluster runnong on each segment host
+  become_user: "{{ gpdb.user }}"
   shell: ( source ~/.bashrc && pxf cluster stop )
   ignore_errors: yes
-  when:
-    - with_nfs_access != True or  with_hadoop_access != True
-    - inventory_hostname in groups['master']
-    - "'PXF is running on' in pxf_running_checked.stdout"
+  when: inventory_hostname in groups['master'] and 'PXF is running on' in pxf_running_checked.stdout
 
+#
 - name: Killall java processes running for PXF
-  become_user: gpadmin
+  become_user: "{{ gpdb.user }}"
   shell: ( killall java )
   ignore_errors: yes
 
+#
 - name: Remove the PXF library
-  become_user: gpadmin
+  become_user: "{{ gpdb.user }}"
   file:
-    path: "{{ gpdb_base_dir }}/greenplum-db/lib/postgresql/pxf.so"
+    path: "{{ gpdb.base_dir }}/greenplum-db/lib/postgresql/pxf.so"
     state: absent
   ignore_errors: yes
 
+#
 - name: Find the PXF extension files named with pxf under extension directory
-  become_user: gpadmin
+  become_user: "{{ gpdb.user }}"
   find:
-    paths: "{{ gpdb_base_dir }}/greenplum-db/share/postgresql/extension"
+    paths: "{{ gpdb.base_dir }}/greenplum-db/share/postgresql/extension"
     patterns: "^pxf*"
   register: wildcard_files_to_delete
 
+#
 - name: Remove the PXF extension files named with pxf under extension directory
-  become_user: gpadmin
+  become_user: "{{ gpdb.user }}"
   file:
     path: "{{ item.path }}"
     state: absent
   ignore_errors: yes
   with_items: "{{ wildcard_files_to_delete.files }}"
 
+#
 - name: Remove PXF rpm package
   become: yes
   become_user: root
-  yum: name="pxf-gp6" state=absent
+  yum: name=pxf-{{ pxf.gpdb_version }} state=absent
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
 
+#
 - name: Check if PXF extension is installed on GPDB
-  become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf_database_name }} -t -c "select count(*) FROM pg_extension where extname='pxf';" | tr -d " " | sed '/^$/d' )
+  become_user: "{{ gpdb.user }}"
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -t -c "select count(*) FROM pg_extension where extname='pxf';" | tr -d " " | sed '/^$/d' )
   register: pxf_extension_install_checked
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 # - debug: msg={{ pxf_extension_install_checked.stdout }}
-#  when:
-#    - inventory_hostname in groups['master']
-#
-# - meta: end_play
+#  when: inventory_hostname in groups['master']
 
+#
 - name: Drop PXF extension
   become: yes
-  become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf_database_name }} -c "DROP EXTENSION pxf;")
+  become_user: "{{ gpdb.user }}"
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "DROP EXTENSION pxf;")
   register: pxf_extension_dropped
   ignore_errors: yes
-  when:
-    - inventory_hostname in groups['master']
-    - "'1' in pxf_extension_install_checked.stdout"
+  when: inventory_hostname in groups['master'] and '1' in pxf_extension_install_checked.stdout
 
+#
 - name: Drop database for PXF
   become: yes
-  become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ pxf_database_name }} )
+  become_user: "{{ gpdb.user }}"
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ pxf.database_name }} )
   register: pxf_database_dropped
   ignore_errors: yes
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
+#
 - name: Drop User for PXF
   become: yes
-  become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "DROP USER {{ pxf_username }};" )
+  become_user: "{{ gpdb.user }}"
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "DROP USER {{ pxf.username }};" )
   register: pxf_user_dropped
   ignore_errors: yes
-  when:
-    - inventory_hostname in groups['master']
-
-#
-- name: Delete relative directories to the NFS share point
-  become: yes
-  become_user: root
-  file:
-    path: "{{ nfs_share_dir }}/{{ item }}"
-    state: absent
-  with_items:
-    - "ex1"
-  when:
-    - with_nfs_access
-
-#
-- name: Delete PXF Base directory and query examples directory  for NFS Access
-  become: yes
-  become_user: root
-  file:
-    path: "{{ item }}"
-    state: absent
-  with_items:
-    - "{{ pxf_base_dir_with_nfs }}"
-    - "{{ pxf_base_dir_with_hadoop }}"
-    - "/home/gpadmin/query-examples"
-  when:
-    - with_nfs_access or with_hadoop_access
-
-#
-- name: Unmount NFS share directory on all hosts
-  become: yes
-  become_user: root
-  mount:
-    path: "{{ nfs_share_dir }}"
-    state: unmounted
-  register: result
-  retries: 5
-  delay: 60
-  until: result is not failed
-  when:
-    - with_nfs_access
-
-- debug:
-    var: result
+  when: inventory_hostname in groups['master']

@@ -1,106 +1,92 @@
 ---
-# pxf-gp7-6.8.0-2.el8.x86_64.rpm
-pxf_major_version: 6
-pxf_minor_version: 9.0
-pxf_patch_version: 2
-pxf_gpdb_version: gp7
-# pxf_os_version: "el8"
-pxf_os_version: "el8"
-# pxf_os_version: "ubuntu18.04"
-pxf_database_name: pxf_testdb
-pxf_mdw_hostname: rh8-master
-pxf_username: pxf_user
-pxf_setup_action: "{{ setup_action }}"
-
-gpdb_base_dir: "/usr/local"
-
-# pxf-gp6-6.1.0-2.el7.x86_64.rpm
-# pxf-gp7-6.6.0-2.el8.x86_64.rpm
-# pxf-gp6-5.15.1-2.el7.x86_64.rpm
-# pxf-gp6-6.6.0-2-ubuntu18.04-amd64.deb
-
-install_pxf: true
-
-with_nfs_access: false
-pxf_base_dir_with_nfs: /home/gpadmin/pxf-nfs-base
-nfs_share_dir: /home/gpadmin/nfsshare
-nfs_server_ip_addr: 192.168.0.2
-
-with_hadoop_access: true
-hadoop_master_hostname: rk8-master
-pxf_base_dir_with_hadoop: /home/gpadmin/pxf-hadoop-base
-
-hadoop_version: "3.3.5"
-
-hadoop_access_jar_files:
-  - "avro-tools-1.11.1.jar"
-  - "orc-tools-1.7.3-uber.jar"
-  - "orc-tools-1.8.3-uber.jar"
-  - "orc-tools-1.8.3.jar"
-
-hadoop_access_sample_data:
-  - "pxf-hdfs-file1.txt"
-  - "pxf-hdfs-file2.txt"
-  - "pxf-hdfs-file3.txt"
-  - "pxf-hdfs-fixedwidth.txt"
-  - "pxf-hdfs-multi.txt"
-  - "pxf-hdfs-simple-data.txt"
-  - "pxf-hdfs-simple.txt"
-  - "pxf-hdfs-json-single-line.json"
-  - "pxf-hdfs-json-multi-line.json"
-  - "pxf-hdfs-sample-data-orc.json"
-
-hadoop_access_test_queries:
-  - "pxf-hdfs-insert-multi-data.sql"
-  - "pxf-hdfs-json-single-line-table-aep.sql"
-  - "pxf-hdfs-json-single-line.sql"
-  - "pxf-hdfs-json-multi-line.sql"
-  - "pxf-hdfs-json-single-line-table-stc.sql"
-  - "pxf-hdfs-parquet-table.sql"
-  - "pxf-hdfs-read-simple-text-1.sql"
-  - "pxf-hdfs-read-simple-text-2.sql"
-  - "pxf-hdfs-select-multi-data.sql"
-  - "pxf-hdfs-fixedwidth-read.sql"
-
-  # - "pxf-hdfs-avro-read.sql"
-  # - "pxf-hdfs-avro-write.sql"
-  # - "pxf-hdfs-fixedwidth-write.sql"               # Need to test manually
-  # - "pxf-hdfs-read-table-seqfile-record-key.sql"  # Need to test manually
-  # - "pxf-hdfs-custom-writable-example.sql"        # Need to test manually
-  # - "pxf-hdfs-read-file-row.sql"                  # Need to test with tdir
-  # - "pxf-hdfs-read-orc-sample-data.sql"           # Need to test manually
-  # - "pxf-hdfs-simple-write-orc-data.sql"          # Need to test manually
-
-hadoop_access_test_scripts:
-  - "pxf-hdfs-create-simple-data.sh"
-  - "pxf-hdfs-custom-writable-example-hdfs.sh"
-  - "pxf-hdfs-get-multi-data.sh"
-  - "pxf-hdfs-json-line.sh"
-  - "pxf-hdfs-read-sample-data-2.sh"
-  - "pxf-hdfs-read-simple-text-2.sh"
-  - "pxf-hdfs-fixedwidth-read.sh"
-  # - "pxf-hdfs-fixedwidth-write.sh"
-  # - "pxf-hdfs-avro.sh"
-  # - "pxf-hdfs-tdir.sh"                            # Need to test manually
-
-gpdb_access_test_scripts:
-  - "pxf-hdfs-custom-writable-example-gpdb.sh"
-
-#
-with_oracle_access: false
-pxf_base_dir_with_oracle: /home/gpadmin/pxf-oracle-base
-oracle_dbname: cdb1
-oracle_user: oracleuser
-oracle_user_pass: changeme
-
-#
-with_mssql_access: false
-pxf_base_dir_with_mssql: /home/gpadmin/pxf-mssql-base
-mssql_dbname: testdb
-mssql_user: mssqluser
-mssql_user_pass: "Changeme!@#$"
-
-with_minio_access: false
-pxf_base_dir_with_minio: /home/gpadmin/pxf-minio-base
-s3_access_key: minioadmin
-s3_secret_key: changeme
+pxf:
+  major_version: 6
+  minor_version: 9.0
+  patch_version: 2
+  gpdb_version: gp7
+  arch_type: x86_64
+  binary_type: rpm
+  os_version: el8
+  database_name: pxf_testdb
+  username: pxf_user
+  install: true
+gpdb:
+  user: gpadmin
+  base_dir: /usr/local
+  gpadmin_home_dir: /home/gpadmin
+nfs:
+  access: false
+  base_work_dir: "{{ gpdb.gpadmin_home_dir }}/pxf-nfs-base"
+  share_dir: "{{ gpdb.gpadmin_home_dir }}/nfsshare"
+  ip_addr: 192.168.0.101
+hadoop:
+  access: true
+  user: hadoop
+  home_dir: /home/hadoop
+  base_work_dir: /home/gpadmin/pxf-hadoop-base
+  version: "3.3.5"
+  access_jar_files:
+    - "avro-tools-1.11.1.jar"
+    - "orc-tools-1.7.3-uber.jar"
+    - "orc-tools-1.8.3-uber.jar"
+    - "orc-tools-1.8.3.jar"
+  access_sample_data:
+    - "pxf-hdfs-file1.txt"
+    - "pxf-hdfs-file2.txt"
+    - "pxf-hdfs-file3.txt"
+    - "pxf-hdfs-fixedwidth.txt"
+    - "pxf-hdfs-multi.txt"
+    - "pxf-hdfs-simple-data.txt"
+    - "pxf-hdfs-simple.txt"
+    - "pxf-hdfs-json-single-line.json"
+    - "pxf-hdfs-json-multi-line.json"
+    - "pxf-hdfs-sample-data-orc.json"
+  access_test_queries:
+    - "pxf-hdfs-insert-multi-data.sql"
+    - "pxf-hdfs-json-single-line-table-aep.sql"
+    - "pxf-hdfs-json-single-line.sql"
+    - "pxf-hdfs-json-multi-line.sql"
+    - "pxf-hdfs-json-single-line-table-stc.sql"
+    - "pxf-hdfs-parquet-table.sql"
+    - "pxf-hdfs-read-simple-text-1.sql"
+    - "pxf-hdfs-read-simple-text-2.sql"
+    - "pxf-hdfs-select-multi-data.sql"
+    - "pxf-hdfs-fixedwidth-read.sql"
+    # - "pxf-hdfs-avro-read.sql"
+    # - "pxf-hdfs-avro-write.sql"
+    # - "pxf-hdfs-fixedwidth-write.sql"               # Need to test manually
+    # - "pxf-hdfs-read-table-seqfile-record-key.sql"  # Need to test manually
+    # - "pxf-hdfs-custom-writable-example.sql"        # Need to test manually
+    # - "pxf-hdfs-read-file-row.sql"                  # Need to test with tdir
+    # - "pxf-hdfs-read-orc-sample-data.sql"           # Need to test manually
+    # - "pxf-hdfs-simple-write-orc-data.sql"          # Need to test manually
+  access_test_scripts:
+    - "pxf-hdfs-create-simple-data.sh"
+    - "pxf-hdfs-custom-writable-example-hdfs.sh"
+    - "pxf-hdfs-get-multi-data.sh"
+    - "pxf-hdfs-json-line.sh"
+    - "pxf-hdfs-read-sample-data-2.sh"
+    - "pxf-hdfs-read-simple-text-2.sh"
+    - "pxf-hdfs-fixedwidth-read.sh"
+    - "pxf-hdfs-custom-writable-example-gpdb.sh"
+    # - "pxf-hdfs-fixedwidth-write.sh"
+    # - "pxf-hdfs-avro.sh"
+    # - "pxf-hdfs-tdir.sh"                            # Need to test manually
+    # access_test_scripts:
+oracle:
+  access: false
+  base_work_dir: "{{ gpdb.gpadmin_home_dir }}/pxf-oracle-base"
+  dbname: cdb1
+  user: oracleuser
+  user_pass: changeme
+mssql:
+  access: false
+  base_work_dir: "{{ gpdb.gpadmin_home_dir }}/pxf-mssql-base"
+  dbname: testdb
+  user: mssqluser
+  user_pass: "Changeme!@#$"
+minio:
+  access: false
+  base_work_dir: "{{ gpdb.gpadmin_home_dir }}/pxf-minio-base"
+  s3_access_key: minioadmin
+  s3_secret_key: changeme

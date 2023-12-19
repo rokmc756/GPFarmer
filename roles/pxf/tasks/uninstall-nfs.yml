@@ -1,0 +1,57 @@
+---
+# Uninstall PXF on GPDB for Red Hat
+#
+- name: Check if the pxf cluster is runnong on each segment host for NFS
+  become_user: "{{ gpdb.user }}"
+  shell: ( source ~/.bashrc && PXF_BASE={{ nfs.base_work_dir }} pxf cluster status )
+  ignore_errors: yes
+  register: pxf_running_checked_nfs
+  when: nfs.access == true and inventory_hostname in groups['master']
+
+#
+- name: Stop pxf cluster runnong on each segment host
+  become_user: "{{ gpdb.user }}"
+  shell: ( source ~/.bashrc && PXF_BASE={{ nfs.base_work_dir }} pxf cluster stop )
+  ignore_errors: yes
+  when:
+    - nfs.access == true and inventory_hostname in groups['master']
+    - "'PXF is running on' in pxf_running_checked_nfs.stdout"
+
+#
+- name: Delete relative directories to the NFS share point
+  become: yes
+  become_user: root
+  file:
+    path: "{{ nfs.share_dir }}/{{ item }}"
+    state: absent
+  with_items:
+    - "ex1"
+  when: nfs.access == true and inventory_hostname in groups['master']
+
+#
+- name: Delete PXF Base directory and query examples directory  for NFS Access
+  become: yes
+  become_user: root
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ nfs.base_work_dir }}"
+    - "{{ gpdb.gpadmin_home_dir }}/query-examples"
+  when: nfs.access == true and inventory_hostname in groups['master']
+
+#
+- name: Unmount NFS share directory on all hosts
+  become: yes
+  become_user: root
+  mount:
+    path: "{{ nfs.share_dir }}"
+    state: unmounted
+  register: result
+  retries: 5
+  delay: 60
+  until: result is not failed
+  when: nfs.access == true and inventory_hostname in groups['master']
+
+- debug:
+    var: result

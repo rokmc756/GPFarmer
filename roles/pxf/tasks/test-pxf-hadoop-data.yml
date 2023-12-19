@@ -2,210 +2,166 @@
 #
 - name: Restart PXF on master for hadoop access
   become: yes
-  become_user: gpadmin
-  shell: ( source ~/.bashrc && PXF_BASE={{ pxf_base_dir_with_hadoop }} pxf cluster restart )
+  become_user: "{{ gpdb.user }}"
+  shell: ( source ~/.bashrc && PXF_BASE={{ hadoop.base_work_dir }} pxf cluster restart )
   register: pxf_cluster_hadoop_restarted
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  when: hadoop.access and inventory_hostname in groups['master']
 
 #
 - name: Delete query-examles directory on GPDB master
-  become_user: gpadmin
+  become_user: "{{ gpdb.user }}"
   file: path={{ item }} state=absent
   with_items:
-    - "/home/gpadmin/query-examples"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+    - "{{ gpdb.gpadmin_home_dir }}/query-examples"
+  when: hadoop.access and inventory_hostname in groups['master']
 
 - name: Delete query-examles directory on Hadoop master
-  become_user: hadoop
+  become_user: "{{ hadoop.user }}"
   file: path={{ item }} state=absent
   with_items:
-    - "/home/hadoop/query-examples"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['hdfs-master']
+    - "{{ hadoop.home_dir }}/query-examples"
+  when: hadoop.access and inventory_hostname in groups['hdfs_master']
 
 #
 - name: Initial connecton to avoid Host Verfication failed
   become: yes
-  become_user: gpadmin
-  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh-copy-id -i ~/.ssh/id_rsa.pub hadoop@co7-master )
+  become_user: "{{ gpdb.user }}"
+  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh-copy-id -i ~/.ssh/id_rsa.pub {{ hadoop.user }}@{{ hostvars[groups['hdfs_master'][0]]['ansible_hostname'] }} )
   register: ssh_initial_connection
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  when: hadoop.access and inventory_hostname in groups['master']
 
 #
 #- name: Remove /data/pxf_examples directory in Hadoop Cluster
 #  become: yes
 #  become_user: gpadmin
-#  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh hadoop@co7-master 'hdfs dfs -rm -r /data' )
+#  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh-copy-id -i ~/.ssh/id_rsa.pub {{ hadoop.user }}@{{ hostvars[groups['hdfs_master'][0]]['ansible_hostname'] }} 'hdfs dfs -rm -r /data' )
 #  ignore_errors: yes
 #  register: hdfs_directory_removed
-#  when:
-#    - with_hadoop_access
-#    - inventory_hostname in groups['master']
+#  when: hadoop.access and inventory_hostname in groups['master']
 
 #
 #- name: Create /data/pxf_examples directory in Hadoop Cluster
 #  become: yes
 #  become_user: gpadmin
-#  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh hadoop@co7-master 'hdfs dfs -mkdir -p /data/pxf_examples' )
+#  shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh-copy-id -i ~/.ssh/id_rsa.pub {{ hadoop.user }}@{{ hostvars[groups['hdfs_master'][0]]['ansible_hostname'] }} 'hdfs dfs -mkdir -p /data/pxf_examples' )
 #  register: hdfs_directory_created
-#  when:
-#    - with_hadoop_access
-#    - inventory_hostname in groups['master']
+#  when: hadoop.access and inventory_hostname in groups['master']
 
 
 - name: Delete query-examples directory in HDFS filesystem
   become: yes
-  become_user: hadoop
+  become_user: "{{ hadoop.user }}"
   shell: ( source ~/.bashrc && hdfs dfs -rm -r /data )
   register: hdfs_data_dir_removed
   ignore_errors: yes
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['hdfs-master']
+  when: hadoop.access and inventory_hostname in groups['hdfs_master']
 
 - name: Create /data/pxf_examples directory in Hadoop Cluster
   become: yes
-  become_user: hadoop
+  become_user: "{{ hadoop.user }}"
   shell: ( source ~/.bashrc && hdfs dfs -mkdir -p /data/pxf_examples )
   register: hdfs_directory_created
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['hdfs-master']
+  when: hadoop.access and inventory_hostname in groups['hdfs_master']
 
 #
 - name: Create PXF base directory for Hadoop Access and query examples directory on all master and segment hosts
-  become_user: gpadmin
+  become_user: "{{ gpdb.user }}"
   file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
   with_items:
-    - "{{ pxf_base_dir_with_hadoop }}"
-    - "/home/gpadmin/query-examples"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+    - "{{ hadoop.base_work_dir }}"
+    - "{{ hadoop.home_dir }}/query-examples"
+  when: hadoop.access and inventory_hostname in groups['master']
 
 #
 - name: Create query examples directory on Hadoop Master
-  become_user: hadoop
+  become_user: "{{ hadoop.user }}"
   file: path={{ item }} state=directory mode=0755 owner=hadoop group=hadoop
   with_items:
-    - "/home/hadoop/query-examples"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['hdfs-master']
+    - "{{ hadoop.home-dir }}/query-examples"
+  when: hadoop.access and inventory_hostname in groups['hdfs_master']
 
 #
 - name: Copy query examples for Hadoop Access
-  become_user: gpadmin
-  template: src={{ item }} dest=/home/gpadmin/query-examples/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
-  loop: "{{ hadoop_access_test_queries }}"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  become_user: "{{ gpdb.user }}"
+  template: src={{ item }} dest={{ hadoop.home_dir }}/query-examples/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
+  loop: "{{ hadoop.access_test_queries }}"
+  when: hadoop.access and inventory_hostname in groups['master']
 
 #
 - name: Copy sample data for Hadoop Access
-  become_user: hadoop
-  template: src={{ item }} dest=/home/hadoop/query-examples/{{ item }} owner=hadoop group=hadoop mode=644 force=yes
-  loop: "{{ hadoop_access_sample_data }}"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['hdfs-master']
+  become_user: "{{ hadoop.user }}"
+  template: src={{ item }} dest={{ hadoop.home_dir }}/query-examples/{{ item }} owner=hadoop group=hadoop mode=644 force=yes
+  loop: "{{ hadoop.access_sample_data }}"
+  when: hadoop.access and inventory_hostname in groups['hdfs_master']
 
 #
 - name: Copy Jar files for Hadoop Access
-  become_user: hadoop
-  copy: src={{ item }} dest=/home/hadoop/query-examples/{{ item }} mode=0644 owner=hadoop group=hadoop
-  loop: "{{ hadoop_access_jar_files }}"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['hdfs-master']
+  become_user: "{{ hadoop.user }}"
+  copy: src={{ item }} dest={{ hadoop.home_dir }}/query-examples/{{ item }} mode=0644 owner=hadoop group=hadoop
+  loop: "{{ hadoop.access_jar_files }}"
+  when: hadoop.access and inventory_hostname in groups['hdfs_master']
 
 #
 - name: Copy test scripts into Hadoop Master
-  become_user: hadoop
-  template: src={{ item }} dest=/home/hadoop/query-examples/{{ item }} owner=hadoop group=hadoop mode=644 force=yes
+  become_user: "{{ hadoop.user }}"
+  template: src={{ item }} dest={{ hadoop.home_dir }}/query-examples/{{ item }} owner=hadoop group=hadoop mode=644 force=yes
   register: hadoop_test_scripts_copied
-  loop: "{{ hadoop_access_test_scripts }}"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['hdfs-master']
+  loop: "{{ hadoop.access_test_scripts }}"
+  when: hadoop.access and inventory_hostname in groups['hdfs_master']
 
 #
 - name: Copy test scripts into GPDB Master
-  become_user: gpadmin
-  template: src={{ item }} dest=/home/gpadmin/query-examples/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
+  become_user: "{{ gpdb.user }}"
+  template: src={{ item }} dest={{ gpdb.gpadmin_home_dir }}/query-examples/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
   register: gpdb_test_scripts_copied
-  loop: "{{ gpdb_access_test_scripts }}"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  loop: "{{ gpdb.access_test_scripts }}"
+  when: hadoop.access and inventory_hostname in groups['master']
 
 - name: Change ownership of /data/pxf_examples directory in Hadoop Cluster
   become: yes
-  become_user: hadoop
+  become_user: "{{ hadoop.user }}"
   shell: ( source ~/.bashrc && hdfs dfs -chown -R gpadmin:hadoop /data/pxf_examples )
   register: hdfs_directory_ownership_changed
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['hdfs-master']
+  when: hadoop.access and inventory_hostname in groups['hdfs_master']
 
 #
 - name: Run example queries on GPDB Master
-  become_user: gpadmin
-  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && psql -d testdb -f /home/gpadmin/query-examples/{{ item }} )
+  become_user: "{{ gpdb.user }}"
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -f {{ gpdb.gpadmin_home_dir }}/query-examples/{{ item }} )
   register: hadoop_test_queries_run
-  loop: "{{ hadoop_access_test_queries }}"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  loop: "{{ hadoop.access_test_queries }}"
+  when: hadoop.access and inventory_hostname in groups['master']
 
 #
 - name: Print the output of running test queries
-  become_user: gpadmin
+  become_user: "{{ gpdb.user }}"
   debug: msg={{ hadoop_test_queries_run }}
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  when: hadoop.access and inventory_hostname in groups['master']
 
 #
 - name: Run test scripts on Hadoop Master
-  become_user: hadoop
-  shell: ( source ~/.bashrc && /bin/bash /home/hadoop/query-examples/{{ item }} )
+  become_user: "{{ hadoop.user }}"
+  shell: ( source ~/.bashrc && /bin/bash {{ hadoop.home_dir }}/query-examples/{{ item }} )
   register: hadoop_test_scripts_run
   loop: "{{ hadoop_access_test_scripts }}"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['hdfs-master']
+  when: hadoop.access and inventory_hostname in groups['hdfs_master']
 
 #
 - name: Print the output of running test scripts on Hadoop
-  become_user: hadoop
+  become_user: "{{ hadoop.user }}"
   debug: msg={{ hadoop_test_scripts_run }}
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['hdfs-master']
+  when: hadoop.access and inventory_hostname in groups['hdfs_master']
 
 #
 - name: Run test scripts on GPDB Master
-  become_user: gpadmin
-  shell: ( source ~/.bashrc && /bin/bash /home/gpadmin/query-examples/{{ item }} )
+  become_user: "{{ gpdb.user }}"
+  shell: ( source ~/.bashrc && /bin/bash {{ gpdb_home_dir }}/query-examples/{{ item }} )
   register: gpdb_test_scripts_run
-  loop: "{{ gpdb_access_test_scripts }}"
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  loop: "{{ hadoop.access_test_scripts }}"
+  when: hadoop.access and inventory_hostname in groups['master']
 
 #
 - name: Print the output of running test scripts
-  become_user: gpadmin
+  become_user: "{{ gpdb.user }}"
   debug: msg={{ gpdb_test_scripts_run }}
-  when:
-    - with_hadoop_access
-    - inventory_hostname in groups['master']
+  when: hadoop.access and inventory_hostname in groups['master']

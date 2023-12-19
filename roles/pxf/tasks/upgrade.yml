@@ -12,27 +12,27 @@
   when: google_cloud_detect.stat.exists
 
 - name: Check if any version of Greenplum Database is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db
+  stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_installed
 
 - name: Check if the Greenplum Database version is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}
+  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}
   register: gpdb_version_installed
 
-- name: Sanity check for {{ gpdb_base_dir }}/greenplum-db
-  fail: msg="{{ gpdb_base_dir }}/greenplum-db is supposed to be a symlink!"
+- name: Sanity check for {{ gpdb.base_dir }}/greenplum-db
+  fail: msg="{{ gpdb.base_dir }}/greenplum-db is supposed to be a symlink!"
   when: gpdb_installed.stat.exists == True and gpdb_installed.stat.islnk != True
 
 - name: Shutdown database
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
   async: 60
   poll: 5
   when:
    - inventory_hostname in groups['master']
    - gpdb_installed.stat.exists == True and gpdb_version_installed.stat.exists == True
 
-- name: Copy Greenplum Database {{ gpdb_major_version }} {{ gpdb_binary_type }} file
+- name: Copy Greenplum Database {{ gpdb.major_version }} {{ gpdb.binary_type }} file
   copy: src={{ binary_installer_file }}.rpm dest=/home/gpadmin/{{ binary_installer_file }}.rpm mode=0644 owner=gpadmin group=gpadmin
   when:
     - gpdb_binary_type == 'rpm'
@@ -50,7 +50,7 @@
 - name: Update the permissions for the new installation
   become_user: gpadmin
   file:
-    path: "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}"
+    path: "{{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.build_version }}"
     owner: gpadmin
     group: gpadmin
     recurse: yes
@@ -59,22 +59,22 @@
   replace:
     path: /home/gpadmin/.bashrc
     regexp: "^source /usr/local/greenplum-db*"
-    replace: "^source {{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}"
+    replace: "^source {{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.build_version }}"
     backup: yes
 # GPHOME=/usr/local/greenplum-db-6.11.1 in /usr/local/greenplum-db/greenplum_path.sh
 
 - name: Remove the link to point to the earily installed version
   become_user: gpadmin
   file:
-    path: "{{ gpdb_base_dir }}/greenplum-db"
+    path: "{{ gpdb.base_dir }}/greenplum-db"
     owner: gpadmin
     group: gpadmin
     state: absent
 
 - name: Update the link to point to the newly installed version
   file:
-    src: "{{ gpdb_base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}"
-    dest: "{{ gpdb_base_dir }}/greenplum-db"
+    src: "{{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.build_version }}"
+    dest: "{{ gpdb.base_dir }}/greenplum-db"
     state: link
 
 - name: Source the environment file of GPDB
@@ -86,8 +86,7 @@
 
 - name: Start Greenplum Database after upgrade
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstart -a )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstart -a )
   async: 60
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']

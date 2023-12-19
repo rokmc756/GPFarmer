@@ -1,5 +1,5 @@
 # Start line to configure nfs access
-
+#
 #
 - set_fact:
     java_home: "/usr/lib/jvm/jre-1.8.0"
@@ -10,21 +10,20 @@
     java_home: "/usr/lib/jvm/java-8-openjdk-amd64/jre"
   when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
 
-
+#
 - name: Stop the pxf cluster start command to start PXF on each segment host
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster stop )
+  shell: ( source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster stop )
   args:
     executable: /bin/bash
   register: pxf_cluster_stopped
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
+#
 - name: Print stopping pxf cluster
   debug: msg={{ pxf_cluster_stopped }}
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #
 - name: Install NFS Client on all hosts for RedHat/CentOS/Rocky
@@ -33,7 +32,7 @@
   package: name={{ item }} state=present
   with_items:
     - nfs-utils
-  when: with_nfs_access and ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+  when: nfs.access and ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
 
 #
 - name: Install NFS Client on all hosts for Ubuntu/Debian
@@ -43,7 +42,7 @@
   with_items:
     - nfs-common
     - nfs-client
-  when: with_nfs_access and ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+  when: nfs.access and ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
 
 # With NFS
 - name: Create PXF base directory for NFS Access and query examples directory on all master and segment hosts
@@ -52,32 +51,27 @@
   with_items:
     - "{{ pxf_base_dir_with_nfs }}"
     - "/home/gpadmin/query-examples"
-  when:
-    - with_nfs_access
+  when: nfs.access
 
 #
 - name: Prepare PXF on master for nfs access
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ pxf_base_dir_with_nfs }} /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster prepare )
+  shell: ( source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ nfs.base_work_dir }} /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster prepare )
   args:
     executable: /bin/bash
   register: pxf_cluster_nfs_prepared
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
+  when: nfs.access and inventory_hostname in groups['master']
 
 #
 - name: Start PXF on master for nfs access
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ pxf_base_dir_with_nfs }} /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster start )
+  shell: ( source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ nfs.base_work_dir }} /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start )
   args:
     executable: /bin/bash
   register: pxf_cluster_nfs_started
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
+  when: nfs.access and inventory_hostname in groups['master']
 
 #
 #- name: Synchronize the PXF server configuration to the GPDB cluster
@@ -92,30 +86,24 @@
 #
 - name:  Create the $PXF_BASE/servers/nfssrvcfg directory.
   become_user: gpadmin
-  file: path={{ pxf_base_dir_with_nfs }}/servers/nfssrvcfg state=directory mode=0755 owner=gpadmin group=gpadmin
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
+  file: path={{ nfs.base_work_dir }}/servers/nfssrvcfg state=directory mode=0755 owner=gpadmin group=gpadmin
+  when: nfs.access and inventory_hostname in groups['master']
 
 #
 - name: Copy the PXF pxf-site.xml template file to the nfssrvcfg server configuration directory.
   become_user: gpadmin
-  template: src=nfs/pxf-site.xml.j2 dest={{ pxf_base_dir_with_nfs}}/servers/nfssrvcfg/pxf-site.xml owner=gpadmin group=gpadmin mode=644 force=yes
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
+  template: src=nfs/pxf-site.xml.j2 dest={{ nfs.base_work_dir }}/servers/nfssrvcfg/pxf-site.xml owner=gpadmin group=gpadmin mode=644 force=yes
+  when: nfs.access and inventory_hostname in groups['master']
 
 #
 - name: Synchronize the PXF server configuration to the GPDB cluster
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ pxf_base_dir_with_nfs }} /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster sync )
+  shell: ( source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ nfs.base_work_dir }} /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster sync )
   args:
     executable: /bin/bash
   register: pxf_cluster_nfs_started
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
+  when: nfs.access and inventory_hostname in groups['master']
 
 #
 - name: Mount NFS share directory on all hosts
@@ -126,8 +114,7 @@
     src: "{{ nfs_server_ip_addr }}:/external_storage/nfsshare"
     fstype: nfs
     state: mounted
-  when:
-    - with_nfs_access
+  when: nfs.access
 
 #
 - name: Create a relative directoy to the NFS share point
@@ -136,19 +123,15 @@
   file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
   with_items:
     - "{{ nfs_share_dir }}/ex1"
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
+  when: nfs.access and inventory_hostname in groups['master']
 
 #
 - name: Copy some data in example directory
   become_user: gpadmin
-  template: src=nfs/{{ item }} dest={{ nfs_share_dir }}/ex1/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
+  template: src=nfs/{{ item }} dest={{ nfs.share_dir }}/ex1/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
   with_items:
     - "somedata.csv"
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
+  when: nfs.access and inventory_hostname in groups['master']
 
 #
 - name: Copy the query examples
@@ -159,13 +142,12 @@
     - "select_pxf_read_nfs.sql"
     - "create-external-table-for-write-nfs.sql"
     - "insert-data-into-pxf-write-nfs.sql"
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
+  when: nfs.access and inventory_hostname in groups['master']
 
+#
 - name: Run query examples for nfs access
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc -d {{ pxf_database_name }} -f /home/gpadmin//query-examples/{{ item }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc -d {{ pxf.database_name }} -f /home/gpadmin/query-examples/{{ item }} )
   args:
     executable: /bin/bash
   register: run_query_examples_output
@@ -174,25 +156,19 @@
     - "select_pxf_read_nfs.sql"
     - "create-external-table-for-write-nfs.sql"
     - "insert-data-into-pxf-write-nfs.sql"
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
+  when: nfs.access and inventory_hostname in groups['master']
 
 #
 - name: Print the output of running query examples
   debug: msg={{ run_query_examples_output }}
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
+  when: nfs.access and inventory_hostname in groups['master']
 
 #
 - name: Start PXF on master for nfs access
   become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && source /usr/local/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ pxf_base_dir_with_nfs }} /usr/local/pxf-{{ pxf_gpdb_version }}/bin/pxf cluster start )
+  shell: ( source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ nfs.base_work_dir }} /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start )
   args:
     executable: /bin/bash
   register: pxf_cluster_nfs_started
-  when:
-    - with_nfs_access
-    - inventory_hostname in groups['master']
+  when: nfs.access and inventory_hostname in groups['master']
