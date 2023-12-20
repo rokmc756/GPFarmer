@@ -14,9 +14,12 @@ rh8-node01 ansible_ssh_host=192.168.0.53
 rh8-node02 ansible_ssh_host=192.168.0.54
 rh8-node03 ansible_ssh_host=192.168.0.55
 
-# [s3_storage]
-# rk9-minio  ansible_ssh_host=192.168.0.98
+#[databases]
+#rk8-oracle  ansible_ssh_host=192.168.0.153
+#rk8-mssql   ansible_ssh_host=192.168.0.154
 
-[databases]
-rk8-oracle  ansible_ssh_host=192.168.0.153
-rk8-mssql   ansible_ssh_host=192.168.0.154
+[nfs]
+lab  ansible_ssh_host=192.168.0.101
+
+#[s3_storage]
+#rk9-minio  ansible_ssh_host=192.168.0.98

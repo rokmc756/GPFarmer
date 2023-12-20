@@ -15,10 +15,11 @@ gpdb:
   base_dir: /usr/local
   gpadmin_home_dir: /home/gpadmin
 nfs:
-  access: false
+  access: true
   base_work_dir: "{{ gpdb.gpadmin_home_dir }}/pxf-nfs-base"
   share_dir: "{{ gpdb.gpadmin_home_dir }}/nfsshare"
-  ip_addr: 192.168.0.101
+  expose_dir: "/extra-usb-storage/nfsshare"
+  server_ip_addr: 192.168.0.101
 hadoop:
   access: false
   user: hadoop
@@ -80,7 +81,7 @@ oracle:
   user: oracleuser
   user_pass: changeme
 mssql:
-  access: true
+  access: false
   base_work_dir: "{{ gpdb.gpadmin_home_dir }}/pxf-mssql-base"
   dbname: testdb
   user: mssqluser

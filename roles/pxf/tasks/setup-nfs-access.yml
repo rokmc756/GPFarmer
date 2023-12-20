@@ -1,5 +1,4 @@
-# Start line to configure nfs access
-#
+# Start line to configure NFS access
 #
 - set_fact:
     java_home: "/usr/lib/jvm/jre-1.8.0"
@@ -32,7 +31,10 @@
   package: name={{ item }} state=present
   with_items:
     - nfs-utils
-  when: nfs.access and ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+  when:
+    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    - ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky"
+    - nfs.access == true
 
 #
 - name: Install NFS Client on all hosts for Ubuntu/Debian
@@ -42,16 +44,21 @@
   with_items:
     - nfs-common
     - nfs-client
-  when: nfs.access and ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+  when:
+    - ansible_distribution == "Debian" or ansible_distribution == "Ubuntu"
+    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    - nfs.access == true
 
 # With NFS
 - name: Create PXF base directory for NFS Access and query examples directory on all master and segment hosts
   become_user: gpadmin
   file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
   with_items:
-    - "{{ pxf_base_dir_with_nfs }}"
+    - "{{ nfs.base_work_dir }}"
     - "/home/gpadmin/query-examples"
-  when: nfs.access
+  when:
+    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    - nfs.access == true
 
 #
 - name: Prepare PXF on master for nfs access
@@ -61,7 +68,7 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_nfs_prepared
-  when: nfs.access and inventory_hostname in groups['master']
+  when: nfs.access == true and inventory_hostname in groups['master']
 
 #
 - name: Start PXF on master for nfs access
@@ -71,9 +78,8 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_nfs_started
-  when: nfs.access and inventory_hostname in groups['master']
+  when: nfs.access == true and inventory_hostname in groups['master']
 
-#
 #- name: Synchronize the PXF server configuration to the GPDB cluster
 #  become: yes
 #  become_user: gpadmin
@@ -81,19 +87,19 @@
 #  register: pxf_cluster_nfs_started
 #  when:
 #    - inventory_hostname in groups['master']
-#    - with_nfs_access
+#    - with_nfs_access == access
 
 #
 - name:  Create the $PXF_BASE/servers/nfssrvcfg directory.
   become_user: gpadmin
   file: path={{ nfs.base_work_dir }}/servers/nfssrvcfg state=directory mode=0755 owner=gpadmin group=gpadmin
-  when: nfs.access and inventory_hostname in groups['master']
+  when: nfs.access == true and inventory_hostname in groups['master']
 
 #
 - name: Copy the PXF pxf-site.xml template file to the nfssrvcfg server configuration directory.
   become_user: gpadmin
   template: src=nfs/pxf-site.xml.j2 dest={{ nfs.base_work_dir }}/servers/nfssrvcfg/pxf-site.xml owner=gpadmin group=gpadmin mode=644 force=yes
-  when: nfs.access and inventory_hostname in groups['master']
+  when: nfs.access == true and inventory_hostname in groups['master']
 
 #
 - name: Synchronize the PXF server configuration to the GPDB cluster
@@ -103,18 +109,20 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_nfs_started
-  when: nfs.access and inventory_hostname in groups['master']
+  when: nfs.access == true and inventory_hostname in groups['master']
 
 #
 - name: Mount NFS share directory on all hosts
   become: yes
   become_user: root
   mount:
-    path: "{{ nfs_share_dir }}"
-    src: "{{ nfs_server_ip_addr }}:/external_storage/nfsshare"
+    path: "{{ nfs.share_dir }}"
+    src: "{{ nfs.server_ip_addr }}:{{ nfs.expose_dir }}"
     fstype: nfs
     state: mounted
-  when: nfs.access
+  when:
+    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    - nfs.access == true
 
 #
 - name: Create a relative directoy to the NFS share point
@@ -122,8 +130,8 @@
   become_user: root
   file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
   with_items:
-    - "{{ nfs_share_dir }}/ex1"
-  when: nfs.access and inventory_hostname in groups['master']
+    - "{{ nfs.share_dir }}/ex1"
+  when: nfs.access == true and inventory_hostname in groups['master']
 
 #
 - name: Copy some data in example directory
@@ -131,7 +139,7 @@
   template: src=nfs/{{ item }} dest={{ nfs.share_dir }}/ex1/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
   with_items:
     - "somedata.csv"
-  when: nfs.access and inventory_hostname in groups['master']
+  when: nfs.access == true and inventory_hostname in groups['master']
 
 #
 - name: Copy the query examples
@@ -142,12 +150,12 @@
     - "select_pxf_read_nfs.sql"
     - "create-external-table-for-write-nfs.sql"
     - "insert-data-into-pxf-write-nfs.sql"
-  when: nfs.access and inventory_hostname in groups['master']
+  when: nfs.access == true and inventory_hostname in groups['master']
 
 #
 - name: Run query examples for nfs access
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc -d {{ pxf.database_name }} -f /home/gpadmin/query-examples/{{ item }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc -d {{ pxf.database_name }} -f /home/gpadmin/query-examples/{{ item }} )
   args:
     executable: /bin/bash
   register: run_query_examples_output
@@ -156,12 +164,12 @@
     - "select_pxf_read_nfs.sql"
     - "create-external-table-for-write-nfs.sql"
     - "insert-data-into-pxf-write-nfs.sql"
-  when: nfs.access and inventory_hostname in groups['master']
+  when: nfs.access == true and inventory_hostname in groups['master']
 
 #
 - name: Print the output of running query examples
   debug: msg={{ run_query_examples_output }}
-  when: nfs.access and inventory_hostname in groups['master']
+  when: nfs.access == true and inventory_hostname in groups['master']
 
 #
 - name: Start PXF on master for nfs access
@@ -171,4 +179,5 @@
   args:
     executable: /bin/bash
   register: pxf_cluster_nfs_started
-  when: nfs.access and inventory_hostname in groups['master']
+  when: nfs.access == true and inventory_hostname in groups['master']
+
