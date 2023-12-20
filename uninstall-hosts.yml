@@ -18,7 +18,7 @@
 #    - { role: pljava }
 #    - { role: plr }
 #    - { role: gpupgrade }
-
+#
 #
 #- hosts: rh8-master,rh8-slave
 #  become: true

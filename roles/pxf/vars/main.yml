@@ -74,13 +74,13 @@ hadoop:
     # - "pxf-hdfs-tdir.sh"                            # Need to test manually
     # access_test_scripts:
 oracle:
-  access: true
+  access: false
   base_work_dir: "{{ gpdb.gpadmin_home_dir }}/pxf-oracle-base"
   dbname: cdb1
   user: oracleuser
   user_pass: changeme
 mssql:
-  access: false
+  access: true
   base_work_dir: "{{ gpdb.gpadmin_home_dir }}/pxf-mssql-base"
   dbname: testdb
   user: mssqluser

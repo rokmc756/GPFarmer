@@ -19,12 +19,14 @@
 #    - { role: plr }
 #    - { role: gpupgrade }
 
+#
 #- hosts: rh8-master,rh8-slave
 #  become: true
 #  become_user: gpadmin
 #  roles:
 #    - { role: gpcc }
 
+#
 #- hosts: rk9-minio
 #  become: true
 #  gather_facts: true
