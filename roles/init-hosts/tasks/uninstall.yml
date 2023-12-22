@@ -40,6 +40,12 @@
     - "{{ groups['all'] }}"
 
 #
+#- name: Kill processes hold by gpadmin user
+#  become: true
+#  shell: kill -9 $(lsof -t -u {{ sudo_user }})
+#  ignore_errors: yes
+
+#
 - name: Delete "{{ sudo_user }}" user and group
   become: true
   become_user: root

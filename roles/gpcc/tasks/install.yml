@@ -20,16 +20,16 @@
   set_fact:
     gppkg_install_cmd: "gppkg -i"
     check_gpmetrics_installed: "gppkg -q --all | grep MetricsCollector | cut -d - -f 1"
-    gpmetrics_package_name: MetricsCollector-{{ gpcc_major_version }}.{{ gpcc_minor_version }}_gp_{{ gpdb_metric_major_version }}.{{ gpdb_metric_minor_version }}-{{ gpcc_os_name }}-{{ gpcc_metric_arch }}.gppkg
-  when: inventory_hostname in groups['master'] and gpdb_major_version|int <= 6
+    gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}-{{ gpcc.os_name }}-{{ gpcc.metric_arch }}.gppkg
+  when: inventory_hostname in groups['master'] and gpdb.major_version|int <= 6
 
 #
 - name: Define varaibles for the installation and existance and the package name of gppkg
   set_fact:
     gppkg_install_cmd: "gppkg -a install"
     check_gpmetrics_installed: "gppkg query | grep MetricsCollector | awk '{print $1}'"
-    gpmetrics_package_name: MetricsCollector-{{ gpcc_major_version }}.{{ gpcc_minor_version }}_gp_{{ gpdb_metric_major_version }}.{{ gpdb_metric_minor_version }}-{{ gpcc_os_name }}-{{ gpcc_metric_arch }}.gppkg
-  when: inventory_hostname in groups['master'] and gpdb_major_version|int >= 7
+    gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}-{{ gpcc.os_name }}-{{ gpcc.metric_arch }}.gppkg
+  when: inventory_hostname in groups['master'] and gpdb.major_version|int >= 7
 
 #
 - name: Check if the Greenplum Database Software is already installed
@@ -83,7 +83,7 @@
 #
 - name: Add gpmon user to pg_hba.conf to authenticate Greenplum Command Center
   lineinfile:
-    dest: "{{ master_data_dir }}/pg_hba.conf"
+    dest: "{{ gpdb.master_data_dir }}/pg_hba.conf"
     line: "{{ item.line }}"
     state: "{{ item.state }}"
   with_items:
@@ -114,175 +114,175 @@
 #
 - name: Install gpperfmon agents
   changed_when: False
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpperfmon_install --enable --password '{{ gpmon_password }}' --port 5432 )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpperfmon_install --enable --password '{{ gpcc.gpmon_password }}' --port 5432 )
   args:
     executable: /bin/bash
   when: 
     - ( inventory_hostname in groups['master'] and gpcc_gpperfmon_install == True )
-    - ( gpcc_major_version|int <= 6 and gpcc_minor_version|int < 7.0 ) or ( gpcc_major_version|int >= 7 and gpcc_minor_version|int > 0 )
+    - ( gpcc.major_version|int <= 6 and gpcc.minor_version|int < 7.0 ) or ( gpcc.major_version|int >= 7 and gpcc.minor_version|int > 0 )
 
 #
 - name: Check if the Greenpum Command Center version is already installed
-  stat: path={{ gpcc.base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}
+  stat: path={{ gpcc.base_dir }}/greenplum-cc-web-{{ gpcc.major_version }}.{{ gpcc.minor_version }}
   register: gpcc_installed
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
 
 #
 - name: Copy Greenplum Command Center zip file
-  copy: src=greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-gp{{ gpdb_major_version }}-{{ gpcc_os_name}}-x86_64.zip dest={{ gpdb.admin_home_dir }}/gpcc.zip mode=0644 owner=gpadmin group=gpadmin
+  copy: src=greenplum-cc-web-{{ gpcc.major_version }}.{{ gpcc.minor_version }}-gp{{ gpdb.major_version }}-{{ gpcc.os_name}}-x86_64.zip dest={{ gpdb.gpadmin_home_dir }}/gpcc.zip mode=0644 owner=gpadmin group=gpadmin
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True )
 
 #
 - name: Remove old temp Greenplum Command Center installer directory
-  file: path={{ gpdb.admin_home_dir }}/gpcc-tmp-install state=absent
+  file: path={{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install state=absent
   changed_when: False
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True )
 
 #
 - name: Create new temp installer directory
-  file: path={{ gpdb.admin_home_dir }}/gpcc-tmp-install state=directory owner=gpadmin group=gpadmin
+  file: path={{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install state=directory owner=gpadmin group=gpadmin
   changed_when: False
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True )
 
 #
 - name: Unzip Greenplum Command Center archive
-  unarchive: src={{ gpdb.admin_home_dir }}/gpcc.zip dest={{ gpdb.admin_home_dir }}/gpcc-tmp-install remote_src=yes owner=gpadmin group=gpadmin
+  unarchive: src={{ gpdb.gpadmin_home_dir }}/gpcc.zip dest={{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install remote_src=yes owner=gpadmin group=gpadmin
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True )
 
 # Make next tasks easier by not always using the Ansible variables in the filename
 - name: Rename .bin file
-  command: creates={{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpdb.admin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-LINUX-x86_64.bin {{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin
-  when: ( inventory_hostname in groups['master'] and gpcc_major_version|int <= 3 )
+  command: creates={{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc.major_version }}.{{ gpcc.minor_version }}-LINUX-x86_64.bin {{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin
+  when: ( inventory_hostname in groups['master'] and gpcc.major_version|int <= 3 )
 
 # Make next tasks easier by not always using the Ansible variables in the filename
 - name: Rename .bin file
-  command: creates={{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpdb.admin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}-gp{{ gpdb_major_version }}-{{ gpcc_os_name }}-x86_64/gpccinstall-{{ gpcc_major_version }}.{{ gpcc_minor_version }} {{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin
-  when: inventory_hostname in groups['master'] and ( gpcc_major_version|int <= 7 and gpcc_major_version|int > 3 )
+  command: creates={{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc.major_version }}.{{ gpcc.minor_version }}-gp{{ gpdb.major_version }}-{{ gpcc.os_name }}-x86_64/gpccinstall-{{ gpcc.major_version }}.{{ gpcc.minor_version }} {{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin
+  when: inventory_hostname in groups['master'] and ( gpcc.major_version|int <= 7 and gpcc.major_version|int > 3 )
 
 #
 - name: Copy Command Center setup config file
-  copy: src=gpcc_config.ini dest={{ gpdb.admin_home_dir }}/gpcc_config.ini mode=0644 owner=gpadmin group=gpadmin
-  when: inventory_hostname in groups['master'] and ( gpcc_major_version|int <= 7 and gpcc_major_version|int > 3 )
+  copy: src=gpcc_config.ini dest={{ gpdb.gpadmin_home_dir }}/gpcc_config.ini mode=0644 owner=gpadmin group=gpadmin
+  when: inventory_hostname in groups['master'] and ( gpcc.major_version|int <= 7 and gpcc.major_version|int > 3 )
 
 #
 - name: Copy Command Center setup config file
-  copy: src=gpcmdr_setup.ini dest={{ gpdb.admin_home_dir }}/gpcmdr_setup.ini mode=0644 owner=gpadmin group=gpadmin
-  when: ( inventory_hostname in groups['master'] and gpcc_major_version|int <= 3 )
+  copy: src=gpcmdr_setup.ini dest={{ gpdb.gpadmin_home_dir }}/gpcmdr_setup.ini mode=0644 owner=gpadmin group=gpadmin
+  when: ( inventory_hostname in groups['master'] and gpcc.major_version|int <= 3 )
 
 #
 - name: Copy Command Center install script file
-  copy: src=install_gpcc.sh dest={{ gpdb.admin_home_dir }}/install_gpcc.sh mode=0755 owner=gpadmin group=gpadmin
-  when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True ) and ( gpcc_major_version|int <= 7 and gpcc_major_version|int > 3 )
+  copy: src=install_gpcc.sh dest={{ gpdb.gpadmin_home_dir }}/install_gpcc.sh mode=0755 owner=gpadmin group=gpadmin
+  when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True ) and ( gpcc.major_version|int <= 7 and gpcc.major_version|int > 3 )
 
 #
 - name: Check if SSL Directory is already existed
-  stat: path={{ gpdb.admin_home_dir }}/certs
+  stat: path={{ gpdb.gpadmin_home_dir }}/certs
   register: check_dir_sslkey_installed
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
 
 #
 - name: Create SSL directory
-  file: path={{ gpdb.admin_home_dir }}/certs state=directory owner=gpadmin group=gpadmin
+  file: path={{ gpdb.gpadmin_home_dir }}/certs state=directory owner=gpadmin group=gpadmin
   changed_when: False
   register: dir_sslkey_installed
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and check_dir_sslkey_installed.stat.exists != True
 
 #
 - name: Create SSL key for Greenplum Command Center Web UI
-  shell: ( openssl req -newkey rsa:2048 -x509 -keyout {{ gpcc_ssl_dir }}/cert.pem -out {{ gpcc_ssl_dir }}/cert.pem -days {{ gpcc_ssl_days }} -nodes -subj "/C={{ gpcc_ssl_country }}/ST={{ gpcc_ssl_state }}/L={{ gpcc_ssl_location }}/O={{ gpcc_ssl_organization }}/CN={{ gpcc_ssl_common_name }}/emailAddress={{ gpcc_ssl_email }}" )
+  shell: ( openssl req -newkey rsa:2048 -x509 -keyout {{ gpcc.ssl_dir }}/cert.pem -out {{ gpcc.ssl_dir }}/cert.pem -days {{ gpcc.ssl_days }} -nodes -subj "/C={{ gpcc.ssl_country }}/ST={{ gpcc.ssl_state }}/L={{ gpcc.ssl_location }}/O={{ gpcc.ssl_organization }}/CN={{ gpcc.ssl_common_name }}/emailAddress={{ gpcc.ssl_email }}" )
   args:
     executable: /bin/bash
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
 
 #
 - name: Install Greenplum Command Center Software
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gpdb.admin_home_dir }}/install_gpcc.sh )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gpdb.gpadmin_home_dir }}/install_gpcc.sh )
   args:
     executable: /bin/bash
-  when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True and gpcc_major_version|int > 3 )
+  when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True and gpcc.major_version|int > 3 )
 
 #
 - name: Print Greenplum Command Center instance URL
-  debug: msg="https://{{ inventory_hostname }}:{{ gpccws_port }}/"
+  debug: msg="https://{{ inventory_hostname }}:{{ gpcc.gpccws_port }}/"
   when: ( inventory_hostname in groups['master'] and gpcc_setup_cc_sne == True )
 
 # This will only work on the first run (secured by gpcc_installed.stat.exists != True)
 # Note: You hereby accept the license! Please see installer for remaining questions.
 - name: First accept license and make unattended installation possible
   lineinfile:
-    dest: "{{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin"
+    dest: "{{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin"
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
     state: "{{ item.state }}"
   with_items:
     - { regexp: '^more <<-EOF', line: 'cat <<-EOF', state: present, backrefs: no }
     - { regexp: '^agreed=', line: 'agreed=1', state: present, backrefs: yes }
-    - { regexp: '^installPath=$', line: 'installPath={{ gpcc.base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }}', state: present, backrefs: yes }
+    - { regexp: '^installPath=$', line: 'installPath={{ gpcc.base_dir }}/greenplum-cc-web-{{ gpcc.major_version }}.{{ gpcc.minor_version }}', state: present, backrefs: yes }
     - { regexp: '^        pathVerification=', line: '        pathVerification=1', state: present, backrefs: yes }
     - { regexp: '^    agreed=', line: '    agreed=1', state: present, backrefs: yes }
-  when: ( inventory_hostname in groups['master'] ) and ( gpcc_installed.stat.exists != True and gpcc_major_version|int <= 3 )
+  when: ( inventory_hostname in groups['master'] ) and ( gpcc_installed.stat.exists != True and gpcc.major_version|int <= 3 )
 
 # Skip to install Greenplum Command Centner at standby master automatically
 # Filter EOF error occured by modifing this file as using redirect option
 # Skip to type hostname of stnadby master node.
 - name: Second make unattended installation possible
-  shell: ( sed -i '987c if\ [\ !\ -z\ \"\${GPHOME}\"\ ]\ &&\ [\ !\ -z\ \$standby\ ]\;\ then' {{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin ;
-           sed -i '1022c tail\ -n\ +\${SKIP}\ \$0\ \|\ \${TAR}\ zxf\ -\ -C\ \${installPath}\ \>\ /dev/null\ 2\>\&1\;\ fnums\=\`ls\ \${installPath}\ \|\ wc\ -l\`' {{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin ;
-           sed -i '1023c if\ [\ \$\?\ -eq\ 0\ ]\ &&\ [\ \$fnums\ -lt\ 1\ ]\;\ then' {{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin )
+  shell: ( sed -i '987c if\ [\ !\ -z\ \"\${GPHOME}\"\ ]\ &&\ [\ !\ -z\ \$standby\ ]\;\ then' {{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin ;
+           sed -i '1022c tail\ -n\ +\${SKIP}\ \$0\ \|\ \${TAR}\ zxf\ -\ -C\ \${installPath}\ \>\ /dev/null\ 2\>\&1\;\ fnums\=\`ls\ \${installPath}\ \|\ wc\ -l\`' {{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin ;
+           sed -i '1023c if\ [\ \$\?\ -eq\ 0\ ]\ &&\ [\ \$fnums\ -lt\ 1\ ]\;\ then' {{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin )
   args:
     executable: /bin/bash
-  when: inventory_hostname in groups['master'] and (  gpcc_installed.stat.exists != True and gpcc_major_version|int <= 3 )
+  when: inventory_hostname in groups['master'] and (  gpcc_installed.stat.exists != True and gpcc.major_version|int <= 3 )
 
 #
 - name: Install Comment Center Software in {{ gpcc.base_dir }}
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install/gpcc.bin )
   args:
     executable: /bin/bash
-  when: inventory_hostname in groups['master'] and ( gpcc_installed.stat.exists != True and gpcc_major_version <= 3 )
+  when: inventory_hostname in groups['master'] and ( gpcc_installed.stat.exists != True and gpcc.major_version <= 3 )
 
 #
 - name: Create symlink to {{ gpcc.base_dir }}/greenplum-cc-web
   become: true
   become_user: root
-  file: src={{ gpcc.base_dir }}/greenplum-cc-web-{{ gpcc_major_version }}.{{ gpcc_minor_version }} dest={{ gpcc.base_dir }}/greenplum-cc-web state=link owner=gpadmin group=gpadmin force=yes
-  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpcc_major_version|int <= 6 and gpcc_minor_version|int < 2 )
+  file: src={{ gpcc.base_dir }}/greenplum-cc-web-{{ gpcc.major_version }}.{{ gpcc.minor_version }} dest={{ gpcc.base_dir }}/greenplum-cc-web state=link owner=gpadmin group=gpadmin force=yes
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpcc.major_version|int <= 6 and gpcc.minor_version|int < 2 )
 
 #
 - name: Create symlink to {{ gpcc.base_dir }}/greenplum-cc
   become: true
   become_user: root
-  file: src={{ gpcc.base_dir }}/greenplum-cc-{{ gpcc_major_version }}.{{ gpcc_minor_version }} dest={{ gpcc.base_dir }}/greenplum-cc state=link owner=gpadmin group=gpadmin force=yes
+  file: src={{ gpcc.base_dir }}/greenplum-cc-{{ gpcc.major_version }}.{{ gpcc.minor_version }} dest={{ gpcc.base_dir }}/greenplum-cc state=link owner=gpadmin group=gpadmin force=yes
   when:
     - ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
-    - ( gpcc_major_version|int >= 6 and gpcc_minor_version|int >= 2 ) or ( gpcc_major_version|int >= 7 and gpcc_minor_version|int >= 0 )
+    - ( gpcc.major_version|int >= 6 and gpcc.minor_version|int >= 2 ) or ( gpcc.major_version|int >= 7 and gpcc.minor_version|int >= 0 )
 
 #
 - name: Remove temp directory for Greenplum Command Center Installer
-  file: path={{ gpdb.admin_home_dir }}/gpcc-tmp-install state=absent
+  file: path={{ gpdb.gpadmin_home_dir }}/gpcc-tmp-install state=absent
   changed_when: False
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True )
 
 #
 - name: Set prefix directory for installation path of Greenplum Command Center
   set_fact: gpcc_prefix_dir=/usr/local/greenplum-cc-web
-  when: gpcc_major_version|int <= 6 and gpcc_minor_version|int < 2
+  when: gpcc.major_version|int <= 6 and gpcc.minor_version|int < 2
 
 #
 - name: Set prefix directory for installation path of Greenplum Command Center
   set_fact: gpcc_prefix_dir=/usr/local/greenplum-cc
   when:
-    - ( gpcc_major_version|int >= 6 and gpcc_minor_version|int >= 2 ) or ( gpcc_major_version|int >= 7 and gpcc_minor_version|int >=  0 )
+    - ( gpcc.major_version|int >= 6 and gpcc.minor_version|int >= 2 ) or ( gpcc.major_version|int >= 7 and gpcc.minor_version|int >=  0 )
 
 
 # the gpcc_path.sh from the new installation does not have $GPPERFMONHOME
 - name: Add GPPERFMONHOME to gpcc_path.sh
   lineinfile:
-    dest: "{{ gpcc_prefix_dir }}-{{ gpcc_major_version }}.{{ gpcc_minor_version }}/gpcc_path.sh"
+    dest: "{{ gpcc_prefix_dir }}-{{ gpcc.major_version }}.{{ gpcc.minor_version }}/gpcc_path.sh"
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
     state: "{{ item.state }}"
   with_items:
-    - { regexp: '^export GPPERFMONHOME=', line: 'export GPPERFMONHOME={{ gpcc_prefix_dir }}-{{ gpcc_major_version }}.{{ gpcc_minor_version }}', state: present }
+    - { regexp: '^export GPPERFMONHOME=', line: 'export GPPERFMONHOME={{ gpcc_prefix_dir }}-{{ gpcc.major_version }}.{{ gpcc.minor_version }}', state: present }
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
 #
@@ -323,26 +323,26 @@
 #
 - name: Change the port of Greenplum Command Center Web Server
   lineinfile:
-    dest: "{{ gpdb.admin_home_dir }}/gpcc_config.ini"
+    dest: "{{ gpdb.gpadmin_home_dir }}/gpcc_config.ini"
     regexp: "web_port"
-    line: "webserver_port: {{ gpccws_port }}"
-  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['master'] ) and ( gpcc_setup_cc_sne == True and gpcc_major_version|int > 3 )
+    line: "webserver_port: {{ gpcc.gpccws_port }}"
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['master'] ) and ( gpcc_setup_cc_sne == True and gpcc.major_version|int > 3 )
 
 #
 - name: Change the name of web server in order to setup gpcc automatically
   lineinfile:
-    dest: "{{ gpdb.admin_home_dir }}/gpcmdr_setup.ini"
+    dest: "{{ gpdb.gpadmin_home_dir }}/gpcmdr_setup.ini"
     regexp: "web_port"
-    line: "webserver_port: {{ gpccws_port }}"
-  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['master'] ) and (  gpcc_setup_cc_sne == True and gpcc_major_version <= 3 )
+    line: "webserver_port: {{ gpcc.gpccws_port }}"
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['master'] ) and (  gpcc_setup_cc_sne == True and gpcc.major_version <= 3 )
 
 #
 - name: Setup Greenplum Command Center instance for version 3  and ealier versions
   changed_when: False
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc.base_dir }}/greenplum-cc-web/gpcc_path.sh && gpcmdr --setup --config_file {{ gpdb.admin_home_dir }}/gpcmdr_setup.ini )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc.base_dir }}/greenplum-cc-web/gpcc_path.sh && gpcmdr --setup --config_file {{ gpdb.gpadmin_home_dir }}/gpcmdr_setup.ini )
   args:
     executable: /bin/bash
-  when: inventory_hostname in groups['master'] and ( gpcc_setup_cc_sne == True and gpcc_major_version|int <= 3 )
+  when: inventory_hostname in groups['master'] and ( gpcc_setup_cc_sne == True and gpcc.major_version|int <= 3 )
 
 #
 #- name: Drop extension of metrics_collector if it exists
@@ -393,7 +393,7 @@
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_enable_gpperfmon -v on )
   register: gpperfmon_enabled
-  when: inventory_hostname in groups['master'] and gpcc_major_version < 7
+  when: inventory_hostname in groups['master'] and gpcc.major_version < 7
 
 #
 - name: Enable query metrics
@@ -455,7 +455,7 @@
 #  when: ( inventory_hostname in groups['standby'] and gpcc_setup_cc_sne == True )
 
 #
-- name: Start Greenplum Command Center {{ gpcc_major_version  }}.{{ gpcc_minor_version }}
+- name: Start Greenplum Command Center {{ gpcc.major_version  }}.{{ gpcc.minor_version }}
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_prefix_dir }}/gpcc_path.sh && gpcc start )
   args:

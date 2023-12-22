@@ -9,7 +9,7 @@
 #
 - name: Stop if GPDB software is not installed
   fail: msg="Greenplum Database software is not installed!"
-  when: gpdb_installed.stat.exists != True
+  when: gpdb_installed.stat.exists != True and gpdb_installed.stat.islnk != True
 
 #
 - name: Verify that database is up and running
@@ -72,7 +72,7 @@
 - name: Remove MADlib objects from the database
   become_user: gpadmin
   shell: |
-    . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/madlib/bin/madpack -s madlib -p greenplum -c gpadmin@{{ madlib_mdw_hostname }}:5432/{{ madlib_database_name }} uninstall <<EOF
+    . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/madlib/bin/madpack -s madlib -p greenplum -c gpadmin@{{ hostvars[groups['master'][0]]['ansible_hostname'] }}:5432/{{ madlib_database_name }} uninstall <<EOF
     y
     EOF
   register: madlib_extension_uninstalled

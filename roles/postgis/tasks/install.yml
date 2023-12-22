@@ -58,13 +58,13 @@
 
 #
 - name: Copy PostGIS gppkg file
-  copy: src=postgis-{{ postgis_prefix_major_version }}{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}-gp{{ postgis_gpdb_version }}-{{ postgis_os_version }}-x86_64.gppkg dest={{ gpdb.gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=postgis-{{ postgis_prefix_major_version }}{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}-gp{{ postgis_gpdb_version }}-{{ postgis_os_version }}-x86_64.gppkg dest={{ gpdb.admin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when: ( inventory_hostname in groups['master'] and 'postgis' not in postgis_installed.stdout )
 
 #
 - name: Install PostGIS gppkg package
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpdb.gpadmin_home_dir }}/postgis-{{ postgis_prefix_major_version }}{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}-gp{{ postgis_gpdb_version }}-{{ postgis_os_version }}-x86_64.gppkg )
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpdb.admin_home_dir }}/postgis-{{ postgis_prefix_major_version }}{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}-gp{{ postgis_gpdb_version }}-{{ postgis_os_version }}-x86_64.gppkg )
   register: postgis_package_installed
   ignore_errors: true
   until: postgis_package_installed is succeeded

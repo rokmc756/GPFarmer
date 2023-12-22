@@ -63,13 +63,13 @@
 
 #
 - name: Stop if DataScienceR gppkg package is not installed
-  fail: msg="PostGIS gppkg package is not installed!"
+  fail: msg="DataScienceR gppkg package is not installed!"
   when: ( inventory_hostname in groups['master'] and 'DataScienceR' not in dsr_installed.stdout )
 
 #
 - name: Uninstall the DataScienceR package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ dsr_package_name }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} DataScienceR )
   register: dsr_extension_uninstalled
   when: ( inventory_hostname in groups['master'] and 'DataScienceR' in dsr_installed.stdout )
 

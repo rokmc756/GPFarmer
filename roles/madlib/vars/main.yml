@@ -14,9 +14,7 @@ madlib_os_version: rhel8
 
 # madlib_arch_type: amd64
 madlib_arch_type: x86_64
-
 madlib_database_name: madlib_testdb
-madlib_mdw_hostname: rh8-master
 
 # madlib-1.21.0+1-gp6-rhel8-x86_64.tar.gz
 # madlib-1.20.0+1-gp6-rhel8-x86_64.tar.gz

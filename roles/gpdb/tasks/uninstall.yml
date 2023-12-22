@@ -1,6 +1,5 @@
 ---
 # Destroy Greenplum Database on Red Hat / CentOS / Rocky / Ubuntu / Debian
-
 # Uninstallation: {{ gpdb.base_dir }}/greenplum-db must not exist
 # Unlinkchange: {{ gpdb.base_dir }} /greenplum-db points to another directory
 #

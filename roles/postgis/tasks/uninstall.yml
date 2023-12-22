@@ -31,16 +31,14 @@
     postgis_package_name: "postgis-{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}"
     gppkg_remove_cmd: "gppkg -r"
     check_postgis_installed: "gppkg -q --all | grep postgis | cut -d - -f 1"
-  when:
-    - inventory_hostname in groups['master'] and postgis_gpdb_version|int <= 6
+  when: inventory_hostname in groups['master'] and postgis_gpdb_version|int <= 6
 
 #
 - set_fact:
     postgis_package_name: "postgis"
     gppkg_remove_cmd: "gppkg -a remove"
     check_postgis_installed: "gppkg query | grep postgis | awk '{print $1}'"
-  when:
-    - inventory_hostname in groups['master'] and postgis_gpdb_version|int >= 7
+  when: inventory_hostname in groups['master'] and postgis_gpdb_version|int >= 7
 
 #
 - name: Verify if PostGIS gppkg is installed
@@ -82,8 +80,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ postgis_database_name }} )
   register: postgis_database_dropped
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #
 - name: Uninstall the GPDB PostGIS Pakcage
@@ -95,15 +92,13 @@
   retries: 10
   delay: 30
   changed_when: postgis_database_installed == True
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #
 - name: Check if the directory of PostGIS Package is still remained
   stat: path={{ gpdb.base_dir }}/greenplum-db/postgis
   register: postgis_dir_remained
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
 #- name: Remove PostGIS Directory still remained
 #  file:
