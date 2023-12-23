@@ -230,6 +230,7 @@ $ make uninstall
 ```
 
 ## Planning
+Change CentOS and Rocky Linux repository into local mirror in Korea
 Converting Makefile.init from original project\
 Adding GPCR role\
 Adding SELinux role\
