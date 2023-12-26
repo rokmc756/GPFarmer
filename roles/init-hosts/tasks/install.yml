@@ -1,4 +1,30 @@
 ---
+#
+- name: Copy script to change package repository
+  become: true
+  template:
+    src: "{{ item }}.j2"
+    dest: "/root/{{ item }}"
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - "change-centos-mirror.sh"
+    - "change-rocklinux-mirror.sh"
+
+#
+- name: Change package repository of Naver for CentOS 7.x and lower versions
+  become: true
+  shell: "/root/change-centos-mirror.sh -n"
+  register: centos_mirror_changed
+  when: change_kr_mirror == true and ( ansible_distribution == 'CentOS' and hostvars[inventory_hostname].ansible_distribution_major_version|int == 7 )
+
+#
+- name: Change package repository of Naver for Rocky 8.x and higher versions
+  become: true
+  shell: "/root/change-rocklinux-mirror.sh -n"
+  register: centos_mirror_changed
+  when: change_kr_mirror == true and ( ansible_distribution == 'Rocky' and hostvars[inventory_hostname].ansible_distribution_major_version|int >= 8 )
 
 #
 - name: Install epel-release

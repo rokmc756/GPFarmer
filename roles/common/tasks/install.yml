@@ -84,6 +84,7 @@
   package:
     name: "{{ rhel_install_packages }}"
     state: present
+  ignore_errors: true
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
 
 #

@@ -1,5 +1,5 @@
 #
-- hosts: rh8-master,rh8-slave
+- hosts: rk8-master,rk8-slave
   become: true
   become_user: gpadmin
   roles:

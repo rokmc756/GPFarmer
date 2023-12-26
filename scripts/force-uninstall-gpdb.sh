@@ -1,10 +1,10 @@
 #!/bin/bash
 
-HOSTS_RANGE="51 55"
+# HOSTS_RANGE="51 55"
 # HOSTS_RANGE="61 65"
 # HOSTS_RANGE="171 175"
 # HOSTS_RANGE="71 75"
-# HOSTS_RANGE="81 85"
+HOSTS_RANGE="81 85"
 # HOSTS_RANGE="51 55"
 
 NETWORK_RANGE="192.168.0"
@@ -28,10 +28,11 @@ do
         rm -f /etc/sysctl.d/99-sysctl.conf
         systemctl stop cgconfig;
         systemctl disable cgconfig;
-        # userdel gpadmin
-        # rm -rf /home/gpadmin/.ssh;
-        # rm -rf /home/gpadmin/*;
-        # rm -rf /home/gpadmin;
+        rm -rf /home/gpadmin/.ssh;
+        rm -rf /home/gpadmin/*;
+        userdel gpadmin
+        rm -rf /home/gpadmin;
         rm -f /etc/cgconfig.conf;
+        rm -rf /root/.ssh
         "
 done
