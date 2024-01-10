@@ -1,15 +1,15 @@
 [all:vars]
 ssh_key_filename="id_rsa"
-remote_machine_username="gpadmin"
+remote_machine_username="jomoon"
 remote_machine_password="changeme"
 
 [master]
-rk8-master ansible_ssh_host=192.168.56.181
+rk8-master ansible_ssh_host=192.168.56.81
 
 [standby]
-rk8-slave ansible_ssh_host=192.168.56.182
+rk8-slave ansible_ssh_host=192.168.56.82
 
 [segments]
-rk8-node01 ansible_ssh_host=192.168.56.183
-rk8-node02 ansible_ssh_host=192.168.56.184
-rk8-node03 ansible_ssh_host=192.168.56.185
+rk8-node01 ansible_ssh_host=192.168.56.83
+rk8-node02 ansible_ssh_host=192.168.56.84
+rk8-node03 ansible_ssh_host=192.168.56.85

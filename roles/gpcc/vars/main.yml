@@ -11,11 +11,11 @@
 # greenplum-cc-web-6.8.4-gp6-ubuntu18.04-x86_64.zip
 
 gpdb:
-  major_version: 6
-  minor_version: 25.3
+  major_version: 7
+  minor_version: 0.0
   build_version:
-  metric_major_version: 6
-  metric_minor_version: 25.1
+  metric_major_version: 7
+  metric_minor_version: 0.0
   metric_build_version:
   base_dir: "/usr/local"
   data_dir: "/data"
@@ -23,10 +23,10 @@ gpdb:
   master_data_dir: "/data/master/gpseg-1"
 gpcc:
   base_dir: "/usr/local"
-  major_version: 6
-  minor_version: 9.1
+  major_version: 7
+  minor_version: 0.0
   metric_arch: 'x86_64'
-  os_name: 'rhel8'
+  os_name: 'el8'
   gpccws_port: 28080
   gpmon_password: "changeme"
   # metric_arch: 'amd64'

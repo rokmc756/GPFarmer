@@ -78,7 +78,7 @@
   with_items: "{{ groups['all'] }}"
   when: inventory_hostname in groups['master']
 
-# - debug: msg={{ gpperfmon_status }}
+- debug: msg={{ gpperfmon_status }}
 
 #
 - name: Add gpmon user to pg_hba.conf to authenticate Greenplum Command Center

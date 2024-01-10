@@ -11,7 +11,7 @@
 #
 - name: Reboot required ( Red Hat ) - Step 2
   shell: ( /bin/sleep 5 ; /sbin/shutdown -r now "Ansible updates triggered" ) &
-  async: 120
+  async: 1200
   poll: 0
   notify:
     - Waiting for server to come back after restart

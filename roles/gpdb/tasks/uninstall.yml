@@ -206,8 +206,8 @@
   debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }} uninstalled"
   when: gpdb_uninstall == True
   notify:
-    - restart system
-    - waiting for server to come back after reboot
+    - Restart system
+    - Waiting for server to come back after reboot
 
 # Status: Greenplum Database up and running
 # FIXME: update bash history

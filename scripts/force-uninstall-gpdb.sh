@@ -7,7 +7,7 @@
 HOSTS_RANGE="81 85"
 # HOSTS_RANGE="51 55"
 
-NETWORK_RANGE="192.168.0"
+NETWORK_RANGE="192.168.56"
 USER="root"
 
 for i in `seq $HOSTS_RANGE`
@@ -33,6 +33,5 @@ do
         userdel gpadmin
         rm -rf /home/gpadmin;
         rm -f /etc/cgconfig.conf;
-        rm -rf /root/.ssh
         "
 done
