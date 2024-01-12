@@ -34,13 +34,13 @@
 #
 - name: Set name for binary installer file (name includes build number)
   set_fact:
-    binary_installer_file: "{{ gpdb_package_name }}-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}-{{ gpdb_os_name }}-{{ gpdb_arch_name }}"
+    binary_installer_file: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}-{{ gpdb.os_name }}-{{ gpdb.arch_name }}"
   when: gpdb_build_version is defined and gpdb_build_version != None
 
 #
 - name: Set name for binary installer file (name does not include build number)
   set_fact:
-    binary_installer_file: "{{ gpdb_package_name }}-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}-{{ gpdb_os_name }}-{{ gpdb_arch_name }}"
+    binary_installer_file: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}-{{ gpdb.os_name }}-{{ gpdb.arch_name }}"
   when: gpdb_build_version is not defined or ( gpdb_build_version is defined and gpdb_build_version == None )
 
 #

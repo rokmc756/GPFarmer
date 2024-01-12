@@ -58,4 +58,4 @@
     - { file: "postgresql.conf", line: "ssl = on",           state: present }
   register: ssl_postgres_config
   when:
-    - ( inventory_hostname in groups['master'] and enable_ssl == True and gpdb_initdb_with_standby == True ) or ( inventory_hostname in groups['standby'] and gpdb_initdb_with_standby == True and enable_ssl == True )
+    - ( inventory_hostname in groups['master'] and enable_ssl == True and gpdb.initdb_with_standby == True ) or ( inventory_hostname in groups['standby'] and gpdb.initdb_with_standby == True and enable_ssl == True )

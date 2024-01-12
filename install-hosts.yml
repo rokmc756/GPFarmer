@@ -2,8 +2,8 @@
   become: true
   gather_facts: true
   roles:
+    - { role: init-hosts }
     - { role: gpdb }                 # Need to check if get_facts: true is required
-#    - { role: init-hosts }
 #    - { role: plcontainer }
 #    - { role: DataScienceR }
 #    - { role: DataSciencePython }

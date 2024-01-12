@@ -48,12 +48,12 @@
 
 #
 - name: Greenplum Database Installation
-  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }} installed"
+  debug: msg="Greenplum Database {{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }} installed"
   when: gpdb_install == True
 
 #
 - name: Greenplum Database Version switched
-  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }} is active"
+  debug: msg="Greenplum Database {{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }} is active"
   when: gpdb_linkchange == True
 
 # Status: Greenplum Database up and running

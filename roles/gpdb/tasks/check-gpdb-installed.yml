@@ -11,7 +11,7 @@
 
 #
 - name: Check if the Greenplum Database version is already installed
-  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
+  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}
   register: gpdb_dir_existed
 
 #

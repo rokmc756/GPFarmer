@@ -11,7 +11,7 @@
 
 #
 - name: Check if the GPDB is already installed
-  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ upgrade.gpdb_major_version }}.{{ upgrade.gpdb_minor_version }}
+  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}
   register: gpdb_installed
 
 #
@@ -22,14 +22,16 @@
 #
 - name: Set name for binary upgrade greenplum ( name includes build number )
   set_fact:
-    binary_installer_file: greenplum-db-{{ upgrade.gpdb_major_version }}.{{ upgrade.gpdb_minor_version }}.{{ upgrade.gpdb_build_version }}-{{ upgrade.gpdb_os_name }}-x86_64
-  when: gpdb_build_version is defined and gpdb_build_version != None
+    binary_upgrade_file: greenplum-db-{{ upgrade.major_version }}.{{ upgrade.gpdb_minor_version }}.{{ upgrade.build_version }}-{{ upgrade.os_name }}-x86_64
+    upgrade_path: greenplum-db-{{ upgrade.major_version }}.{{ upgrade.minor_version }}.{{ upgrade.build_version }}
+  when: upgrade.build_version is defined and upgrade.build_version != None
 
 #
 - name: Set name for binary installer file ( name does not include build number )
   set_fact:
-    binary_installer_file: greenplum-db-{{ upgrade.gpdb_major_version }}.{{ upgrade.gpdb_minor_version }}-{{ upgrade.gpdb_os_name }}-x86_64
-  when: gpdb_build_version is not defined or (gpdb_build_version is defined and gpdb_build_version == None)
+    binary_upgrade_file: greenplum-db-{{ upgrade.major_version }}.{{ upgrade.minor_version }}-{{ upgrade.os_name }}-x86_64
+    upgrade_path: greenplum-db-{{ upgrade.major_version }}.{{ upgrade.minor_version }}
+  when: upgrade.build_version is not defined or (upgrade.build_version is defined and upgrade.build_version == None)
 
 #
 - name: Set default values for run mode variables
@@ -47,7 +49,7 @@
 - name: Identify Greenplum Database Linkchange
   set_fact:
     gpdb_linkchange: True
-  when: ( gpdb_linked.stat.exists == True and gpdb_installed.stat.exists == True and gpdb_linked.stat.lnk_source != "{{ gpdb.base_dir }}/greenplum-db-{{ upgrade.gpdb_major_version }}.{{ upgrade.gpdb_minor_version }}" )
+  when: ( gpdb_linked.stat.exists == True and gpdb_installed.stat.exists == True and gpdb_linked.stat.lnk_source != "{{ gpdb.base_dir }}/greenplum-db-{{ upgrade.major_version }}.{{ upgrade.minor_version }}" )
 
 #
 - name: Check if database is running
@@ -73,31 +75,31 @@
 - debug: msg={{ database_shutdowned }}
 
 #
-- name: Copy Greenplum Database {{ gpdb_major_version }} {{ gpdb_binary_type }} rpm package
-  copy: src={{ binary_installer_file }}.rpm dest=/home/gpadmin/{{ binary_installer_file }}.rpm mode=0644 owner=gpadmin group=gpadmin
+- name: Copy Greenplum Database {{ upgrade.major_version }} {{ upgrade.binary_type }} package
+  copy: src={{ binary_upgrade_file }}.rpm dest=/home/gpadmin/{{ binary_upgrade_file }}.rpm mode=0644 owner=gpadmin group=gpadmin
   when:
     - gpdb_upgrade == True or gpdb_linkchange == True
-    - gpdb_binary_type == 'rpm'
+    - upgrade.binary_type == 'rpm'
 
 #
 - name: Install Greenplum Database software in {{ gpdb.base_dir }}
   yum:
-    name: /home/gpadmin/{{ binary_installer_file }}.rpm
+    name: /home/gpadmin/{{ binary_upgrade_file }}.rpm
     state: latest
   async: 60
   poll: 5
-  register: gpdb_software_install
+  register: gpdb_software_upgrade
   when:
     - gpdb_upgrade == True or gpdb_linkchange == True
-    - gpdb_binary_type == 'rpm'
+    - upgrade.binary_type == 'rpm'
 
-- debug: msg={{ gpdb_software_install }}
+- debug: msg={{ gpdb_software_upgrade }}
 
 #
 - name: Update the permissions for the new installation
   become: true
   file:
-    path: "{{ gpdb.base_dir }}/greenplum-db-{{ upgrade.gpdb_major_version }}.{{ upgrade.gpdb_minor_version }}"
+    path: "{{ gpdb.base_dir }}/{{ upgrade_path }}"
     state: directory
     recurse: yes
     owner: gpadmin
@@ -108,9 +110,9 @@
 #
 - name: Replace database directory
   replace:
-    path: "{{ gpdb.base_dir }}/greenplum-db-{{ upgrade.gpdb_major_version }}.{{ upgrade.gpdb_minor_version }}/greenplum_path.sh"
+    path: "{{ gpdb.base_dir }}/{{ upgrade_path }}/greenplum_path.sh"
     regexp: "^(.*)GPHOME=(.*)$"
-    replace: "GPHOME={{ gpdb.base_dir }}/greenplum-db-{{ upgrade.gpdb_major_version }}.{{ upgrade.gpdb_minor_version }}"
+    replace: "GPHOME={{ gpdb.base_dir }}/{{ upgrade_path }}"
     backup: yes
   when:
     - gpdb_upgrade == True or gpdb_linkchange == True
@@ -122,7 +124,7 @@
   replace:
     path: /home/gpadmin/.bashrc
     regexp: "^(.*)source(.*)$"
-    replace: "source {{ gpdb.base_dir }}/greenplum-db-{{ upgrade.gpdb_major_version }}.{{ upgrade.gpdb_minor_version }}/greenplum_path.sh"
+    replace: "source {{ gpdb.base_dir }}/{{ upgrade_path }}/greenplum_path.sh"
     backup: yes
   when:
     - gpdb_upgrade == True or gpdb_linkchange == True
@@ -139,14 +141,14 @@
 
 #
 - name: Uupdate the link to point to the newly installed GPDB version
-  file: path={{ gpdb.base_dir }}/greenplum-db src={{ gpdb.base_dir }}/greenplum-db-{{ upgrade.gpdb_major_version }}.{{ upgrade.gpdb_minor_version }} state=link
+  file: path={{ gpdb.base_dir }}/greenplum-db src={{ gpdb.base_dir }}/{{ upgrade_path }} state=link
   when:
     - gpdb_upgrade == True or gpdb_linkchange == True
 
 # the greenplum_path.sh from the new installation does not have $MASTER_DATA_DIRECTORY
 - name: Add MASTER_DATA_DIRECTORY to greenplum_path.sh
   lineinfile:
-    dest: "{{ gpdb.base_dir }}/greenplum-db-{{ upgrade.gpdb_major_version }}.{{ upgrade.gpdb_minor_version }}/greenplum_path.sh"
+    dest: "{{ gpdb.base_dir }}/{{ upgrade_path }}/greenplum_path.sh"
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
     state: "{{ item.state }}"
@@ -158,7 +160,7 @@
 #
 - name: Start Greenplum Database after upgrade
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstart -a )
+  shell: ( . {{ gpdb.base_dir }}/{{ upgrade_path }}/greenplum_path.sh && gpstart -a )
   async: 60
   poll: 5
   register: gpdb_started
