@@ -1,9 +1,9 @@
 #
-- hosts: rk8-master,rk8-slave
-  become: true
-  become_user: gpadmin
-  roles:
-    - { role: gpcc }
+#- hosts: rk8-master,rk8-slave
+#  become: true
+#  become_user: gpadmin
+#  roles:
+#    - { role: gpcc }
 
 #
 - hosts: all

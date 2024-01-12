@@ -85,3 +85,10 @@
 - name: Uninstall Greenplum Database
   import_tasks: uninstall.yml
   tags: uninstall
+
+#
+- name: Upgrade Greenplum Database
+  import_tasks: upgrade.yml
+  tags: upgrade
+
+

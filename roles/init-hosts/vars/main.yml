@@ -10,3 +10,6 @@ sudo_user_pass: "changeme"
 sudo_user_home_dir: "/home/{{ sudo_user }}"
 domain_name: "jtest.pivotal.io"
 change_kr_mirror: true
+
+gp7_hosts_num: "{{ groups['all'] | length -1 }}"
+

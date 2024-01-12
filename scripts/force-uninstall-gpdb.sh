@@ -1,13 +1,13 @@
 #!/bin/bash
-
+#
 # HOSTS_RANGE="51 55"
 # HOSTS_RANGE="61 65"
 # HOSTS_RANGE="171 175"
-# HOSTS_RANGE="71 75"
-HOSTS_RANGE="81 85"
+HOSTS_RANGE="71 75"
+# HOSTS_RANGE="81 85"
 # HOSTS_RANGE="51 55"
 
-NETWORK_RANGE="192.168.56"
+NETWORK_RANGE="192.168.0"
 USER="root"
 
 for i in `seq $HOSTS_RANGE`
@@ -18,6 +18,8 @@ do
         rpm -e --allmatches greenplum-db-5 > /dev/null 2>&1;
         rpm -e --allmatches greenplum-db-6 > /dev/null 2>&1;
         rpm -e --allmatches greenplum-db-7 > /dev/null 2>&1;
+        rpm -e --allmatches  open-source-greenplum-db-6-6.26.1-1.el7.x86_64 > /dev/null 2>&1;
+        rpm -e --allmatches greenplum-disaster-recovery > /dev/null 2>&1;
         dpkg -r greenplum-db-6 > /dev/null 2>&1;
         rm -rf /home/gpadmin/greenplum*.zip /home/gpadmin/greenplum*.rpm /data/master/* /data/primary/* /data/mirror/* \
         /usr/local/greenplum-db /usr/local/greenplum-db-4.* /usr/local/greenplum-db-5.* /usr/local/greenplum-db-7.* /usr/local/greenplum-db-6.* /tmp/.s.PGSQL.* \

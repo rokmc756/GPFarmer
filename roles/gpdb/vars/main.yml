@@ -14,15 +14,23 @@ gpdb_initdb_with_standby: True
 # greenplum-db-6.24.3-ubuntu18.04-amd64.deb
 gpdb_package_name: greenplum-db
 # gpdb_package_name: open-source-greenplum-db
-gpdb_major_version: 7
-gpdb_minor_version: 0.0
+gpdb_major_version: 6
+gpdb_minor_version: 23.1
 gpdb_build_version:
-gpdb_os_name: 'el8'
+gpdb_os_name: 'rhel7'
 gpdb_arch_name: 'x86_64'
 gpdb_binary_type: 'rpm'
 # gpdb_os_name: 'ubuntu18.04'
 # gpdb_arch_name: 'amd64'
 # gpdb_binary_type: 'deb'
+
+upgrade:
+  gpdb_major_version: 6
+  gpdb_minor_version: 23.3
+  gpdb_build_version:
+  gpdb_os_name: 'rhel7'
+  gpdb_arch_name: 'x86_64'
+  gpdb_binary_type: 'rpm'
 
 #
 common_gpdb_kernel_parameters:

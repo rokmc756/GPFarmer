@@ -67,16 +67,6 @@
   debug: msg="Nothing to do (Uo uninstall/delete link required)"
   when: gpdb_uninstall == False and gpdb_unlinkchange == False
 
-# Backup SRs directory
-#
-- name: Backup SRs directories
-  become_user: gpadmin
-  changed_when: False
-  shell: ( sudo rsync -arv /home/gpadmin/SRs/* /root/SRs/ )
-  register: backup_sr
-  ignore_errors: true
-  when: inventory_hostname in groups['master']
-
 # Database Uninstallation
 #
 - name: Check if database is running

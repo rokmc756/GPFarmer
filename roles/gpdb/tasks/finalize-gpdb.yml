@@ -46,16 +46,6 @@
 #    - "{{ groups['segments'] }}"
 #  when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == False and gpdb_initdb_with_standby == True )
 
-# Copy SRs directories
-- name: Copy SRs directory
-  become_user: gpadmin
-  changed_when: False
-  shell: ( sudo rsync -arv /root/SRs /home/gpadmin/ ; sudo chown -R gpadmin.gpadmin /home/gpadmin/SRs )
-  args:
-    executable: /bin/bash
-  register: copy_sr
-  when: inventory_hostname in groups['master']
-
 #
 - name: Greenplum Database Installation
   debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }} installed"
