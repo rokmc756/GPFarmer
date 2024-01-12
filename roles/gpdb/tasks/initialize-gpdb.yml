@@ -114,8 +114,6 @@
 
 #
 - name: Change permission of Greenplum Database directory
-  become: true
-  become_user: root
   file:
     path: "{{ item.dir }}"
     state: "{{ item.state }}"
@@ -124,13 +122,11 @@
     group: gpadmin
     recurse: "{{ item.recurse }}"
   with_items:
-    - { "state": "directory", "perm": "0755", "recurse": "yes", "dir": "{{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}" }
+    - { "state": "directory", "perm": "0755", "recurse": "yes", "dir": "{{ gpdb.base_dir }}/{{ install_path }}" }
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 #
 - name: Change permission of Greenplum Database link since above task does not work for link
-  become: true
-  become_user: root
   shell: "chown -R gpadmin:gpadmin {{ gpdb.base_dir }}/greenplum-db"
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
@@ -188,13 +184,11 @@
   poll: 5
   register: gpseginstall_installed
   # changed_when: False
-  when: inventory_hostname in groups['master'] and ( gpdb_initialized.stat.exists != True and gpdb.initdb_single == False and seg_serialized_install == True )
-
+  when: inventory_hostname in groups['master'] and ( gpdb_initialized.stat.exists != True and gpdb.initdb_single == False and gpdb.seg_serialized_install == True )
 
 # pip2 install pip
 # python -m pip install --upgrade pip
-#
-#python -m pip install psutil
+# python -m pip install psutil
 
 #
 - name: Initialize Greenplum Database Cluster
@@ -212,7 +206,6 @@
 - name: Initialize Greenplum Database Cluster with Standby Master
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -c /home/gpadmin/gpinitsystem_config -a {{ gpdb.spread_mirrors }} -h /home/gpadmin/hostfile -s {{ hostvars[groups['standby'][0]]['ansible_hostname'] }} )
-  # shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -c /home/gpadmin/gpinitsystem_config -h /home/gpadmin/hostfile -s {{ hostvars[groups['standby'][0]]['ansible_hostname'] }} )
   args:
     executable: /bin/bash
   async: 600
@@ -225,12 +218,12 @@
 - name: Add MASTER_DATA_DIRECTORY to greenplum_path.sh
   become_user: gpadmin
   lineinfile:
-    dest: "{{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}/greenplum_path.sh"
+    dest: "{{ gpdb.base_dir }}/{{ install_path }}/greenplum_path.sh"
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
     state: "{{ item.state }}"
   with_items:
-    - { regexp: '^export MASTER_DATA_DIRECTORY=', line: 'export MASTER_DATA_DIRECTORY={{ gpdb.data_dir }}/master/gpseg-1', state: present }
+    - { regexp: '^export MASTER_DATA_DIRECTORY=', line: 'export MASTER_DATA_DIRECTORY={{ gpdb.master_data_dir }}', state: present }
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_install == True or gpdb_linkchange == True )
 
 #

@@ -12,7 +12,6 @@
 
 #
 - name: Add IP address of FreeIPA Server
-  become: true
   lineinfile:
     dest: /etc/hosts
     line: "{{ freeipa.client_ipaddr }}  {{ freeipa.client_server }}  {{ ( freeipa.client_server | split('.') )[0] }}"
@@ -20,7 +19,6 @@
 
 #
 - name: Install FreeIPA Client Package for Red Hat / CentOS / Rocky Linux
-  become: true
   package:
     name: "{{ item }}"
     state: present
@@ -33,7 +31,6 @@
 
 #
 - name: Enable and start systemd service for nscld daemon
-  become: true
   systemd:
     daemon_reload: yes
     enabled: yes
@@ -44,7 +41,6 @@
 
 #
 - name: Install FreeIPA Client
-  become: yes
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
     ipa-client-install --domain={{ freeipa.client_domain }} --server={{ freeipa.client_server }} --enable-dns-updates --principal={{ freeipa.admin_user }} --password={{ freeipa.admin_passwd }} --no-ntp -U
@@ -55,7 +51,6 @@
 
 #
 - name: Add LDAP User into FreeIPA Server for Greenplum Database Authentication
-  become: yes
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit -p {{ freeipa.admin_user }}
     echo {{ item.passwd }} | ipa user-add {{ item.username }} --first={{ item.first_name }} --last={{ item.last_name }} --password
@@ -68,7 +63,6 @@
 
 #
 - name: Add service for Greenplum Database into FreeIPA Server
-  become: yes
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
     ipa service-add postgres/{{ freeipa.client_fqdn }}.{{ freeipa.client_domain }}@{{ freeipa.client_realm }}

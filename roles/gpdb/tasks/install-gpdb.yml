@@ -1,27 +1,5 @@
 # Database installation
 #
-#- name: Create empty variable for data directories
-#  set_fact: data_dirs=""
-#  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
-
-#
-#- name: Create empty variable for mirror data directories
-#  set_fact: mirror_data_dirs=""
-#  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
-
-#
-#- name: Loop over number for primary segments
-#  set_fact: data_dirs="{{ data_dirs | replace('^ *', '') }} {{ gpdb.data_dir }}/primary"
-#  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
-#  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
-
-#
-#- name: Loop over number for mirror segments
-#  set_fact: mirror_data_dirs="{{ mirror_data_dirs | replace('^ *', '') }} {{ gpdb.data_dir }}/mirror"
-#  with_sequence: start=1 end={{ gpdb_number_segments }} stride=1
-#  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_mirror_enable == True and gpdb_install == True )
-
-#
 - name: Copy Greenplum Database {{ gpdb.major_version }} {{ gpdb.binary_type }} file
   copy: src={{ binary_installer_file }}.{{ gpdb.binary_type }} dest=/home/gpadmin/{{ binary_installer_file }}.{{ gpdb.binary_type }} mode=0644 owner=gpadmin group=gpadmin
 
@@ -79,8 +57,8 @@
     - { regexp: '^agreed=', line: 'agreed=1', state: present, backrefs: yes }
     - { regexp: '^pathVerification=', line: 'pathVerification=1', state: present, backrefs: yes }
     - { regexp: '^validMigrateDecision=', line: 'validMigrateDecision=1', state: present, backrefs: yes }
-    - { regexp: '^user_specified_installPath=', line: 'user_specified_installPath={{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}', state: present, backrefs: yes }
-    - { regexp: '^installPath=', line: 'installPath={{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}', state: present, backrefs: yes }
+    - { regexp: '^user_specified_installPath=', line: 'user_specified_installPath={{ gpdb.base_dir }}/{{ install_path }}', state: present, backrefs: yes }
+    - { regexp: '^installPath=', line: 'installPath={{ gpdb.base_dir }}/{{ install_path }}', state: present, backrefs: yes }
     - { regexp: '^    agreed=', line: '    agreed=1', state: present, backrefs: yes }
   when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb.binary_type != 'rpm' and gpdb.binary_type != 'deb' )
 
@@ -119,7 +97,7 @@
 
 #
 - name: Check again if the Greenplum Database version is already installed
-  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}
+  stat: path={{ gpdb.base_dir }}/{{ install_path }}
   register: gpdb_installed_verify
 
 #

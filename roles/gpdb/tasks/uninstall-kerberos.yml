@@ -23,7 +23,6 @@
 
 #
 - name: Delete a service for rh7-master.jtest.pivotal.io
-  become: true
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
     ipa service-del postgres/{{ freeipa.client_fqdn }}.{{ freeipa.client_domain }}@{{ freeipa.client_realm }}
@@ -48,7 +47,6 @@
 
 #
 - name: Delte user in FreeIPA Server
-  become: yes
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
     echo {{ item.passwd }} | ipa user-del {{ item.username }}
@@ -60,7 +58,6 @@
 
 #
 - name: Uninstall FreeIPA Client
-  become: yes
   shell: ipa-client-install --uninstall -U
   args:
     executable: /bin/bash
@@ -92,7 +89,6 @@
 
 #
 - name: Remove keytab file
-  become: yes
   shell: |
     rm -f {{ freeipa.kerberos.client_gpdb_keytab }}  {{ freeipa.kerberos.client_keytab }}
   args:
@@ -102,7 +98,6 @@
 
 #
 - name: Uninstall FreeIPA Client Package
-  become: true
   package:
     name: ipa-client
     state: absent
@@ -121,7 +116,6 @@
 
 #
 - name: Remove hostname and ip address entries in /etc/hosts
-  become: true
   lineinfile:
     path: "{{ item.file }}"
     regexp: "{{ item.regexp }}"

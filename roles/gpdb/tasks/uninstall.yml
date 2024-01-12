@@ -25,7 +25,7 @@
 
 #
 - name: Check if the Greenplum Database version is already installed
-  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}{{ gpdb_build_version }}
+  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}
   register: gpdb_dir_existed
 
 #
@@ -36,9 +36,9 @@
 #
 - name: Set name for binary installer file (name includes build number)
   set_fact:
-    gpdb_dir: greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}
-    gpdb_package_name: greenplum-db-{{ gpdb_major_version }}
-    binary_installer_file: greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}.{{ gpdb_build_version }}-{{ gpdb_os_name }}-{{ gpdb_arch_name }}
+    gpdb_dir: greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}
+    gpdb_package_name: greenplum-db-{{ gpdb.major_version }}
+    binary_installer_file: greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.build_version }}-{{ gpdb.os_name }}-{{ gpdb.arch_name }}
 
 # Non-existent {{ gpdb.base_dir }}/greenplum-db is a new installation
 - name: Identify Greenplum Database Uninstallation
@@ -87,7 +87,6 @@
 
 #
 - name: Shutdown database
-  become: true
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
   async: 60
@@ -98,7 +97,6 @@
 
 #
 - name: Uninstall Greenplum Database software package
-  become: true
   package:
     name: "{{ gpdb_package_name }}"
     state: absent
@@ -108,18 +106,16 @@
 
 #
 - name: Delete Greenplum Database directories
-  become: true
   file:
     path: "{{ item }}"
     state: absent
   with_items:
     - "{{ gpdb.base_dir }}/greenplum-db"
-    - "{{ gpdb.base_dir }}/greenplum-db-{{ gpdb_major_version }}.{{ gpdb_minor_version }}"
+    - "{{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}"
    # when: ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
 #
 - name: Delete {{ gpdb.master_data_dir }} for master data directories
-  become: true
   file:
     path: "{{ gpdb.master_data_dir }}"
     state: absent
@@ -128,7 +124,6 @@
 
 #
 - name: Delete {{ gpdb.data_dir }} segment data directories
-  become: true
   file:
     path: "{{ gpdb.data_dir }}/{{ item }}"
     state: absent
@@ -141,7 +136,6 @@
 
 #
 - name: Delete gpinitsystem config file and hostlist file
-  become: true
   file:
     path: "{{ item }}"
     state: absent
@@ -149,12 +143,11 @@
     - "/home/gpadmin/gpinitsystem_config"
     - "/home/gpadmin/hostfile"
     - "/home/gpadmin/hostfile_all"
-    - "/home/gpadmin/{{ binary_installer_file }}.{{ gpdb_binary_type }}"
+    - "/home/gpadmin/{{ binary_installer_file }}.{{ gpdb.binary_type }}"
   when: inventory_hostname in groups['master'] and ( gpdb_uninstall == True or gpdb_unlinkchange == True )
 
 #
 #- name: Delete ssh public keys in all hosts
-#  become: true
 #  become_user: "{{ item }}"
 #  file:
 #    path: ~/.ssh/known_hosts
@@ -193,7 +186,7 @@
 
 #
 - name: Greenplum Database Uninstallation
-  debug: msg="Greenplum Database {{ gpdb_major_version }}.{{ gpdb_minor_version }} uninstalled"
+  debug: msg="Greenplum Database {{ gpdb.major_version }}.{{ gpdb.minor_version }} uninstalled"
   when: gpdb_uninstall == True
   notify:
     - Restart system

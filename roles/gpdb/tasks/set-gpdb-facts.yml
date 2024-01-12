@@ -8,7 +8,7 @@
 - name: Identify Greenplum Database Installation
   set_fact:
     gpdb_install: True
-  when: gpdb_dir_existed.stat.exists != True and  gpdb_dir_existed.stat.exists != True
+  when: gpdb_dir_existed.stat.exists != True and gpdb_dir_existed.stat.exists != True
 
 # If the link points to a different existing directory, it's a link change
 - name: Identify Greenplum Database Linkchange
@@ -35,12 +35,14 @@
 - name: Set name for binary installer file (name includes build number)
   set_fact:
     binary_installer_file: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}-{{ gpdb.os_name }}-{{ gpdb.arch_name }}"
+    install_path: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}"
   when: gpdb_build_version is defined and gpdb_build_version != None
 
 #
 - name: Set name for binary installer file (name does not include build number)
   set_fact:
     binary_installer_file: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}-{{ gpdb.os_name }}-{{ gpdb.arch_name }}"
+    install_path: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}"
   when: gpdb_build_version is not defined or ( gpdb_build_version is defined and gpdb_build_version == None )
 
 #

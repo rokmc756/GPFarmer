@@ -9,7 +9,7 @@ gpdb:
   admin_passwd: changeme
   package_name: greenplum-db
   major_version: 6
-  minor_version: 23.3
+  minor_version: 25.3
   build_version:
   os_name: 'rhel7'
   arch_name: 'x86_64'
@@ -30,7 +30,7 @@ gpdb:
 
 upgrade:
   major_version: 6
-  minor_version: 24.3
+  minor_version: 25.3
   build_version:
   os_name: 'rhel7'
   arch_name: 'x86_64'
