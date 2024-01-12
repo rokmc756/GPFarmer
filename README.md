@@ -13,7 +13,7 @@ Since it only provide install GPDB on a single host GPFarmer support multiple ho
 
 ## Supported GPDB and extension version
 * GPDB 4.x, 5.x, 6.x, 7.x
-* GPCC 4x, 6x
+* GPCC 4x, 6x, 7.x
 * GPTEXT 3.x.x
 * madlib 1.x, 2.x
 * postgis 2.x
@@ -48,7 +48,7 @@ Configure Yum / Local & EPEL Repostiory
 #### 1) Clone GPFarmer ansible playbook and go to that directory
 ```
 $ git clone https://github.com/rokmc756/GPFarmer
-$ cd gpfarmer
+$ cd GPFarmer
 ```
 
 #### 2) Configure password for sudo user in VMs where GPDB would be deployed
@@ -87,18 +87,25 @@ co7-node03 ansible_ssh_host=192.168.0.65
 ```
 $ vi role/gpdb/var/main.yml
 ---
-# number of Greenplum Database segments
-local_machine_user: "moonja"
-gpdb_number_segments: 4
-gpdb_mirror_enable: true
-gpdb_spread_mirrors: ""
-
-gpdb_major_version: 6
-gpdb_minor_version: 23
-gpdb_build_version: 0
-gpdb_os_name: 'rhel8'
-gpdb_arch_name: 'x86_64'
-gpdb_binary_type: 'rpm'
+gpdb:
+  master_data_dir: /data/master/gpseg-1
+  data_dir: /data
+  base_dir: /usr/local
+  admin_user: gpadmin
+  admin_passwd: changeme
+  package_name: greenplum-db
+  major_version: 6
+  minor_version: 25.3
+  build_version:
+  os_name: 'rhel7'
+  arch_name: 'x86_64'
+  binary_type: 'rpm'
+  number_segments: 4
+  mirror_enable: true
+  spread_mirrors: ""
+  initdb_single: False
+  initdb_with_standby: True
+  seg_serialized_install: False
 ~~ snip
 ```
 
@@ -200,8 +207,31 @@ $ vi setup-host.yml
 
 $ make install
 ```
+#### 10) Configure order of roles in GPFarmer anisble playbook and upgrade GPDB
+```
+$ vi install-hosts.yml
+---
+- hosts: all
+  become: true
+  become_user: gpadmin
+  roles:
+    - { role: gpdb }
 
-#### 10) Configure order of roles in GPFarmer anisble playbook and destroy GPDB and extentions
+$ vi roles/gpdb/var/main.yml
+~~ snip
+upgrade:
+  major_version: 6
+  minor_version: 25.3
+  build_version:
+  os_name: 'rhel7'
+  arch_name: 'x86_64'
+  binary_type: 'rpm'
+~~ snip
+
+$ make upgrade
+```
+
+#### 11) Configure order of roles in GPFarmer anisble playbook and destroy GPDB and extentions
 ```
 $ vi uninstall-host.yml
 ---
