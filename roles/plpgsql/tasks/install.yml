@@ -1,6 +1,6 @@
 ---
 
-# Install plr extention on Greenplum database
+# Install PL/PGSQL extention on Greenplum database
 
 - name: Check if the GPDB software is already installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
@@ -18,69 +18,68 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
-- name: Verify if plr gppkg is installed
+- name: Verify if PL/PGSQL gppkg is installed
   become_user: gpadmin
-  command: 'rpm -q plr --dbpath /usr/local/greenplum-db/share/packages/database'
+  command: 'rpm -q plpgsql --dbpath /usr/local/greenplum-db/share/packages/database'
   ignore_errors: true
-  register: plr_installed
+  register: plpgsql_installed
   changed_when: False
   when: inventory_hostname in groups['master']
 
-- name: Stop if plr gppkg package is not installed
-  fail: msg="plr gppkg package is not installed!"
+- name: Stop if PL/PGSQL gppkg package is not installed
+  fail: msg="plpgsql gppkg package is not installed!"
   when:
     - inventory_hostname in groups['master']
-    - "'package plr is not installed' not in plr_installed.stdout"
+    - "'package plpgsql is not installed' not in plpgsql_installed.stdout"
 
-- name: Copy plr gppkg file
-  copy: src=plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_rhel_version }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+- name: Copy PL/PGSQL gppkg file
+  copy: src=plpgsql-{{ plpgsql.prefix_major_version }}{{ plpgsql.major_version }}.{{ plpgsql.minor_version }}.{{ plpgsql.patch_version }}-{{ plpgsql.gpdb_version }}-{{ plpgsql.os_version }}-x86_64.gppkg dest={{ gpdb.gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
     - inventory_hostname in groups['master']
-    - "'package plr is not installed' in plr_installed.stdout"
+    - "'package plpgsql is not installed' in plpgsql_installed.stdout"
 
-- name: Install plr package
+- name: Install PL/PGSQL package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-{{ plr_gpdb_version }}-{{ plr_rhel_version }}-x86_64.gppkg )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpdb.gpadmin_home_dir }}/plpgsql-{{ plpgsql.prefix_major_version }}{{ plpgsql.major_version }}.{{ plpgsql.minor_version }}.{{ plpgsql.patch_version }}-{{ plpgsql.gpdb_version }}-{{ plpgsql.os_version }}-x86_64.gppkg )
   when:
     - inventory_hostname in groups['master']
-    - "'package plr is not installed' in plr_installed.stdout"
+    - "'package plpgsql is not installed' in plpgsql_installed.stdout"
 
-- name: Restart GPDB and apply parameters for plr in greenplum_path.sh
+- name: Restart GPDB and apply parameters for PL/PGSQL in greenplum_path.sh
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
-
-- name: Verify that database for plr is installed
-  become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plr_database_name }}'" )
-  register: plr_database_installed
   when: inventory_hostname in groups['master']
 
-- name: Create database for plr
+- name: Verify that database for PL/PGSQL is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plr_database_name }} )
-  register: plr_database_created
-  when:
-    - inventory_hostname in groups['master']
-    - "'100' not in plr_database_installed.stdout"
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plpgsql.database_name }}'" )
+  register: plpgsql_database_installed
+  when: inventory_hostname in groups['master']
 
-- name: Enabling PL/R Language Support for GPDB 4.x
+- name: Create database for PL/PGSQL
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createlang plr -d {{ plr_database_name }} )
-  register: plr_language_support_enabled
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plpgsql.database_name }} )
+  register: plpgsql_database_created
   when:
     - inventory_hostname in groups['master']
-    - plr_gpdb_version == "GPDB4.3"
-    - "'100' not in plr_database_installed.stdout"
+    - "'100' not in plpgsql_database_installed.stdout"
 
-- name: Enabling PL/R Language Support for GPDB 6.x
+- name: Enabling PL/PGSQL Language Support for GPDB 4.x
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c "CREATE EXTENSION plr;" )
-  register: plr_language_support_enabled
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createlang plpgsql -d {{ plpgsql.database_name }} )
+  register: plpgsql_language_support_enabled
   when:
     - inventory_hostname in groups['master']
-    - plr_gpdb_version == "gpdb6"
-    - "'100' not in plr_database_installed.stdout"
+    - plpgsql.gpdb_version == "GPDB4.3"
+    - "'100' not in plpgsql_database_installed.stdout"
+
+- name: Enabling PL/PGSQL Language Support for GPDB 6.x
+  become_user: gpadmin
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plpgsql.database_name }} -c "CREATE EXTENSION plpgsql;" )
+  register: plpgsql_language_support_enabled
+  when:
+    - inventory_hostname in groups['master']
+    - plpgsql.gpdb_version == "gpdb6"
+    - "'100' not in plpgsql_database_installed.stdout"

@@ -1,7 +1,10 @@
 ---
-major_version: 2
-minor_version: 3
-build_version: 1
+gpdb:
+  gpadmin_home_dir: '/home/gpadmin'
 
-rhel_version: 'rhel7'
-gpadmin_home_dir: '/home/gpadmin'
+gpcopy:
+  major_version: 2
+  minor_version: 3
+  build_version: 1
+  os_version: 'rhel7'
+

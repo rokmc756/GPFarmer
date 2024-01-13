@@ -31,54 +31,54 @@
 
 #
 - name: Stop if MADLib extention software is already installed
-  fail: msg="madlib extention software is already installed!"
+  fail: msg="MADLib extention software is already installed!"
   when: inventory_hostname in groups['master'] and madlib_installed.stat.exists == True
 
 #
 - set_fact:
     gppkg_install_cmd: "gppkg -i"
     madpack_cmd: "madlib/bin/madpack"
-    madlib_package_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-gp{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
-    madlib_package_bin_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-gp{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}.gppkg
-    madlib_directory_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-gp{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
+    madlib_package_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}+{{ madlib.build_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
+    madlib_package_bin_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}+{{ madlib.build_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}.gppkg
+    madlib_directory_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}+{{ madlib.build_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
   when:
     - inventory_hostname in groups['master']
-    - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and madlib_major_version <= 1
+    - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and madlib.major_version <= 1
 
 #
 - set_fact:
     gppkg_install_cmd: "gppkg -a install"
     # madpack_cmd: "madlib/Versions/2.0.0/bin/madpack"
     madpack_cmd: "madlib/bin/madpack"
-    madlib_package_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}-gp{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
-    madlib_package_bin_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}-gp{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}.gppkg.tar.gz
-    madlib_directory_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}-gp{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
+    madlib_package_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
+    madlib_package_bin_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}.gppkg.tar.gz
+    madlib_directory_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
   when:
     - inventory_hostname in groups['master']
-    - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and madlib_major_version >= 2
+    - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and madlib.major_version >= 2
 
 #
 - set_fact:
     gppkg_install_cmd: "gppkg -i"
     madpack_cmd: "madlib/bin/madpack"
-    madlib_package_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-gp{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
-    madlib_package_bin_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-gp{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}.gppkg
-    madlib_directory_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-gp{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
+    madlib_package_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}+{{ madlib.build_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
+    madlib_package_bin_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}+{{ madlib.build_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}.gppkg
+    madlib_directory_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}+{{ madlib.build_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
   when:
     - inventory_hostname in groups['master']
-    - ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and madlib_major_version <= 1
+    - ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and madlib.major_version <= 1
 
 #
 - set_fact:
     gppkg_install_cmd: "gppkg -a install"
     # madpack_cmd: "madlib/Versions/2.0.0/bin/madpack"
     madpack_cmd: "madlib/bin/madpack"
-    madlib_package_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}+{{ madlib_build_version }}-gp{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
-    madlib_package_bin_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}-gp{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}.gppkg.tar.gz
-    madlib_directory_name: madlib-{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}-gp{{ madlib_gpdb_version }}-{{ madlib_os_version }}-{{ madlib_arch_type }}
+    madlib_package_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}+{{ madlib.build_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
+    madlib_package_bin_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}.gppkg.tar.gz
+    madlib_directory_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
   when:
     - inventory_hostname in groups['master']
-    - ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and madlib_major_version >= 2
+    - ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and madlib.major_version >= 2
 
 #
 - name: Copy MADLib extention tar.gz file
@@ -108,7 +108,7 @@
 #
 - name: Verify that database for MADLib Extention is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ madlib_database_name }}'" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ madlib.database_name }}'" )
   args:
     executable: /bin/bash
   register: madlib_database_installed
@@ -117,7 +117,7 @@
 #
 - name: Create database for MADLib
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ madlib_database_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ madlib.database_name }} )
   args:
     executable: /bin/bash
   register: madlib_database_created
@@ -126,7 +126,7 @@
 #
 - name: Add MADLib function
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/{{ madpack_cmd }} -s madlib -p greenplum -c gpadmin@{{ hostvars[groups['master'][0]]['ansible_hostname'] }}:5432/{{ madlib_database_name }} install )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/{{ madpack_cmd }} -s madlib -p greenplum -c gpadmin@{{ hostvars[groups['master'][0]]['ansible_hostname'] }}:5432/{{ madlib.database_name }} install )
   args:
     executable: /bin/bash
   register: madlib_function_added
@@ -139,7 +139,7 @@
 # Need to debug why errors occurs in the part items
 #- name: Check if MADLib function are added
 #  become_user: gpadmin
-#  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/madlib/bin/madpack -s madlib -p greenplum -c gpadmin@{{ hostvars[groups['master'][0]]['ansible_hostname'] }}:5432/{{ madlib_database_name }} install-check )
+#  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/madlib/bin/madpack -s madlib -p greenplum -c gpadmin@{{ hostvars[groups['master'][0]]['ansible_hostname'] }}:5432/{{ madlib.database_name }} install-check )
 #  args:
 #    executable: /bin/bash
 #  register: madlib_function_checked

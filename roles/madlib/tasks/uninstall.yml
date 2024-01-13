@@ -31,22 +31,22 @@
 - set_fact:
     gppkg_remove_cmd: "gppkg -r"
     check_madlib_installed: "gppkg -q --all | grep madlib | cut -d - -f 1"
-    madlib_package_name: madlib-{{ madlib_prefix_major_version }}{{ madlib_major_version }}.{{ madlib_minor_version }}.{{ madlib_patch_version }}
-  when: inventory_hostname in groups['master'] and madlib_gpdb_version|int <= 6 and ( madlib_os_version | regex_replace('[^0-9]','')|int <= 8 )
+    madlib_package_name: madlib-{{ madlib.prefix_major_version }}{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}
+  when: inventory_hostname in groups['master'] and madlib.gpdb_version|int <= 6 and ( madlib_os_version | regex_replace('[^0-9]','')|int <= 8 )
 
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -r"
     check_madlib_installed: "gppkg -q --all | grep madlib | cut -d - -f 1"
-    madlib_package_name: madlib-{{ madlib_prefix_major_version }}{{ madlib_major_version }}.{{ madlib_minor_version }}-{{ madlib_patch_version }}
-  when: inventory_hostname in groups['master'] and madlib_gpdb_version|int >= 7 and ( madlib_os_version | regex_replace('[^0-9]','')|int >= 8 )
+    madlib_package_name: madlib-{{ madlib.prefix_major_version }}{{ madlib.major_version }}.{{ madlib.minor_version }}-{{ madlib.patch_version }}
+  when: inventory_hostname in groups['master'] and madlib.gpdb_version|int >= 7 and ( madlib.os_version | regex_replace('[^0-9]','')|int >= 8 )
 
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -a remove"
     check_madlib_installed: "gppkg query | grep madlib | awk '{print $1}'"
-    madlib_package_name: madlib{{ madlib_prefix_major_version }}{{ madlib_major_version }}.{{ madlib_minor_version }}
-  when: inventory_hostname in groups['master'] and madlib_gpdb_version|int >= 7 and ( madlib_os_version | regex_replace('[^0-9]','')|int >= 8 )
+    madlib_package_name: madlib{{ madlib.prefix_major_version }}{{ madlib.major_version }}.{{ madlib.minor_version }}
+  when: inventory_hostname in groups['master'] and madlib.gpdb_version|int >= 7 and ( madlib.os_version | regex_replace('[^0-9]','')|int >= 8 )
 
 #
 - name: Verify if MADLib gppkg is installed
@@ -72,7 +72,7 @@
 - name: Remove MADlib objects from the database
   become_user: gpadmin
   shell: |
-    . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/madlib/bin/madpack -s madlib -p greenplum -c gpadmin@{{ hostvars[groups['master'][0]]['ansible_hostname'] }}:5432/{{ madlib_database_name }} uninstall <<EOF
+    . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/madlib/bin/madpack -s madlib -p greenplum -c gpadmin@{{ hostvars[groups['master'][0]]['ansible_hostname'] }}:5432/{{ madlib.database_name }} uninstall <<EOF
     y
     EOF
   register: madlib_extension_uninstalled
@@ -82,7 +82,7 @@
 #
 - name: Drop database for MADlib
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ madlib_database_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ madlib.database_name }} )
   register: madlib_database_dropped
   when: ( inventory_hostname in groups['master'] and '100' in madlib_database_installed.stdout )
 

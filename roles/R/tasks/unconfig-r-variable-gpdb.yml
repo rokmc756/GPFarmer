@@ -1,4 +1,3 @@
-
 #
 - name: Delete lines of R variables in "$GPHOME"/greenplum_path.sh
   become: true
@@ -19,7 +18,7 @@
 - name: Recursively change ownership of R libraary directory for root user
   become: true
   file:
-    path: /opt/R/{{ r_major_version }}.{{ r_minor_version }}.{{ r_patch_version }}/lib/R/{{ item }}
+    path: /opt/R/{{ r.major_version }}.{{ r.minor_version }}.{{ r.patch_version }}/lib/R/{{ item }}
     state: directory
     recurse: yes
     owner: root
@@ -27,4 +26,5 @@
   with_items:
     - "doc"
     - "library"
-  when: with_gpdb == true
+  when: r.with_gpdb == true
+

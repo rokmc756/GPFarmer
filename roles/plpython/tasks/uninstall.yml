@@ -12,13 +12,13 @@
 
 - name: Verify that database for plpython is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plpython_database_name }}'" )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plpython.database_name }}'" )
   register: plpython_database_installed
   when: inventory_hostname in groups['master']
 
 - name: Drop database for plpython
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plpython_database_name }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plpython.database_name }} )
   register: plpython_database_deleted
   when:
     - inventory_hostname in groups['master']
@@ -29,5 +29,5 @@
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
+

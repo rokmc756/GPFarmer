@@ -1,9 +1,11 @@
 ---
-pljava_prefix_major_version:
-pljava_major_version: 2
-pljava_minor_version: 0
-pljava_patch_version: 4
-pljava_gpdb_version: gp6
-pljava_rhel_version: rhel7
-pljava_database_name: testdb
-pljava_schema_name: test_scheme
+plpgsql:
+  prefix_major_version: ""
+  major_version: 2
+  minor_version: 0
+  patch_version: 4
+  gpdb_version: gp6
+  os_version: rhel7
+  database_name: plpgsql_testdb
+  schema_name: plpgsql_test_scheme
+

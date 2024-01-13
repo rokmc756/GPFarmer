@@ -10,14 +10,14 @@
 
 #
 - name: Copy minio client binary from local directory, roles/minio/files
-  copy: src=mc-{{ minio_release_date }}.tar.gz dest=/tmp/mc-{{ minio_release_date }}.tar.gz mode=0644 owner=root group=root
+  copy: src=mc-{{ minio.release_date }}.tar.gz dest=/tmp/mc-{{ minio.release_date }}.tar.gz mode=0644 owner=root group=root
   register: mc_local_copy
   when: mc_bin_exists.stat.exists == false and minio_download == false
 
 #
 - name: Unarchive minio client gzip file
   unarchive:
-    src: "/tmp/mc-{{ minio_release_date }}.tar.gz"
+    src: "/tmp/mc-{{ minio.release_date }}.tar.gz"
     dest: "/usr/local/bin"
     owner: "root"
     group: "root"
@@ -66,10 +66,10 @@
 - name: Add minio server to client config
   become: yes
   become_user: "{{ minio_user }}"
-  command: "{{ minio_client_bin }} --insecure config host add minio https://{{ ansible_host | default('localhost') }}:{{ minio_port }} {{ minio_access_key }} {{ minio_secret_key }}"
+  command: "{{ minio_client_bin }} --insecure config host add minio https://{{ ansible_host | default('localhost') }}:{{ minio_port }} {{ minio.access_key }} {{ minio.secret_key }}"
   args:
     creates: "{{ minio_client_config }}"
-  # command: "{{ minio_client_bin }} config host add minio http://{{ ansible_host | default('localhost') }}:{{ minio_port }} {{ minio_access_key }} {{ minio_secret_key }}"
+  # command: "{{ minio_client_bin }} config host add minio http://{{ ansible_host | default('localhost') }}:{{ minio_port }} {{ minio.access_key }} {{ minio.secret_key }}"
 
 #
 - block:

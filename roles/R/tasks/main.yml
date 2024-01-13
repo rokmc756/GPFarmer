@@ -9,34 +9,35 @@
 - name: Install R
   import_tasks: install-r.yml
   tags: install
-  when: use_r == true
+  when: r.use_r == true
 
 #
 - name: Configure R variables for GPDB
   import_tasks: config-r-variable-gpdb.yml
   tags: config
-  when: use_r == true
+  when: r.use_r == true
 
 #
 - name: Install R Studio
   import_tasks: install-r-studio.yml
   tags: install
-  when: use_r_studio == true
+  when: r.use_r_studio == true
 
 #
 - name: Uninstall R
   import_tasks: uninstall-r.yml
   tags: uninstall
-  when: use_r == true
+  when: r.use_r == true
 
 #
 - name: Unconfigure R variables for GPDB
   import_tasks: unconfig-r-variable-gpdb.yml
   tags: unconfig
-  when: use_r == true
+  when: r.use_r == true
 
 #
 - name: Uninstall R Studio
   import_tasks: uninstall-r-studio.yml
   tags: uninstall
-  when: use_r_studio == true
+  when: r.use_r_studio == true
+

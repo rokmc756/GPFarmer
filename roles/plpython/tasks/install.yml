@@ -28,13 +28,13 @@
 
 - name: Verify that database for plpython is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plpython_database_name }}'" )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plpython.database_name }}'" )
   register: plpython_database_installed
   when: inventory_hostname in groups['master']
 
 - name: Create database for plpython
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plpython_database_name }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plpython.database_name }} )
   register: plpython_database_created
   when:
     - inventory_hostname in groups['master']
@@ -42,9 +42,9 @@
 
 - name: Enabling PL/Python Language Support for GPDB 6.x
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plpython_database_name }} -c "CREATE EXTENSION plpythonu;" )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plpython.database_name }} -c "CREATE EXTENSION plpythonu;" )
   register: plpython_language_support_enabled
   when:
     - inventory_hostname in groups['master']
-    - plpython_gpdb_version == "gp6"
+    - plpython.gpdb_version == "gp6"
     - "'100' not in plpython_database_installed.stdout"

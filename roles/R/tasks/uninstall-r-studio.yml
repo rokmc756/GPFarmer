@@ -86,4 +86,3 @@
   shell: rm -f /tmp/posit-code-signing.key
   register: public_key_deleted
 
-

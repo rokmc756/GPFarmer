@@ -7,36 +7,35 @@
   when: ansible_os_family != 'RedHat' or  ansible_os_family != 'CentOS' or  ansible_os_family != 'Rocky'
 
 #
-- name: Configure firewall for MinIO
+- name: Configure firewall for MinIO on {{ ansible_distribution }}
   import_tasks: firewalld.yml
   tags: install
   when: open_firewall
 
 #
-- name: Enable SSL
+- name: Enable SSL on {{ ansible_distribution }}
   import_tasks: enable-ssl.yml
   tags: install
   when: enable_ssl
 
 #
-- name: Install MinIO
+- name: Install MinIO on {{ ansible_distribution }}
   import_tasks: minio.yml
   tags: install
   when: install_minio
 
 #
-- name: Install Nginx
+- name: Install Nginx on {{ ansible_distribution }}
   import_tasks: nginx.yml
   tags: install
   when: use_nginx
 
 #
-- name: Uninstallation of MinIO for Red Hat / CentOS / Rocky
+- name: Uninstall MinIO on {{ ansible_distribution }}
   import_tasks: uninstall.yml
   tags: uninstall
 
 #
-- name: Upgrade of MinIO for Red Hat / CentOS / Rocky
+- name: Upgrade MinIO on {{ ansible_distribution }}
   import_tasks: upgrade.yml
   tags: upgrade
-

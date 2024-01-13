@@ -1,10 +1,4 @@
 package_download_path : "/tmp"
-#gpdb:
-#  master_data_dir: /data/master/gpseg-1
-#  data_dir: /data
-#  base_dir: /usr/local
-#  admin_user: gpadmin
-#  admin_passwd: changeme
 freeipa:
   admin_user: admin
   admin_passwd: changeme

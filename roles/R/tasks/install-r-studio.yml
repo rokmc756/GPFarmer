@@ -48,6 +48,7 @@
   become: true
   debug: msg={{ r_studio_installed }}
 
+
 # By default, the Package Manager settings are controlled by a configuration file located at /etc/rstudio-pm/rstudio-pm.gcfg.
 # At a minimum, complete the Address property within the Server section.
 # Do this by specifying the URL used to access Package Manager:

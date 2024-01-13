@@ -22,13 +22,13 @@
 #
 - name: Verify that database for PostGIS extention is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ postgis_database_name }}'" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ postgis.database_name }}'" )
   register: postgis_database_installed
   when: inventory_hostname in groups['master']
 
 #
 - set_fact:
-    postgis_package_name: "postgis-{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}"
+    postgis_package_name: "postgis-{{ postgis.major_version }}.{{ postgis.minor_version }}{{ postgis.patch_version }}"
     gppkg_remove_cmd: "gppkg -r"
     check_postgis_installed: "gppkg -q --all | grep postgis | cut -d - -f 1"
   when: inventory_hostname in groups['master'] and postgis_gpdb_version|int <= 6
@@ -63,7 +63,7 @@
 #
 - name: Drop Extensions of PostGIS
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis_database_name }} -c "{{ item }}" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis.database_name }} -c "{{ item }}" )
   register: postgis_database_installed
   with_items:
     - "DROP EXTENSION IF EXISTS address_standardizer_data_us;"
@@ -78,14 +78,14 @@
 #
 - name: Drop database for PostGIS
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ postgis_database_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ postgis.database_name }} )
   register: postgis_database_dropped
   when: inventory_hostname in groups['master']
 
 #
 - name: Uninstall the GPDB PostGIS Pakcage
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ postgis_package_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ postgis.package_name }} )
   register: postgis_package_uninstalled
   ignore_errors: true
   until: postgis_package_uninstalled is succeeded

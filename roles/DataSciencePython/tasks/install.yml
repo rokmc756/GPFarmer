@@ -35,28 +35,28 @@
 - set_fact:
     gppkg_install_cmd: "gppkg -i"
     check_dspython_installed: "gppkg -q --all | grep DataSciencePython | cut -d . -f 1 | sed 's/[0-9]$//g'"
-    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}-{{ dspython_patch_version }}-gp{{ dspython_gpdb_version }}-{{ dspython_os_version }}_{{ dspython_arch_type }}.gppkg
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and dspython_gpdb_version|int <= 6
+    dspython_package_name: DataSciencePython{{ dspython.prefix_major_version }}{{ dspython.major_version }}.{{ dspython.minor_version }}-{{ dspython.patch_version }}-gp{{ dspython.gpdb_version }}-{{ dspython.os_version }}_{{ dspython.arch_type }}.gppkg
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and dspython.gpdb_version|int <= 6
 
 - set_fact:
     gppkg_install_cmd: "gppkg -a install"
     check_dspython_installed: "gppkg query | grep DataSciencePython | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
-    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}-{{ dspython_patch_version }}-gp{{ dspython_gpdb_version }}-{{ dspython_os_version }}_{{ dspython_arch_type }}.gppkg
-  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and dspython_gpdb_version|int >= 7
+    dspython_package_name: DataSciencePython{{ dspython.prefix_major_version }}{{ dspython.major_version }}.{{ dspython.minor_version }}-{{ dspython.patch_version }}-gp{{ dspython.gpdb_version }}-{{ dspython.os_version }}_{{ dspython.arch_type }}.gppkg
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and dspython.gpdb_version|int >= 7
 
 #
 - set_fact:
     gppkg_install_cmd: "gppkg -i"
     check_dspython_installed: "gppkg -q --all | grep DataSciencePython | cut -d . -f 1 | sed 's/[0-9]$//g'"
-    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}.{{ dspython_patch_version }}-gp{{ dspython_gpdb_version }}-{{ dspython_os_version }}_{{ dspython_arch_type }}.gppkg
-  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and dspython_gpdb_version <= 6
+    dspython_package_name: DataSciencePython{{ dspython.prefix_major_version }}{{ dspython.major_version }}.{{ dspython.minor_version }}.{{ dspython.patch_version }}-gp{{ dspython.gpdb_version }}-{{ dspython.os_version }}_{{ dspython.arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and dspython.gpdb_version <= 6
 
 #
 - set_fact:
     gppkg_install_cmd: "gppkg -a install"
     check_dspython_installed: "gppkg query | grep DataSciencePython | awk '{print $1}' | sed 's/[0-9]*//g' | sed 's/.$//g'"
-    dspython_package_name: DataSciencePython{{ dspython_prefix_major_version }}{{ dspython_major_version }}.{{ dspython_minor_version }}-{{ dspython_patch_version }}-gp{{ dspython_gpdb_version }}-{{ dspython_os_version }}_{{ dspython_arch_type }}.gppkg
-  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and dspython_gpdb_version >= 7
+    dspython_package_name: DataSciencePython{{ dspython.prefix_major_version }}{{ dspython.major_version }}.{{ dspython.minor_version }}-{{ dspython.patch_version }}-gp{{ dspython.gpdb_version }}-{{ dspython.os_version }}_{{ dspython.arch_type }}.gppkg
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and dspython.gpdb_version >= 7
 
 #
 - name: Verify if DataSciencePython gppkg is installed
@@ -110,7 +110,7 @@
 #
 - name: Verify that database for DataSciencePython is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ dspython_database_name }}'" )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ dspython.database_name }}'" )
   args:
     executable: /bin/bash
   register: dspython_database_installed
@@ -119,7 +119,7 @@
 #
 - name: Create database for dspython
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ dspython_database_name }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ dspython.database_name }} )
   args:
     executable: /bin/bash
   register: dspython_database_created

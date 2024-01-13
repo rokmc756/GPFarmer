@@ -14,14 +14,14 @@
 #
 - name: Verify that database for DataScienceR is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ dsr_database_name }}'" )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ dsr.database_name }}'" )
   register: dsr_database_installed
   when: inventory_hostname in groups['master']
 
 #
 - name: Drop database for DataScienceR
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ dsr_database_name }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ dsr.database_name }} )
   register: dsr_database_deleted
   when: ( inventory_hostname in groups['master'] and '100' in dsr_database_installed.stdout )
 
@@ -29,22 +29,22 @@
 - set_fact:
     gppkg_remove_cmd: "gppkg -r"
     check_dsr_installed: "gppkg -q --all | grep DataScienceR | cut -d - -f 1"
-    dsr_package_name: DataScienceR-{{ dsr_prefix_major_version }}{{ dsr_major_version }}.{{ dsr_minor_version }}.{{ dsr_patch_version }}
-  when: inventory_hostname in groups['master'] and dsr_gpdb_version|int <= 6 and ( dsr_os_version | regex_replace('[^0-9]','')|int <= 8 )
+    dsr_package_name: DataScienceR-{{ dsr.prefix_major_version }}{{ dsr.major_version }}.{{ dsr.minor_version }}.{{ dsr.patch_version }}
+  when: inventory_hostname in groups['master'] and dsr.gpdb_version|int <= 6 and ( dsr.os_version | regex_replace('[^0-9]','')|int <= 8 )
 
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -r"
     check_dsr_installed: "gppkg -q --all | grep DataScienceR | cut -d - -f 1"
-    dsr_package_name: DataScienceR-{{ dsr_prefix_major_version }}{{ dsr_major_version }}.{{ dsr_minor_version }}-{{ dsr_patch_version }}
-  when: inventory_hostname in groups['master'] and dsr_gpdb_version|int >= 7 and ( dsr_os_version | regex_replace('[^0-9]','')|int >= 8 )
+    dsr_package_name: DataScienceR-{{ dsr.prefix_major_version }}{{ dsr.major_version }}.{{ dsr.minor_version }}-{{ dsr.patch_version }}
+  when: inventory_hostname in groups['master'] and dsr.gpdb_version|int >= 7 and ( dsr.os_version | regex_replace('[^0-9]','')|int >= 8 )
 
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -a remove"
     check_dsr_installed: "gppkg query | grep DataScienceR | awk '{print $1}'"
-    dsr_package_name: DataScienceR{{ dsr_prefix_major_version }}{{ dsr_major_version }}.{{ dsr_minor_version }}
-  when: inventory_hostname in groups['master'] and dsr_gpdb_version|int >= 7 and ( dsr_os_version | regex_replace('[^0-9]','')|int >= 8 )
+    dsr_package_name: DataScienceR{{ dsr.prefix_major_version }}{{ dsr.major_version }}.{{ dsr.minor_version }}
+  when: inventory_hostname in groups['master'] and dsr.gpdb_version|int >= 7 and ( dsr.os_version | regex_replace('[^0-9]','')|int >= 8 )
 
 #
 - name: Verify if DataScienceR gppkg is installed

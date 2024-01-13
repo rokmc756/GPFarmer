@@ -1,26 +1,24 @@
 ---
 # Uninstall GPCOPY
 #
-- name: Check if the Greenplum Database software is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db
+- name: Check if the Greenplum Database Software is already installed
+  stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_installed
 
 #
-- name: Stop if database software is not installed
+- name: Stop if Greenplum Database Software is not installed
   fail: msg="Greenplum Database software is not installed!"
-  when:
-    - gpdb_installed.stat.exists != True
+  when: gpdb_installed.stat.exists != True
 
 #
 - name: Check if the GPCOPY is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db/bin/gpcopy
+  stat: path={{ gpdb.base_dir }}/greenplum-db/bin/gpcopy
   register: gpcopy_installed
 
 #
 - name: Stop if GPCOPY is not installed yet
   fail: msg="GPCOPY is not installed yet"
-  when:
-    - gpcopy_installed.stat.exists != True
+  when: gpcopy_installed.stat.exists != True
 
 #
 - name: Delete GPCOPY binary files
@@ -28,9 +26,9 @@
     path: "{{ item }}"
     state: absent
   with_items:
-    - "{{ gpdb_base_dir }}/greenplum-db/bin/gpcopy"
-    - "{{ gpdb_base_dir }}/greenplum-db/bin/gpcopy_helper"
-    - "{{ gpadmin_home_dir }}/gpcopy-{{ major_version }}.{{ minor_version }}.{{ build_version }}"
-    - "{{ gpadmin_home_dir }}/gpcopy-{{ major_version }}.{{ minor_version }}.{{ build_version }}.tar.gz"
-  when:
-    - gpcopy_installed.stat.exists != False
+    - "{{ gpdb.base_dir }}/greenplum-db/bin/gpcopy"
+    - "{{ gpdb.base_dir }}/greenplum-db/bin/gpcopy_helper"
+    - "{{ gpadmin.home_dir }}/gpcopy-{{ gpcopy.major_version }}.{{ gpcopy.minor_version }}.{{ gpcopy.build_version }}"
+    - "{{ gpadmin.home_dir }}/gpcopy-{{ gpcopy.major_version }}.{{ gpcopy.minor_version }}.{{ gpcopy.build_version }}.tar.gz"
+  when: gpcopy_installed.stat.exists != False
+

@@ -1,17 +1,17 @@
 ---
-# Uninstall pljava extention on GPDB
+# Uninstall PL/Java extention on GPDB
 
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -r"
-    pljava_package_name: pljava-{{ pljava_prefix_major_version }}{{ pljava_major_version }}.{{ pljava_minor_version }}.{{ pljava_patch_version }}-gp{{ pljava_gpdb_version }}-{{ pljava_os_version }}_{{ pljava_arch_type }}
-  when: inventory_hostname in groups['master'] and pljava_gpdb_version|int <= 6
+    pljava_package_name: pljava-{{ pljava.prefix_major_version }}{{ pljava.major_version }}.{{ pljava.minor_version }}.{{ pljava.patch_version }}-gp{{ pljava.gpdb_version }}-{{ pljava.os_version }}_{{ pljava.arch_type }}
+  when: inventory_hostname in groups['master'] and pljava.gpdb_version|int <= 6
 
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -a remove"
     pljava_package_name: pljava
-  when: inventory_hostname in groups['master'] and pljava_gpdb_version|int == 7
+  when: inventory_hostname in groups['master'] and pljava.gpdb_version|int == 7
 
 #
 - name: Check if the GPDB software is already installed
@@ -24,36 +24,36 @@
   when: gpdb_installed.stat.exists != True
 
 #
-- name: Verify that database for PLJava is installed
+- name: Verify that database for PL/Java is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ pljava_database_name }}'" )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ pljava.database_name }}'" )
   register: pljava_database_installed
   when: inventory_hostname in groups['master']
 
 #
-- name: Remove PLJava Support far a Database of GPDB 4.x
+- name: Remove PL/Java Support far a Database of GPDB 4.x
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && droplang pljava -d {{ pljava_database_name }}; )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && droplang pljava -d {{ pljava.database_name }}; )
   register: pljava_support_removed
-  when: ( inventory_hostname in groups['master'] and pljava_gpdb_version == "4.3" and '100' in pljava_database_installed.stdout )
+  when: ( inventory_hostname in groups['master'] and pljava.gpdb_version == "4.3" and '100' in pljava_database_installed.stdout )
 
 #
-- name: Remove PLJava Support far a Database of GPDB 5x / 6.x
+- name: Remove PL/Java Support far a Database of GPDB 5x / 6.x
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pljava_database_name }} -c 'DROP EXTENSION pljava;' )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pljava.database_name }} -c 'DROP EXTENSION pljava;' )
   register: pljava_support_removed
   ignore_errors: yes
-  when: ( inventory_hostname in groups['master'] and pljava_gpdb_version|int == 6 and '100' in pljava_database_installed.stdout )
+  when: ( inventory_hostname in groups['master'] and pljava.gpdb_version|int == 6 and '100' in pljava_database_installed.stdout )
 
 #
-- name: Drop database for PLJava
+- name: Drop database for PL/Java
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ pljava_database_name }} )
+  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ pljava.database_name }} )
   register: pljava_database_deleted
   when: ( inventory_hostname in groups['master'] and '100' in pljava_database_installed.stdout )
 
 #
-- name: Uninstall the PLJava language extension
+- name: Uninstall the PL/Java language extension
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ pljava_package_name }} )
   register: pljava_extension_uninstalled

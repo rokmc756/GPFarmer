@@ -18,7 +18,7 @@
 
 #
 - set_fact:
-    minio_file_name: minio-{{ minio_release_date }}.tar.gz
+    minio_file_name: minio-{{ minio.release_date }}.tar.gz
 
 #
 - name: Check if minio binary is already existed
@@ -30,14 +30,14 @@
 
 #
 - name: Copy minio binary from local directory, roles/minio/files
-  copy: src=minio-{{ minio_release_date }}.tar.gz dest=/tmp/minio-{{ minio_release_date }}.tar.gz mode=0644 owner=root group=root
+  copy: src=minio-{{ minio.release_date }}.tar.gz dest=/tmp/minio-{{ minio.release_date }}.tar.gz mode=0644 owner=root group=root
   register: minio_local_copy
   when: minio_bin_exists.stat.exists == false and minio_download == false
 
 
 - name: Unarchive minio gzip file
   unarchive:
-    src: "/tmp/minio-{{ minio_release_date }}.tar.gz"
+    src: "/tmp/minio-{{ minio.release_date }}.tar.gz"
     dest: "/usr/local/bin"
     owner: "root"
     group: "root"

@@ -26,18 +26,18 @@
 - set_fact:
     gppkg_install_cmd: "gppkg -i"
     check_plr_installed: "gppkg -q --all | grep plr | cut -d - -f 1"
-    plr_package_name: plr-{{ plr_prefix_major_version }}{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-gp{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
+    plr_package_name: plr-{{ plr.prefix_major_version }}{{ plr.major_version }}.{{ plr.minor_version }}.{{ plr.patch_version }}-gp{{ plr.gpdb_version }}-{{ plr.os_version }}-{{ plr.arch_type }}.gppkg
   when: inventory_hostname in groups['master'] and plr_gpdb_version|int <= 6
 
 #
 - set_fact:
     gppkg_install_cmd: "gppkg -a install"
     check_plr_installed: "gppkg query | grep plr | awk '{print $1}'"
-    plr_package_name: plr-{{ plr_major_version }}.{{ plr_minor_version }}.{{ plr_patch_version }}-gp{{ plr_gpdb_version }}-{{ plr_os_version }}-{{ plr_arch_type }}.gppkg
+    plr_package_name: plr-{{ plr.major_version }}.{{ plr.minor_version }}.{{ plr.patch_version }}-gp{{ plr.gpdb_version }}-{{ plr.os_version }}-{{ plr.arch_type }}.gppkg
   when: inventory_hostname in groups['master'] and plr_gpdb_version|int >= 7
 
 #
-- name: Verify if PLR gppkg pakcage is installed
+- name: Verify if PL/R gppkg pakcage is installed
   become_user: gpadmin
   shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_plr_installed }} )
   args:
@@ -48,19 +48,19 @@
   when: inventory_hostname in groups['master']
 
 #
-- name: Stop if PLR gppkg package is already installed
+- name: Stop if PL/R gppkg package is already installed
   fail: msg="PLR gppkg package is already installed!"
   when: ( inventory_hostname in groups['master'] and 'plr' in plr_installed.stdout )
 
 #
-- name: Copy PLR gppkg pakcage file
+- name: Copy PL/R gppkg pakcage file
   copy: src={{ plr_package_name }} dest={{ gpdb.admin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when: ( inventory_hostname in groups['master'] and 'plr' not in plr_installed.stdout )
 
 #
-- name: Install PLR gppkg package
+- name: Install PL/R gppkg package
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpdb.admin_home_dir }}/{{ plr_package_name }} )
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpdb.admin_home_dir }}/{{ plr.package_name }} )
   args:
     executable: /bin/bash
   register: plr_package_installed
@@ -84,18 +84,18 @@
   when: inventory_hostname in groups['master']
 
 #
-- name: Verify that database for plr is installed
+- name: Verify that database for PL/R is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plr_database_name }}'" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plr.database_name }}'" )
   args:
     executable: /bin/bash
   register: plr_database_installed
   when: inventory_hostname in groups['master']
 
 #
-- name: Create database for plr
+- name: Create database for PL/R
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plr_database_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plr.database_name }} )
   args:
     executable: /bin/bash
   register: plr_database_created
@@ -104,7 +104,7 @@
 #
 - name: Enabling PL/R Language Support for GPDB 4.x
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createlang plr -d {{ plr_database_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createlang plr -d {{ plr.database_name }} )
   args:
     executable: /bin/bash
   register: plr_language_support_enabled
@@ -113,7 +113,7 @@
 #
 - name: Enabling PL/R Language Support for GPDB 6.x or 7.x
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr_database_name }} -c "CREATE EXTENSION plr;" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr.database_name }} -c "CREATE EXTENSION plr;" )
   args:
     executable: /bin/bash
   register: plr_language_support_enabled

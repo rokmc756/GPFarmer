@@ -1,6 +1,6 @@
 ---
 # This role installs and sets up keepalived
-
+#
 - name: Install keepalived
   become: true
   package:
@@ -9,6 +9,7 @@
   tags: keepalived
   notify: restart keepalived
 
+#
 - when: keepalived_notifications_email | default(False)
   block:
    - name: Install postfix to send notifications
@@ -21,8 +22,8 @@
        name: postfix
        state: started
        enabled: yes
- 
 
+#
 - name: Install check script
   become: true
   become_user: root
@@ -35,6 +36,7 @@
   tags: keepalived
   notify: restart keepalived
 
+#
 - name: Install email notification script
   become: true
   become_user: root
@@ -47,6 +49,7 @@
   tags: keepalived
   notify: restart keepalived
 
+#
 - name: Keepalived configuration
   become: true
   become_user: root
@@ -56,6 +59,7 @@
   tags: keepalived
   notify: restart keepalived
 
+#
 - name: Start keepalived
   become: true
   systemd:

@@ -11,6 +11,7 @@
     - firewalld-filesystem
     - iptables-services
 
+#
 - name: Start firewalld for all nodes
   become: true
   become_user: root
