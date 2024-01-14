@@ -1,10 +1,4 @@
 ---
-# DataScienceR-2.0.2-gp6-ubuntu18.04_x86_64.gppkg
-# DataScienceR-2.0.2-gp6-rhel8_x86_64.gppkg
-
-gpdb:
-  base_dir: "/usr/local"
-  gpadmin_home_dir: "/home/gpadmin"
 dsr:
   prefix_major_version: ""
   major_version: 2
@@ -18,3 +12,5 @@ dsr:
 # arch_type: 'amd64'
 # os_version: 'ubuntu18.04'
 
+# DataScienceR-2.0.2-gp6-ubuntu18.04_x86_64.gppkg
+# DataScienceR-2.0.2-gp6-rhel8_x86_64.gppkg

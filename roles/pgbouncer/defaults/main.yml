@@ -1,122 +1,87 @@
 ---
-pgbouncer_packages:
-  - pgbouncer
-
-# pgbouncer_package_state: present
-pgbouncer_package_state: absent
-
-pgbouncer_hba_default:
-  - comment: unix socket connections
-    type: local
-    database: all
-    user: all
-    address: ""
-    method: trust
-  - comment: trust passwordless local IPv4 connections to the stats table
-    type: host
-    database: pgbouncer
-    user: stats
-    address: "127.0.0.1/32"
-    method: trust
-  - comment: local IPv4 connections
-    type: host
-    database: all
-    user: all
-    address: 127.0.0.1/32
-    method: md5
-
-pgbouncer_hba_custom: []
-
-pgbouncer_databases:
-  - name: "*"
-    host: 127.0.0.1
-    port: 5432
-
-pgbouncer_users: []
-
-# pgbouncer_confdir: /etc/pgbouncer
-pgbouncer_confdir: /usr/local/greenplum-db/etc/pgbouncer
-pgbouncer_daemon_opts: -d {{ pgbouncer_confdir }}/pgbouncer.ini
-pgbouncer_daemon_start: 1
-# pgbouncer_user: postgres
-# pgbouncer_group: postgres
-pgbouncer_user: gpadmin
-pgbouncer_group: gpadmin
-
-# pgbouncer_logfile: /var/log/postgresql/pgbouncer.log
-# pgbouncer_pidfile: /var/run/postgresql/pgbouncer.pid
-pgbouncer_logfile: /data/master/gpseg-1/pgbouncer/pgbouncer.log
-pgbouncer_pidfile: /data/master/gpseg-1/pgbouncer/pgbouncer.pid
-
-pgbouncer_listen_addr: 127.0.0.1
-pgbouncer_listen_port: 6432
-pgbouncer_unix_socket_dir: /data/master/gpseg-1/pgbouncer/
-pgbouncer_unix_socket_mode: 0755
-pgbouncer_unix_socket_group: "{{ pgbouncer_group }}"
-# allow ident logins for admin and stats as the postgres user
-pgbouncer_auth_type: hba
-pgbouncer_auth_file: /usr/local/greenplum-db/etc/pgbouncer/userlist.txt
-pgbouncer_auth_hba_file: "{{ pgbouncer_confdir }}/pgbouncer_hba.conf"
-pgbouncer_auth_query: SELECT usename, passwd FROM pg_shadow WHERE usename=$1
-
-pgbouncer_admin_users:
-  - gpadmin
-  - postgres
-  - root
-
-pgbouncer_stats_users:
-  - gpadmin
-  - postgres
-  - root
-  - stats
-
-pgbouncer_pool_mode: session
-pgbouncer_server_reset_query: DISCARD ALL
-pgbouncer_server_reset_query_always: 0
-pgbouncer_ignore_startup_parameters: extra_float_digits,application_name
-pgbouncer_server_check_query: select 1
-pgbouncer_server_check_delay: 30
-pgbouncer_application_name_add_host: 0
-pgbouncer_max_client_conn: 100
-pgbouncer_default_pool_size: 20
-pgbouncer_min_pool_size: 0
-pgbouncer_reserve_pool_size: 0
-pgbouncer_reserve_pool_timeout: 5
-pgbouncer_max_db_connections: 50
-pgbouncer_max_user_connections: 50
-pgbouncer_server_round_robin: 0
-pgbouncer_syslog: 0
-pgbouncer_syslog_facility: daemon
-pgbouncer_syslog_ident: pgbouncer
-pgbouncer_log_connections: 1
-pgbouncer_log_disconnections: 1
-pgbouncer_log_pooler_errors: 1
-pgbouncer_verbose: 0
-pgbouncer_stats_period: 60
-pgbouncer_server_lifetime: 3600
-pgbouncer_server_idle_timeout: 600
-pgbouncer_server_connect_timeout: 15
-pgbouncer_server_login_retry: 15
-pgbouncer_query_timeout: 0
-pgbouncer_query_wait_timeout: 120
-pgbouncer_client_idle_timeout: 0
-pgbouncer_client_login_timeout: 60
-pgbouncer_autodb_idle_timeout: 3600
-pgbouncer_suspend_timeout: 10
-pgbouncer_idle_transaction_timeout: 0
-pgbouncer_pkt_buf: 4096
-pgbouncer_listen_backlog: 128
-pgbouncer_sbuf_loopcnt: 5
-pgbouncer_disable_pqexec: 0
-pgbouncer_max_packet_size: 2147483647
-pgbouncer_tcp_defer_accept: 45
-pgbouncer_tcp_socket_buffer: 0
-pgbouncer_tcp_keepalive: 1
-pgbouncer_tcp_keepcnt: 0
-pgbouncer_tcp_keepidle: 0
-pgbouncer_tcp_keepintvl: 0
-pgbouncer_dns_max_ttl: 15
-pgbouncer_dns_zone_check_period: 0
-pgbouncer_dns_nxdomain_ttl: 15
-pgbouncer_service_name: pgbouncer
-pgbouncer_job_name: pgbouncer
+_pgbouncer:
+  packages: pgbouncer
+  package_state: absent
+  hba_default:
+    - { comment: "unix socket connections", type: local, database: all, user: all, address: "", method: trust }
+    - { comment: "trust passwordless local IPv4 connections to the stats table", type: host, database: pgbouncer, user: stats, address: "127.0.0.1/32", method: trust }
+    - { comment: "local IPv4 connections", type: host, database: all, user: all, address: "127.0.0.1/32", method: md5 }
+  hba_custom: []
+  databases:
+    - { name: "*", host: 127.0.0.1, port: 5432 }
+  users: []
+  confdir: /usr/local/greenplum-db/etc/pgbouncer
+  daemon_opts: -d /usr/local/greenplum-db/etc/pgbouncer/pgbouncer.ini
+  daemon_start: 1
+  user: gpadmin
+  group: gpadmin
+  logfile: /data/master/gpseg-1/pgbouncer/pgbouncer.log
+  pidfile: /data/master/gpseg-1/pgbouncer/pgbouncer.pid
+  listen_addr: 127.0.0.1
+  listen_port: 6432
+  unix_socket_dir: /data/master/gpseg-1/pgbouncer
+  unix_socket_mode: 0755
+  unix_socket_group: gpadmin
+  auth_type: hba
+  auth_file: /usr/local/greenplum-db/etc/pgbouncer/userlist.txt
+  auth_hba_file: /usr/local/greenplum-db/etc/pgbouncer/pgbouncer_hba.conf
+  auth_query: SELECT usename, passwd FROM pg_shadow WHERE usename=$1
+  admin_users:
+    - gpadmin
+    - postgres
+    - root
+  stats_users:
+    - gpadmin
+    - postgres
+    - root
+    - stats
+  pool_mode: session
+  server_reset_query: DISCARD ALL
+  server_reset_query_always: 0
+  ignore_startup_parameters: extra_float_digits,application_name
+  server_check_query: select 1
+  server_check_delay: 30
+  application_name_add_host: 0
+  max_client_conn: 100
+  default_pool_size: 20
+  min_pool_size: 0
+  reserve_pool_size: 0
+  reserve_pool_timeout: 5
+  max_db_connections: 50
+  max_user_connections: 50
+  server_round_robin: 0
+  syslog: 0
+  syslog_facility: daemon
+  syslog_ident: pgbouncer
+  log_connections: 1
+  log_disconnections: 1
+  log_pooler_errors: 1
+  verbose: 0
+  stats_period: 60
+  server_lifetime: 3600
+  server_idle_timeout: 600
+  server_connect_timeout: 15
+  server_login_retry: 15
+  query_timeout: 0
+  query_wait_timeout: 120
+  client_idle_timeout: 0
+  client_login_timeout: 60
+  autodb_idle_timeout: 3600
+  suspend_timeout: 10
+  idle_transaction_timeout: 0
+  pkt_buf: 4096
+  listen_backlog: 128
+  sbuf_loopcnt: 5
+  disable_pqexec: 0
+  max_packet_size: 2147483647
+  tcp_defer_accept: 45
+  tcp_socket_buffer: 0
+  tcp_keepalive: 1
+  tcp_keepcnt: 0
+  tcp_keepidle: 0
+  tcp_keepintvl: 0
+  dns_max_ttl: 15
+  dns_zone_check_period: 0
+  dns_nxdomain_ttl: 15
+  service_name: pgbouncer
+  job_name: pgbouncer

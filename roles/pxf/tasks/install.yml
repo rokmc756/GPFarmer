@@ -84,7 +84,7 @@
 - name: Copy the PXF .{{ pxf.binary_type }} file to all hosts in your Greenplum cluster
   become: yes
   become_user: root
-  copy: src={{ pxf_package_name }} dest={{ gpdb.gpadmin_home_dir }}/{{ pxf_package_name }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src={{ pxf_package_name }} dest={{ gpdb.admin_home_dir }}/{{ pxf_package_name }} mode=0644 owner=gpadmin group=gpadmin
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 #
@@ -92,7 +92,7 @@
   become: yes
   become_user: root
   yum:
-    name: "{{ gpdb.gpadmin_home_dir }}/{{ pxf_package_name }}"
+    name: "{{ gpdb.admin_home_dir }}/{{ pxf_package_name }}"
     state: present
     disable_gpg_check: true
   async: 60
@@ -107,7 +107,7 @@
   become: yes
   become_user: root
   apt:
-    deb: "{{ gpdb.gpadmin_home_dir }}/{{ pxf_package_name }}"
+    deb: "{{ gpdb.admin_home_dir }}/{{ pxf_package_name }}"
     state: present
   async: 60
   poll: 5
@@ -134,7 +134,7 @@
   become: yes
   become_user: gpadmin
   lineinfile:
-    path: "{{ gpdb.gpadmin_home_dir }}/.bashrc"
+    path: "{{ gpdb.admin_home_dir }}/.bashrc"
     line: "{{ item }}"
     insertafter: EOF
   with_items:

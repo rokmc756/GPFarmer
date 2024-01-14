@@ -11,7 +11,7 @@
   template:
     src: etc_monit_conf.d_pgbouncer.j2
     dest: /etc/monit.d/pgbouncer
-  notify: restart monit
+  notify: Restart monit
 
 # we need to restart before monit is called
 - meta: flush_handlers
@@ -24,3 +24,4 @@
     name: pgbouncer
     state: started
   ignore_errors: true
+

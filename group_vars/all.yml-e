@@ -1,9 +1,9 @@
 # ansible_ssh_pass: "changeme"
 ansible_become_pass: "changeme"
 gpdb:
-  admin_user: "gpadmin"
   base_dir: "/usr/local"
   admin_home_dir: "/home/gpadmin"
+  admin_user: "gpadmin"
   master_data_dir: "/data/master/gpseg-1"
   data_dir: "/data"
 gpcc:

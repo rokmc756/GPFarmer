@@ -65,7 +65,7 @@
 # pgbouncer_hba_default records
 #
 
-{% for record in pgbouncer_hba_default %}
+{% for record in _pgbouncer.hba_default %}
 {% if record.comment is defined -%}
    # {{ record.comment }}
 
@@ -77,7 +77,7 @@
 # pgbouncer_hba_custom records
 #
 
-{% for record in pgbouncer_hba_custom %}
+{% for record in _pgbouncer.hba_custom %}
 {% if record.comment is defined -%}
   # {{ record.comment }}
 

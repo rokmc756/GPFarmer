@@ -1,0 +1,8 @@
+
+[ rhel8 ]
+gpdb - ok
+gpcc - ok
+pxf - ok
+madlib - 
+
+[ rhel7 ]

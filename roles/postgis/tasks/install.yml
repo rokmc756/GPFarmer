@@ -29,14 +29,14 @@
     gppkg_install_cmd: "gppkg -i"
     check_postgis_installed: "gppkg -q --all | grep postgis | cut -d - -f 1"
   when:
-    - inventory_hostname in groups['master'] and postgis_gpdb_version|int <= 6
+    - inventory_hostname in groups['master'] and postgis.gpdb_version|int <= 6
 
 #
 - set_fact:
     gppkg_install_cmd: "gppkg -a install"
     check_postgis_installed: "gppkg query | grep postgis | awk '{print $1}'"
   when:
-    - inventory_hostname in groups['master'] and postgis_gpdb_version|int >= 7
+    - inventory_hostname in groups['master'] and postgis.gpdb_version|int >= 7
 
 #
 - name: Verify if PostGIS gppkg is installed in Greenplum Database
@@ -58,7 +58,7 @@
 
 #
 - name: Copy PostGIS gppkg file
-  copy: src=postgis-{{ postgis.prefix_major_version }}{{ postgis.major_version }}.{{ postgis.minor_version }}{{ postgis.patch_version }}-gp{{ postgis.gpdb_version }}-{{ postgis_os_version }}-x86_64.gppkg dest={{ gpdb.admin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src=postgis-{{ postgis.prefix_major_version }}{{ postgis.major_version }}.{{ postgis.minor_version }}{{ postgis.patch_version }}-gp{{ postgis.gpdb_version }}-{{ postgis.os_version }}-x86_64.gppkg dest={{ gpdb.admin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when: ( inventory_hostname in groups['master'] and 'postgis' not in postgis_installed.stdout )
 
 #
@@ -75,7 +75,7 @@
 #
 - name: Verify that database is existed for PostGIS
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ postgis_database_name }}'" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ postgis.database_name }}'" )
   register: postgis_database_installed
   when: inventory_hostname in groups['master']
 
@@ -97,9 +97,9 @@
 #
 - name: Enable PostGIS and PostGIS Raster in a database when it's less than PostGIS 2.5
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh  && {{ gpdb.base_dir }}/greenplum-db/share/postgresql/contrib/postgis-{{ postgis.major_version }}.{{ postgis.minor_version }}/postgis_manager.sh {{ postgis_database_name }} install )
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh  && {{ gpdb.base_dir }}/greenplum-db/share/postgresql/contrib/postgis-{{ postgis.major_version }}.{{ postgis.minor_version }}/postgis_manager.sh {{ postgis.database_name }} install )
   register: postgis_raster_enabled
-  when: ( inventory_hostname in groups['master'] and postgis_major_version|int <= 2 and postgis_minor_version|int <= 5 )
+  when: ( inventory_hostname in groups['master'] and postgis.major_version|int <= 2 and postgis.minor_version|int <= 5 )
 
 #
 - name: Create PostGIS Extension and Enable Raster in a database

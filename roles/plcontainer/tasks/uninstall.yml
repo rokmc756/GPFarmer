@@ -3,7 +3,7 @@
 
 #
 - name: Check if the GPDB software is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db
+  stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_installed
 
 #
@@ -35,77 +35,77 @@
 #
 - name: List the Docker images
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && plcontainer image-list )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && plcontainer image-list )
   register: docker_images_listed
   when: inventory_hostname in groups['master']
 
 #
 - name: Verify that database for PL/Container is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plcontainer.database_name }}'" )
-  register: plcontainer_database_installed
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plcon.database_name }}'" )
+  register: plcon_database_installed
   when: inventory_hostname in groups['master']
 
 #
 - name: Remove PL/Container Support far a Database
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plcontainer.database_name }} -c 'DROP EXTENSION plcontainer CASCADE;' )
-  register: plcontainer_support_removed
-  when: ( inventory_hostname in groups['master'] and '100' in plcontainer_database_installed.stdout )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plcon.database_name }} -c 'DROP EXTENSION plcontainer CASCADE;' )
+  register: plcon_support_removed
+  when: ( inventory_hostname in groups['master'] and '100' in plcon_database_installed.stdout )
 
 #
 - name: Drop database for PL/Container
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plcontainer.database_name }} )
-  register: plcontainer_database_deleted
-  when: ( inventory_hostname in groups['master'] and '100' in plcontainer_database_installed.stdout )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plcon.database_name }} )
+  register: plcon_database_deleted
+  when: ( inventory_hostname in groups['master'] and '100' in plcon_database_installed.stdout )
 
 #
 - name: Verify that database for PL/R is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plr.database_name }}'" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plr.database_name }}'" )
   register: plr_database_installed
   when: inventory_hostname in groups['master']
 
 #
 - name: Remove PL/R Support far a Database
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr.database_name }} -c 'DROP EXTENSION plcontainer CASCADE;' )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr.database_name }} -c 'DROP EXTENSION plr CASCADE;' )
   register: plr_support_removed
   when: ( inventory_hostname in groups['master'] and '100' in plr_database_installed.stdout )
 
 #
 - name: Drop database for PL/R
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plr.database_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plr.database_name }} )
   register: plr_database_deleted
   when: ( inventory_hostname in groups['master'] and '100' in plr_database_installed.stdout )
 
 #
 - name: Examin the shared_preload_libraries server configuration parameter settings
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -s shared_preload_libraries )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -s shared_preload_libraries )
   register: shared_preload_libraries_listed
   when: inventory_hostname in groups['master']
 
 #
 - name: Remove the configuration parameter setting if plc_coordinator is the only library listed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -r shared_preload_libraries )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -r shared_preload_libraries )
   register: shared_preload_libraries_removed
   when: ( inventory_hostname in groups['master'] and shared_preload_libraries_listed.stdout.find('plc_coordinator') != -1 )
 
 #
 - name: Remove plc_coordinator from the list and re-set the configuration parameter if there are multiple libraries listed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c shared_preload_libraries -v 'diskquota' )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c shared_preload_libraries -v 'diskquota' )
   register: shared_preload_libraries_removed
   when: ( inventory_hostname in groups['master'] and shared_preload_libraries_listed.stdout.find('plc_coordinator') != -1 and shared_preload_libraries_listed.stdout_lines|length >= 2 )
 
 #
 - name: Restart the Greenplum Database
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
   when: inventory_hostname in groups['master']
@@ -113,25 +113,25 @@
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -r"
-  when: inventory_hostname in groups['master'] and plcontainer.gpdb_version <= 6
+  when: inventory_hostname in groups['master'] and plcon.gpdb_version <= 6
 
 #
 - set_fact:
     gppkg_remove_cmd: "gppkg -a remove"
-  when: inventory_hostname in groups['master'] and plcontainer.gpdb_version >= 7
+  when: inventory_hostname in groups['master'] and plcon.gpdb_version >= 7
 
 #
 - name: Uninstall the PL/Container language extension
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} plcontainer )
-  register: plcontainer_extension_uninstalled
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} plcontainer )
+  register: plcon_extension_uninstalled
   ignore_errors: true
   when: inventory_hostname in groups['master']
 
 #
 - name: Uninstall the PL/R language extension
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} plr )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} plr )
   register: plr_extension_uninstalled
   ignore_errors: true
   when: inventory_hostname in groups['master']
@@ -139,7 +139,7 @@
 #
 - name: Restart the Greenplum Database
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
   when: inventory_hostname in groups['master']

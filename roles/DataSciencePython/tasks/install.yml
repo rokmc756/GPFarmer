@@ -3,7 +3,7 @@
 
 #
 - name: Check if the GPDB software is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db
+  stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_installed
 
 #
@@ -24,7 +24,7 @@
 - name: Verify that database is up and running
   become_user: gpadmin
   changed_when: False
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
   args:
     executable: /bin/bash
   register: select_version
@@ -61,7 +61,7 @@
 #
 - name: Verify if DataSciencePython gppkg is installed
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ check_dspython_installed }} )
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_dspython_installed }} )
   args:
     executable: /bin/bash
   ignore_errors: true
@@ -80,7 +80,7 @@
 
 #
 - name: Copy DataSciencePython gppkg file
-  copy: src={{ dspython_package_name }} dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  copy: src={{ dspython_package_name }} dest={{ gpdb.admin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when: ( inventory_hostname in groups['master'] and 'DataSciencePython' not in dspython_installed.stdout )
 
 - debug: msg={{ dspython_package_name }}
@@ -88,7 +88,7 @@
 #
 - name: Install DataSciencePython package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpadmin_home_dir }}/{{ dspython_package_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpdb.admin_home_dir }}/{{ dspython_package_name }} )
   args:
     executable: /bin/bash
   register: dspython_package_installed
@@ -100,7 +100,7 @@
 #
 - name: Restart GPDB and apply parameters for dspython in greenplum_path.sh
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   args:
     executable: /bin/bash
   async: 150
@@ -110,7 +110,7 @@
 #
 - name: Verify that database for DataSciencePython is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ dspython.database_name }}'" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ dspython.database_name }}'" )
   args:
     executable: /bin/bash
   register: dspython_database_installed
@@ -119,7 +119,7 @@
 #
 - name: Create database for dspython
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ dspython.database_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ dspython.database_name }} )
   args:
     executable: /bin/bash
   register: dspython_database_created
@@ -129,5 +129,5 @@
 
 #- name: The Greenplum Database Python Data Science Modules are installed in the following directory
 #  become_user: gpadmin
-#  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && ls -al $GPHOME/ext/DataSciencePython/lib/python2.7/site-packages/ )
+#  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && ls -al $GPHOME/ext/DataSciencePython/lib/python2.7/site-packages/ )
 #  register: dspython_modules_listed

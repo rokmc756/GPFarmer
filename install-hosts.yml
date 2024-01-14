@@ -1,18 +1,24 @@
-- hosts: all
+- hosts: rk8-master
   become: true
   gather_facts: true
   roles:
-    - { role: init-hosts }
-    - { role: gpdb }                 # Need to check if get_facts: true is required
+    - { role: pgbouncer }
+#
+#- hosts: all
+#  become: true
+#  gather_facts: true
+#  roles:
 #    - { role: plcontainer }
 #    - { role: DataScienceR }
 #    - { role: DataSciencePython }
-#    - { role: gptext }
+#    - { role: postgis }
 #    - { role: pljava }
 #    - { role: plr }
-#    - { role: postgis }
-#    - { role: pxf }
 #    - { role: madlib }
+#    - { role: pxf }
+#    - { role: init-hosts }
+#    - { role: gpdb }                 # Need to check if get_facts: true is required
+#    - { role: gptext }
 #    - { role: gpss }
 #    - { role: init-hosts }
 #    - { role: gpupgrade }

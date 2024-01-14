@@ -10,14 +10,10 @@ pxf:
   database_name: pxf_testdb
   username: pxf_user
   install: true
-gpdb:
-  user: gpadmin
-  base_dir: /usr/local
-  gpadmin_home_dir: /home/gpadmin
 nfs:
-  access: true
-  base_work_dir: "{{ gpdb.gpadmin_home_dir }}/pxf-nfs-base"
-  share_dir: "{{ gpdb.gpadmin_home_dir }}/nfsshare"
+  access: false
+  base_work_dir: "{{ gpdb.admin_home_dir }}/pxf-nfs-base"
+  share_dir: "{{ gpdb.admin_home_dir }}/nfsshare"
   expose_dir: "/extra-usb-storage/nfsshare"
   server_ip_addr: 192.168.0.101
 hadoop:
@@ -76,18 +72,18 @@ hadoop:
     # access_test_scripts:
 oracle:
   access: false
-  base_work_dir: "{{ gpdb.gpadmin_home_dir }}/pxf-oracle-base"
+  base_work_dir: "{{ gpdb.admin_home_dir }}/pxf-oracle-base"
   dbname: cdb1
   user: oracleuser
   user_pass: changeme
 mssql:
   access: false
-  base_work_dir: "{{ gpdb.gpadmin_home_dir }}/pxf-mssql-base"
+  base_work_dir: "{{ gpdb.admin_home_dir }}/pxf-mssql-base"
   dbname: testdb
   user: mssqluser
   user_pass: "Changeme!@#$"
 minio:
   access: false
-  base_work_dir: "{{ gpdb.gpadmin_home_dir }}/pxf-minio-base"
+  base_work_dir: "{{ gpdb.admin_home_dir }}/pxf-minio-base"
   s3_access_key: minioadmin
   s3_secret_key: changeme

@@ -1,7 +1,7 @@
 ---
 gpdb:
   base_dir: "/usr/local"
-  gpadmin_home_dir: "/home/gpadmin"
+  admin_home_dir: "/home/gpadmin"
 
 madlib:
   prefix_major_version: ""

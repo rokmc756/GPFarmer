@@ -1,73 +1,76 @@
 ---
+#
 - name: Create directory with necessary privileges
   file:
     dest: "{{ item }}"
-    owner: "{{ pgbouncer_user }}"
-    group: "{{ pgbouncer_group }}"
+    owner: "{{ _pgbouncer.user }}"
+    group: "{{ _pgbouncer.group }}"
     mode: 0755
     state: directory
   with_items:
-    - "/data/master/gpseg-1/pgbouncer"
-    - "/usr/local/greenplum-db/etc/pgbouncer"
+    - "{{ gpdb.master_data_dir }}/pgbouncer"
+    - "{{ gpdb.base_dir }}/greenplum-db/etc/pgbouncer"
 
+#
 #- name: Divert pgbouncer main configuration file {{ pgbouncer_confdir }}/pgbouncer.ini
 #  command: dpkg-divert --quiet --local --divert {{ pgbouncer_confdir }}/pgbouncer.ini.dpkg-divert --rename {{ pgbouncer_confdir }}/pgbouncer.ini
 # args:
 #    creates: "{{ pgbouncer_confdir }}/pgbouncer.ini.dpkg-divert"
 
-- name: Pgbouncer update restart witness
+#
+- name: PGBouncer update restart witness
   template:
     src: "pgbouncer.ini.restart-witness.j2"
-    dest: "{{ pgbouncer_confdir }}/.pgbouncer.ini.restart-witness"
-    owner: "{{ pgbouncer_user }}"
-    group: "{{ pgbouncer_group }}"
+    dest: "{{ _pgbouncer.confdir }}/.pgbouncer.ini.restart-witness"
+    owner: "{{ _pgbouncer.user }}"
+    group: "{{ _pgbouncer.group }}"
     mode: 0600
   notify:
-    - restart pgbouncer
+    - Restart pgbouncer
 
-- name: Pgbouncer main configuration file {{ pgbouncer_confdir }}/pgbouncer.ini
+- name: PGBouncer main configuration file {{ _pgbouncer.confdir }}/pgbouncer.ini
   template:
     src: pgbouncer.ini.j2
-    dest: "{{ pgbouncer_confdir }}/pgbouncer.ini"
-    owner: "{{ pgbouncer_user }}"
-    group: "{{ pgbouncer_group }}"
+    dest: "{{ _pgbouncer.confdir }}/pgbouncer.ini"
+    owner: "{{ _pgbouncer.user }}"
+    group: "{{ _pgbouncer.group }}"
     mode: 0640
   notify:
-    - reload pgbouncer
+    - Reload pgbouncer
 
 #- name: Divert pgbouncer hba file {{ pgbouncer_confdir }}/pgbouncer_hba.conf
 #  command: dpkg-divert --quiet --local --divert {{ pgbouncer_confdir }}/pgbouncer_hba.conf.dpkg-divert --rename {{ pgbouncer_confdir }}/pgbouncer_hba.conf
 #  args:
 #    creates: "{{ pgbouncer_confdir }}/pgbouncer_hba.conf.dpkg-divert"
 
-- name: Pgbouncer hba file {{ pgbouncer_confdir }}/pgbouncer_hba.conf
+- name: PGBouncer hba file {{ _pgbouncer.confdir }}/pgbouncer_hba.conf
   template:
     src: pgbouncer_hba.conf.j2
-    dest: "{{ pgbouncer_confdir }}/pgbouncer_hba.conf"
-    owner: "{{ pgbouncer_user }}"
-    group: "{{ pgbouncer_group }}"
+    dest: "{{ _pgbouncer.confdir }}/pgbouncer_hba.conf"
+    owner: "{{ _pgbouncer.user }}"
+    group: "{{ _pgbouncer.group }}"
     mode: 0640
   notify:
-    - reload pgbouncer
+    - Reload pgbouncer
 
-#- name: Divert pgbouncer user list file {{ pgbouncer_confdir }}/userlist.txt
+#- name: Divert PGBouncer user list file {{ pgbouncer_confdir }}/userlist.txt
 #  command: dpkg-divert --quiet --local --divert {{ pgbouncer_confdir }}/userlist.txt.dpkg-divert --rename {{ pgbouncer_confdir }}/userlist.txt
 #  args:
 #    creates: "{{ pgbouncer_confdir }}/userlist.txt.dpkg-divert"
 
 - name: Add users to userlist.txt
   copy:
-    dest: "{{ pgbouncer_confdir }}/userlist.txt"
-    owner: "{{ pgbouncer_user }}"
-    group: "{{ pgbouncer_group }}"
+    dest: "{{ _pgbouncer.confdir }}/userlist.txt"
+    owner: "{{ _pgbouncer.user }}"
+    group: "{{ _pgbouncer.group }}"
     mode: 0640
     content: |
       "stats" "passwordless"
-      {% for user in pgbouncer_users %}
+      {% for user in _pgbouncer.users %}
       "{{ user.name }}" "md5{{ (user.pass + user.name) | hash('md5') }}"
       {% endfor %}
   notify:
-    - reload pgbouncer
+    - Reload pgbouncer
 
 #- name: Divert pgbouncer default file /etc/default/pgbouncer
 #  command: dpkg-divert --quiet --local --divert /etc/default/pgbouncer.dpkg-divert --rename /etc/default/pgbouncer
@@ -75,15 +78,15 @@
 #    creates: "/etc/default/pgbouncer.dpkg-divert"
 
 # - name: pgbouncer default file /etc/default/pgbouncer
-- name: Pgbouncer default file /usr/local/greenplum-db/etc/pgbouncer
+- name: PGBouncer default file {{ gpdb.base_dir }}/greenplum-db/etc/pgbouncer
   template:
     src: pgbouncer_default.j2
-    dest: "/usr/local/greenplum-db/etc/pgbouncer"
-    owner: "gpadmin"
-    group: "gpadmin"
+    dest: "{{ gpdb.base_dir }}/greenplum-db/etc/pgbouncer"
+    owner: "{{ _pgbouncer.user }}"
+    group: "{{ _pgbouncer.group }}"
     mode: 0644
   notify:
-    - restart pgbouncer
+    - Restart pgbouncer
 
 #
 - name: Copy systemd configuration of pgbouncer into /etc/systemd/system
@@ -105,6 +108,7 @@
     - collectd
     - monit
 
+#
 - name: Ensure pgbouncer is running
   become: true
   service:

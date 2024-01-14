@@ -37,7 +37,7 @@
     state: absent
   with_items:
     - "{{ nfs.base_work_dir }}"
-    - "{{ gpdb.gpadmin_home_dir }}/query-examples"
+    - "{{ gpdb.admin_home_dir }}/query-examples"
   when: nfs.access == true
 
 #

@@ -1,12 +1,4 @@
 ---
-# DataSciencePython2.7-2.0.6-gp6-ubuntu18.04_x86_64.gppkg
-# DataSciencePython3.9-1.1.0-gp7-el8_x86_64.gppkg
-# DataSciencePython2.7-2.0.6-gp6-rhel8_x86_64.gppkg
-
-gpdb:
-  base_dir: "/usr/local"
-  gpadmin_home_dir: "/home/gpadmin"
-
 dspython:
   prefix_major_version: ""
   major_version: 3
@@ -21,3 +13,6 @@ dspython:
 # os_version: ubuntu18.04
 # arch_type: amd64
 
+# DataSciencePython2.7-2.0.6-gp6-ubuntu18.04_x86_64.gppkg
+# DataSciencePython3.9-1.1.0-gp7-el8_x86_64.gppkg
+# DataSciencePython2.7-2.0.6-gp6-rhel8_x86_64.gppkg

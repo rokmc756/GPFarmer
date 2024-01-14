@@ -3,7 +3,7 @@
 
 #
 - name: Check if the GPDB software is already installed
-  stat: path={{ gpdb_base_dir }}/greenplum-db
+  stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_installed
 
 #
@@ -14,14 +14,14 @@
 #
 - name: Verify that database for DataScienceR is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ dsr.database_name }}'" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ dsr.database_name }}'" )
   register: dsr_database_installed
   when: inventory_hostname in groups['master']
 
 #
 - name: Drop database for DataScienceR
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ dsr.database_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ dsr.database_name }} )
   register: dsr_database_deleted
   when: ( inventory_hostname in groups['master'] and '100' in dsr_database_installed.stdout )
 
@@ -41,7 +41,7 @@
 
 #
 - set_fact:
-    gppkg_remove_cmd: "gppkg -a remove"
+    gppkg_remove_cmd: "gppkg -a -f remove"
     check_dsr_installed: "gppkg query | grep DataScienceR | awk '{print $1}'"
     dsr_package_name: DataScienceR{{ dsr.prefix_major_version }}{{ dsr.major_version }}.{{ dsr.minor_version }}
   when: inventory_hostname in groups['master'] and dsr.gpdb_version|int >= 7 and ( dsr.os_version | regex_replace('[^0-9]','')|int >= 8 )
@@ -49,7 +49,7 @@
 #
 - name: Verify if DataScienceR gppkg is installed
   become_user: gpadmin
-  shell: ( source {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ check_dsr_installed }} )
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_dsr_installed }} )
   ignore_errors: true
   register: dsr_installed
   changed_when: False
@@ -69,14 +69,14 @@
 #
 - name: Uninstall the DataScienceR package
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} DataScienceR )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} DataScienceR )
   register: dsr_extension_uninstalled
   when: ( inventory_hostname in groups['master'] and 'DataScienceR' in dsr_installed.stdout )
 
 #
 - name: Restart the Greenplum Database
   become_user: gpadmin
-  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
   when: inventory_hostname in groups['master']

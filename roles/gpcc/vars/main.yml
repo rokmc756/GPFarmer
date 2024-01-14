@@ -29,6 +29,7 @@ gpcc:
 # metric_arch: 'amd64'
 # os_name: 'ubuntu18.04'
 
+# RHEL
 # greenplum-cc-web-6.0.0-beta.5-rhel7_x86_64.zip
 # greenplum-cc-web-6.0.0-rhel7_x86_64.zip
 # greenplum-cc-web-4.7.0-LINUX-x86_64.zip
@@ -37,7 +38,6 @@ gpcc:
 # greenplum-cc-web-6.9.0-gp6-rhel7-x86_64.zip
 # greenplum-cc-web-6.9.0-gp6-rhel8-x86_64.zip
 # greenplum-cc-web-7.0.0-gp7-el8-x86_64.zip
+#
 # Ubuntu
 # greenplum-cc-web-6.8.4-gp6-ubuntu18.04-x86_64.zip
-
-

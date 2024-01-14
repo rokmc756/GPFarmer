@@ -1,5 +1,5 @@
 ---
-# Uninstall madlib extention on Greenplum database
+# Uninstall MADLib Extention on Greenplum database
 
 #
 - name: Check if the GPDB software is already installed
@@ -23,7 +23,7 @@
 #
 - name: Verify that database for MADlib extention is installed
   become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ madlib_database_name }}'" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ madlib.database_name }}'" )
   register: madlib_database_installed
   when: ( inventory_hostname in groups['master'] and '(Greenplum Database ' in select_version.stdout )
 
@@ -43,7 +43,7 @@
 
 #
 - set_fact:
-    gppkg_remove_cmd: "gppkg -a remove"
+    gppkg_remove_cmd: "gppkg -a -f remove"
     check_madlib_installed: "gppkg query | grep madlib | awk '{print $1}'"
     madlib_package_name: madlib{{ madlib.prefix_major_version }}{{ madlib.major_version }}.{{ madlib.minor_version }}
   when: inventory_hostname in groups['master'] and madlib.gpdb_version|int >= 7 and ( madlib.os_version | regex_replace('[^0-9]','')|int >= 8 )
@@ -65,7 +65,7 @@
 
 #
 - name: Stop if MADLib gppkg package is not existed
-  fail: msg="PostGIS gppkg package is not installed!"
+  fail: msg="MADLib gppkg package is not installed!"
   when: ( inventory_hostname in groups['master'] and 'madlib' not in madlib_installed.stdout )
 
 #
@@ -112,7 +112,7 @@
   when: madlib_dir_remained.stat.exists == True
 
 #
-- name: Restart GPDB after removing MADlib extension
+- name: Restart GPDB after removing MADlib Extension
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
