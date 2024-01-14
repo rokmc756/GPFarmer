@@ -1,6 +1,7 @@
-PGBouncer for Greenplum Database
-=========
+## PGBouncer Architecture
+![alt text](https://github.com/rokmc756/GPFarmer/blob/main/roles/pgbouncer/images/pgbouncer_cmoparision_connectinos.png)
 
+## PGBouncer for Greenplum Database
 This role configures PgBouncer for Greenplum database connection mux utility.
 
 Greenplum database's performance degrades when handling a high number of connection due to a 1:1 mapping of connection to Greenplum backend processes. PgBouncer is a threaded pooler which can reduce the number of backend processes and the handshaking involved in setting up a new connection.
@@ -10,10 +11,7 @@ This role is cloned from the following github site[1] which is created for Postg
 
 In this role there are several ansible playbooks modified for RHEL, CentOS and Rocky 8 and Greenplum database as well as configuration of monit and pgbouncer python script for collectd python module.
 
-
-Example pgbouncer/vars/main.yml
----------------------------------
-
+## Example pgbouncer/vars/main.yml
 Ansible handles the templating of userlist.txt, including the md5 hashing.
 ~~~
 $ vi roles/pgbouncer/vars/main.yml
@@ -35,20 +33,12 @@ pgbouncer:
 
 monit_protection: true
 collectd_monitoring: true
-
 ~~~
 
-
-Requirements
-------------
-
+## Requirements
 Module is modified and tested with pgbouncer in greenplum 6.22.x.
 
-
-Install and uninstall pgbouncer with collectd and monit by ansible playbook on ansible host
-----------------
-
----
+## Install and uninstall pgbouncer with collectd and monit by ansible playbook on ansible host
 ~~~
 $ cd /Users/moonja/GPFarmer
 
@@ -58,6 +48,7 @@ $ vi install-hosts.yml
   gather_facts: true
   roles:
     - { role: pgbouncer }
+
 
 $ make install
 
@@ -70,59 +61,36 @@ $ vi uninstall-hosts.yml
     - { role: pgbouncer }
 
 $ make uninstall
-
 ~~~
 
-
-Debugging
----------
-
+## Debugging
 If pgbouncer fails to start:-
-
 ~~~
 [gpadmin@rk8-master ~]$ pgbouncer -d /usr/local/greenplum-db/etc/pgbouncer/pgbouncer.ini -vvvv
 ~~~
-
 Testing a connection to a remote database
-
 ~~~
 [gpadmin@rk8-master ~]$ psql -h localhost -p 6432 -U username databasename
 ~~~
-
-
-Stats
------
-
+## Stats
 The default 1.7.2 configuration provides peer authentication of the pgbouncer database to show stats.
 NOTE: this still requires a userlist.txt entry for the postgres user.
-
 ~~~
 [gpadmin@rk8-master ~]$ psql -p 6432 pgbouncer -c 'show pool;'
 [gpadmin@rk8-master ~]$ psql -p 6432 pgbouncer -c 'show stats;'
 ~~~
 
-
-Reloading / restarting
-----------------------
-
+# Reloading / Restarting
 Key config changes such as pool sizing do not require a full restart
-
+~~~
 $ sysemctl reload pgbouncer
+~~~
 
-
-What are changed and fixed compare to original ansible role
-----------------------
-
+## What are changed and fixed compare to original ansible role
 See [Porting-Rocky-8.md](https://github.com/rokmc756/gpfarmer/blob/main/roles/pgbouncer/Porting-Rocky-8.md)
 
-
-License
--------
-
+## License
 LGPL
 
-
-Author Information
-------------------
-
+## Author Information
 - Jack Moon, rokmc756@gmail.com
