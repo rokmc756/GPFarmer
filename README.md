@@ -1,5 +1,5 @@
 ## Greenplum Database Arichtecture
-![alt text](https://github.com/rokmc756/GPFarmer/blob/main/roles/gpdb/images/greenplum_architecture.png)
+![alt text](https://github.com/rokmc756/GPFarmer/blob/main/roles/gpdb/images/greenplum_architecture.webp)
 
 ## What is GPFarmer?
 GPFarmer is ansible playbook to deploy Greenplum Database conveniently on Baremetal, Virtual Machines and Cloud Infrastructure.
