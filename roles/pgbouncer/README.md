@@ -49,7 +49,6 @@ $ vi install-hosts.yml
   roles:
     - { role: pgbouncer }
 
-
 $ make install
 
 $ vi uninstall-hosts.yml
@@ -64,13 +63,13 @@ $ make uninstall
 ~~~
 
 ## Debugging
-If pgbouncer fails to start:-
+If pgbouncer fails to start
 ~~~
 [gpadmin@rk8-master ~]$ pgbouncer -d /usr/local/greenplum-db/etc/pgbouncer/pgbouncer.ini -vvvv
 ~~~
 Testing a connection to a remote database
 ~~~
-[gpadmin@rk8-master ~]$ psql -h localhost -p 6432 -U username databasename
+[gpadmin@rk8-master ~]$ psql -h localhost -p 6432 -U <user_name> <database_name>
 ~~~
 ## Stats
 The default 1.7.2 configuration provides peer authentication of the pgbouncer database to show stats.
