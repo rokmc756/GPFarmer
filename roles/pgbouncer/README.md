@@ -16,27 +16,26 @@ Example pgbouncer/vars/main.yml
 
 Ansible handles the templating of userlist.txt, including the md5 hashing.
 ~~~
-    pgbouncer_users:
-      - name: testuser
-        pass: changeme
-      - name: postgres
-        pass: changeme
-    # host: changeme
+$ vi roles/pgbouncer/vars/main.yml
+pgbouncer:
+  - users:
+    - name: testuser
+      pass: changeme
+    - name: postgres
+      pass: changeme
+  - databases:
+    - name: "db1"
+      host: "{{ hostvars[groups['master'][0]]['ansible_eth0']['ipv4']['address'] }}"
+      port: 5432
+  - max_client_conn: 300
+  - max_db_connections: 300
+  - max_user_connections: 300
+  - default_pool_size: 80
+  # govern how many backend connections
 
-    pgbouncer_databases:
-      - name: "db1"
-        host: "{{ hostvars[groups['master'][0]]['ansible_eth0']['ipv4']['address'] }}"
-        port: 5432
+monit_protection: true
+collectd_monitoring: true
 
-    pgbouncer_max_client_conn: 300
-    pgbouncer_max_db_connections: 300
-    pgbouncer_max_user_connections: 300
-
-    # govern how many backend connections
-    pgbouncer_default_pool_size: 80
-
-    monit_protection: true
-    collectd_monitoring: true
 ~~~
 
 
@@ -51,16 +50,24 @@ Install and uninstall pgbouncer with collectd and monit by ansible playbook on a
 
 ---
 ~~~
-$ pwd
-/Users/moonja/gpfarmer
+$ cd /Users/moonja/GPFarmer
 
-$ vi setup-host.yml
-- hosts: rk8-master        # Greenplum master hostname
-  become: yes
+$ vi install-hosts.yml
+- hosts: rk8-master
+  become: true
+  gather_facts: true
   roles:
     - { role: pgbouncer }
 
 $ make install
+
+$ vi uninstall-hosts.yml
+#
+- hosts: rk8-master
+  become: true
+  gather_facts: true
+  roles:
+    - { role: pgbouncer }
 
 $ make uninstall
 
