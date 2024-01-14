@@ -1,11 +1,10 @@
-/usr/local/kafka/bin/kafka-run-class.sh kafka.tools.GetOffsetShell \
---bootstrap-server {{ kafka_broker_hosts }} \
---topic {{ kafka_topic_name }} --time -2
+{% for j in kafka.jobs %}
+{% if j.name is defined -%}
+   # {{ j.name }}
+{% endif %}
 
 /usr/local/kafka/bin/kafka-run-class.sh kafka.tools.GetOffsetShell \
---bootstrap-server {{ kafka_broker_hosts }} \
---topic {{ kafka_load_test_topic_name }} --time -2
+--bootstrap-server {{ kafka.broker_hosts }} \
+--topic {{ j.topic_name }} --time -2
 
-/usr/local/kafka/bin/kafka-run-class.sh kafka.tools.GetOffsetShell \
---bootstrap-server {{ kafka_broker_hosts }} \
---topic {{ kafka_delete_test_topic_name }} --time -2
+{%- endfor %}

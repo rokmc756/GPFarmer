@@ -1,12 +1,12 @@
 {
   "ListenAddress": {
     "Host": "",
-    "Port": {{ gpss_port }},
+    "Port": {{ gpss.jobs[0].gpss_port }},
     "SSL": false,
     "DebugPort": 9999
   },
   "Gpfdist": {
     "Host": "",
-    "Port": {{ gpfdist_port }}
+    "Port": {{ gpss.jobs[0].gpfdist_port }}
   }
 }

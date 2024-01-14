@@ -1,5 +1,6 @@
-/usr/local/kafka/bin/kafka-topics.sh --describe --bootstrap-server {{ kafka_broker_hosts }} --topic {{ kafka_topic_name }}
-
-/usr/local/kafka/bin/kafka-topics.sh --describe --bootstrap-server {{ kafka_broker_hosts }} --topic {{ kafka_load_test_topic_name }}
-
-/usr/local/kafka/bin/kafka-topics.sh --describe --bootstrap-server {{ kafka_broker_hosts }} --topic {{ kafka_delete_test_topic_name }}
+{% for k in kafka.jobs %}
+{% if k.topic_name is defined -%}
+   # {{ k.topic_name }}
+{% endif %}
+/usr/local/kafka/bin/kafka-topics.sh --describe --bootstrap-server {{ kafka.broker_hosts }} --topic {{ k.topic_name }}
+{%- endfor %}

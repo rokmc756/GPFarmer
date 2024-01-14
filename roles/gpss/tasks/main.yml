@@ -1,7 +1,7 @@
 ---
 #
 # Install / Uninstall Greenplum Streaming Server v1.x
-
+#
 # for now fail if it's not a Red Hat based system
 - name: Check OS (PGCC v2)
   fail: msg="Not a Red Hat based system!"
@@ -11,18 +11,23 @@
 - name: Setup Kafka
   import_tasks: setup-kafka.yml
   tags: install
+  when: setup_kafka == true
 
 #
 - name: Setup GPSS
   import_tasks: setup-gpss.yml
   tags: install
+  when: setup_gpss == true
 
 #
 - name: Uninstall GPSS
   import_tasks: uninstall-gpss.yml
   tags: uninstall
+  when: remove_gpss == true
 
 #
 - name: Uninstall Kafka
   import_tasks: uninstall-kafka.yml
   tags: uninstall
+  when: remove_kafka == true
+

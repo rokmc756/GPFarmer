@@ -1,5 +1,5 @@
-DATABASE: {{ gpss_database_name }}
-HOST: {{ gpss_mdw_hostname }}
+DATABASE: {{ gpss.database_name }}
+HOST: {{ gpss.mdw_hostname }}
 USER: gpadmin
 PASSWORD: changeme
 PORT: 5432
@@ -7,8 +7,8 @@ KAFKA:
   INPUT:
     ERROR_LIMIT: 1000
     SOURCE:
-      BROKERS: {{ kafka_broker_hosts }}
-      TOPIC: {{ kafka_delete_test_topic_name }}
+      BROKERS: {{ kafka.broker_hosts }}
+      TOPIC: {{ kafka.jobs[2].topic_name }}
     VALUE:
       COLUMNS:
       - NAME: jdata
@@ -117,9 +117,9 @@ KAFKA:
     ORDER_COLUMNS:
     - lst_db_chg_dtm
     SCHEMA: public
-    TABLE: {{ kafka_delete_test_table_name }}
+    TABLE: {{ kafka.jobs[2].table_name }}
   PROPERTIES:
-    group.id: gpss_{{ kafka_delete_test_topic_name }}
+    group.id: gpss_{{ kafka.jobs[2].topic_name }}
   COMMIT:
     IDLE_DURATION: -1
 VERSION: 2

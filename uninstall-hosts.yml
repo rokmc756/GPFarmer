@@ -6,17 +6,18 @@
 #    - { role: gpcc }
 
 #
-- hosts: rk8-master
-  become: true
-  gather_facts: true
-  roles:
-    - { role: pgbouncer }
-
-#
-#- hosts: all
+#- hosts: rk8-master
 #  become: true
 #  gather_facts: true
 #  roles:
+#    - { role: pgbouncer }
+
+#
+- hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - { role: gpss }
 #    - { role: plcontainer }
 #    - { role: DataScienceR }
 #    - { role: DataSciencePython }
@@ -29,7 +30,6 @@
 #    - { role: init-hosts }
 #    - { role: gptext }
 #    - { role: init-hosts }
-#    - { role: gpss }
 #    - { role: gpdb }                 # Need to check if get_facts: true is required
 #    - { role: gpupgrade }
 

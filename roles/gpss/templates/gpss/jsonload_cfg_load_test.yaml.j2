@@ -1,13 +1,13 @@
-DATABASE: {{ gpss_database_name }}
+DATABASE: {{ gpss.database_name }}
 USER: gpadmin
 PASSWORD: changeme
-HOST: {{ gpss_mdw_hostname }}
+HOST: {{ gpss.mdw_hostname }}
 PORT: 5432
 KAFKA:
    INPUT:
      SOURCE:
-        BROKERS: {{ kafka_broker_hosts }}
-        TOPIC: {{ kafka_load_test_topic_name }}
+        BROKERS: {{ kafka.broker_hosts }}
+        TOPIC: {{ kafka.jobs[1].topic_name }}
      COLUMNS:
           - NAME: id
             TYPE: int
@@ -44,7 +44,7 @@ KAFKA:
      FORMAT: csv
      ERROR_LIMIT: 10
    OUTPUT:
-     TABLE: {{ kafka_load_test_table_name }}
+     TABLE: {{ kafka.jobs[1].table_name }}
      MODE: insert
      MAPPING:
         - NAME: id

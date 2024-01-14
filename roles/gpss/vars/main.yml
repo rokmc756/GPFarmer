@@ -1,94 +1,60 @@
 ---
-gpdb_base_dir: "/usr/local"
-gpadmin_home_dir: "/home/gpadmin"
-gpss_major_version: 1
-gpss_minor_version: 10.4
-gpss_patch_version:
-gpss_gpdb_version: gpdb7
-gpss_os_version_kafka: rhel8
-gpss_os_version_gpdb: rhel8
-gpss_arch_type: x86_64
-gpss_database_name: testdb
-gpss_mdw_hostname: "{{ hostvars[groups['master'][0]].ansible_hostname }}"
+gpss:
+  major_version: 1
+  minor_version: 11.0
+  patch_version: ""
+  gpdb_version: gpdb7
+  os_version: rhel8
+  arch_type: x86_64
+  database_name: gpss_testdb
+  mdw_hostname: "{{ hostvars[groups['master'][0]].ansible_hostname }}"
+  setup_action: ""
+  base_dir: "{{ gpdb.admin_home_dir }}/gpss-base"
+  log_dir: "{{ gpdb.admin_home_dir }}/gpss-base/logs"
+  install_tar: false
+  jobs:
+    - { gpss_port: 50007, gpfdist_port: 8319, name: kafkajson2gp, gpss_config: "gpss_config.json", job_config: "jsonload_cfg.yaml" }
+    - { gpss_port: 51007, gpfdist_port: 8419, name: kafkajson2gp-load-test, gpss_config: "gpss_load_test_config.json", job_config: "jsonload_cfg_load_test.yaml" }
+    - { gpss_port: 52007, gpfdist_port: 8519, name: kafkajson2gp-delete-test, gpss_config: "gpss_delete_test_config.json", job_config: "jsonload_cfg_delete_test.yaml" }
+  file_vars:
+    - bin/gpkafka
+    - bin/gpss
+    - bin/gpsscli
+    - bin/kafkacat
+    - lib/postgresql/gpfmt_gpss.so
+    - lib/postgresql/gpfmt_protobuf.so
+    - lib/postgresql/gpss.so
+    - lib/librdkafka.so
+    - lib/librdkafka.so.1
+    - lib/libserdes.so
+    - lib/libserdes.so.1
+    - share/postgresql/extension/dataflow--1.0.sql
+    - share/postgresql/extension/dataflow.control
+    - share/postgresql/extension/gpss--1.0.sql
+    - share/postgresql/extension/gpss.control
+    - open_source_license_VMware_Tanzu_Greenplum_Streaming_Server_1.6.0_GA.txt
 
-gpss_setup_action: "{{ setup_action }}"
-#  gpss-gpdb6-1.6.0-rhel7-x86_64.tar.gz
+kafka:
+  os_version: rhel9
+  base_dir: "{{ gpdb.admin_home_dir }}/kafka-base"
+  major_version: 3
+  jobs:
+    - { topic_name: topic-json-gpkafka, table_name: json_from_kafka }
+    - { topic_name: topic-json-gpkafka-load-test, table_name: json_from_kafka_load_test }
+    - { topic_name: topic-json-gpkafka-delete-test, table_name: json_from_kafka_delete_test }
+  install_dir: /usr/local/kafka
+  replication_factor: 3
+  partitions: 3
+  broker_hosts: "{{ groups['kafka_brokers'] | map('extract', hostvars, ['ansible_hostname']) | map('regex_replace', '$', ':9092') | join(',') }}"
+  zookeeper_hosts: "{{ groups['kafka_brokers'] | map('extract', hostvars, ['ansible_hostname']) | map('regex_replace', '$', ':2181') | join(',') }}"
+  upload_kafka_data: true
+  # - { topic_name: topic-json-gpkafka-temp-delete-test, table_name: json_from_kafka_temp_delete_test }
+  # delete_test_topic_name: s_lot_cect001tm
+  # delete_test_table_name: iiblcect001tm
 
-gpss_base_dir: /home/gpadmin/gpss-base
-gpss_log_dir: /home/gpadmin/gpss-base/logs
-gpss_install_tar: false
-
-kafka_base_dir: /home/gpadmin/kafka-base
-# kafka_major_version: 3
-
-#
-##########################################################
-gpss_port: 50007
-gpss_load_test_port: 51007
-gpss_delete_test_port: 52007
-##########################################################
-gpfdist_port: 8319
-gpfdist_load_test_port: 8419
-gpfdist_delete_test_port: 8519
-##########################################################
-
-##########################################################
-gpss_job_name: kafkajson2gp
-gpss_load_test_job_name: kafkajson2gp-load-test
-gpss_delete_test_job_name: kafkajson2gp-delete-test
-##########################################################
-
-##########################################################
-kafka_topic_name: topic-json-gpkafka
-kafka_load_test_topic_name: topic-json-gpkafka-load-test
-# kafka_delete_test_topic_name: s_lot_cect001tm
-kafka_delete_test_topic_name: topic-json-gpkafka-delete-test
-##########################################################
-kafka_table_name: json_from_kafka
-kafka_load_test_table_name: json_from_kafka_load_test
-# kafka_delete_test_table_name: iiblcect001tm
-kafka_delete_test_table_name: json_from_kafka_delete_test
-kafka_delete_test_temp_table_name: json_from_kafka_temp_delete_test
-##########################################################
-#
-
-kafka_install_dir: /usr/local/kafka
-kafka_replication_factor: 3
-kafka_partitions: 3
-zookeeper_hosts: "{{ hostvars[groups['kafka_brokers'][0]].ansible_hostname }}:2181,{{ hostvars[groups['kafka_brokers'][1]].ansible_hostname }}:2181,{{ hostvars[groups['kafka_brokers'][2]].ansible_hostname }}:2181"
-kafka_broker_hosts: "{{ hostvars[groups['kafka_brokers'][0]].ansible_hostname }}:9092,{{ hostvars[groups['kafka_brokers'][1]].ansible_hostname }}:9092,{{ hostvars[groups['kafka_brokers'][2]].ansible_hostname }}:9092"
 print_debug: true
+setup_kafka: true
+remove_kafka: true
+setup_gpss: false
+remove_gpss: false
 
-gpss_file_vars:
-  - bin/gpkafka
-  - bin/gpss
-  - bin/gpsscli
-  - bin/kafkacat
-  - lib/postgresql/gpfmt_gpss.so
-  - lib/postgresql/gpfmt_protobuf.so
-  - lib/postgresql/gpss.so
-  - lib/librdkafka.so
-  - lib/librdkafka.so.1
-  - lib/libserdes.so
-  - lib/libserdes.so.1
-  - share/postgresql/extension/dataflow--1.0.sql
-  - share/postgresql/extension/dataflow.control
-  - share/postgresql/extension/gpss--1.0.sql
-  - share/postgresql/extension/gpss.control
-  - open_source_license_VMware_Tanzu_Greenplum_Streaming_Server_1.6.0_GA.txt
-
-#  - { id: 2, name: bin/gpss }
-#  - { id: 3, name: bin/gpsscli }
-#  - { id: 4, name: bin/kafkacat }
-#  - { id: 5, name: lib/postgresql/gpfmt_gpss.so }
-#  - { id: 6, name: lib/postgresql/gpfmt_protobuf.so }
-#  - { id: 7, name: lib/postgresql/gpss.so }
-#  - { id: 8, name: lib/librdkafka.so }
-#  - { id: 9, name: lib/librdkafka.so.1 }
-#  - { id: 10, name: lib/libserdes.so }
-#  - { id: 11, name: lib/libserdes.so.1 }
-#  - { id: 12, name: share/postgresql/extension/dataflow--1.0.sql }
-#  - { id: 13, name: share/postgresql/extension/dataflow.control }
-#  - { id: 14, name: share/postgresql/extension/gpss--1.0.sql }
-#  - { id: 15, name: share/postgresql/extension/gpss.control }
-#  - { id: 16, name: open_source_license_VMware_Tanzu_Greenplum_Streaming_Server_1.6.0_GA.txt }

@@ -1,14 +1,21 @@
-source /usr/local/greenplum-db/greenplum_path.sh && \
-daemonize $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_config.json \
---verbose --log-dir /home/gpadmin/gpss-base/logs
+# source /usr/local/greenplum-db/greenplum_path.sh && \
+# daemonize $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_config.json \
+# --verbose --log-dir /home/gpadmin/gpss-base/logs
+#
+#source /usr/local/greenplum-db/greenplum_path.sh && \
+#daemonize $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_load_test_config.json \
+#--verbose --log-dir /home/gpadmin/gpss-base/logs
+#
+#source /usr/local/greenplum-db/greenplum_path.sh && \
+#daemonize $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_delete_test_config.json \
+#--verbose --log-dir /home/gpadmin/gpss-base/logs
 
-source /usr/local/greenplum-db/greenplum_path.sh && \
-daemonize $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_load_test_config.json \
---verbose --log-dir /home/gpadmin/gpss-base/logs
-
-source /usr/local/greenplum-db/greenplum_path.sh && \
-daemonize $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_delete_test_config.json \
---verbose --log-dir /home/gpadmin/gpss-base/logs
+{% for j in gpss.jobs %}
+{% if j.name is defined -%}
+   # {{ j.name }}
+{% endif %}
+source /usr/local/greenplum-db/greenplum_path.sh && daemonize $GPHOME/bin/gpss {{ gpss.base_dir }}/{{ j.gpss_config }} --verbose --log-dir {{ gpss.base_dir }}/logs
+{%- endfor %}
 
 # valgrind --trace-children=yes --show-reachable=yes --track-origins=yes --read-var-info=yes \
 # --tool=memcheck --leak-check=full --num-callers=50 -v --time-stamp=yes --log-file=leaky.log \

@@ -1,2 +1,6 @@
-/usr/local/kafka/bin/kafka-console-producer.sh \
---broker-list {{ kafka_broker_hosts }} --topic {{ kafka_topic_name }} < {{ kafka_base_dir }}/sample_data.json
+{% for k in kafka.jobs %}
+{% if k.topic_name is defined -%}
+   # {{ k.topic_name }}
+{% endif %}
+/usr/local/kafka/bin/kafka-console-producer.sh --broker-list {{ kafka.broker_hosts }} --topic {{ k.topic_name }} < {{ kafka.base_dir }}/sample_data.json
+{%- endfor %}

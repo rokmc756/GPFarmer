@@ -1,13 +1,13 @@
-DATABASE: {{ gpss_database_name }}
+DATABASE: {{ gpss.database_name }}
 USER: gpadmin
-HOST: {{ gpss_mdw_hostname }}
+HOST: {{ gpss.mdw_hostname }}
 PORT: 5432
 VERSION: 2
 KAFKA:
    INPUT:
       SOURCE:
-         BROKERS: {{ kafka_broker_hosts }}
-         TOPIC: {{ kafka_topic_name }}
+         BROKERS: {{ kafka.broker_hosts }}
+         TOPIC: {{ kafka.jobs[0].topic_name }}
       VALUE:
          COLUMNS:
            - NAME: jdata
@@ -21,7 +21,7 @@ KAFKA:
       ERROR_LIMIT: 25
    OUTPUT:
       SCHEMA: public
-      TABLE: {{ kafka_table_name }}
+      TABLE: {{ kafka.jobs[0].table_name }}
       MAPPING:
         - NAME: customer_id
           EXPRESSION: (jdata->>'cust_id')::int

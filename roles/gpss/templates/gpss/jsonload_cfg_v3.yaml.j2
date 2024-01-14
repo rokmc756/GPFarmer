@@ -20,7 +20,7 @@ targets:
 sources:
 - kafka:
     topic: topic-json-gpkafka
-    brokers: {{ kafka_broker_hosts }}
+    brokers: {{ kafka.broker_hosts }}
     key_content:
       binary:
         source_column_name: key

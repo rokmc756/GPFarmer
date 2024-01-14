@@ -1,0 +1,38 @@
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[INFO]:-Starting gppkg with args: -i gpss-gpdb6-1_11_0-rhel8-x86_64.gppkg -v
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Connecting to dbname='postgres'
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Running Command: rpm --version
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-cmd had rc=127 completed=True halted=False
+  stdout=''
+  stderr='rpm: symbol lookup error: /lib64/libelf.so.1: undefined symbol: ZSTD_compressStream2
+'
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-_get_master_port
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-_get_gpdb_host_list
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Connecting to dbname='template1'
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-from_package_path
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Gppkg Constructor
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Starting InstallPackage
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[INFO]:-Installing package gpss-gpdb6-1_11_0-rhel8-x86_64.gppkg
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Starting ExtractPackage
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Starting CleanupDir
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Cleaning up /usr/local/greenplum-db-6.22.0/.tmp
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Ending CleanupDir
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Ending ExtractPackage
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Starting ValidateInstallPackage
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Starting IsVersionCompatible
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-_get_gpdb_version
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Running Command: $GPHOME/bin/postgres --gp-version
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Greenplum Database Version = 6.22.0 build commit:4b6c079bc3aed35b2f161c377e208185f9310a69
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Required Greenplum Database version = main build dev
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Ending IsVersionCompatible
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[INFO]:-Validating rpm installation cmdStr='rpm --test -i /usr/local/greenplum-db-6.22.0/.tmp/gpss-1.11.0.x86_64.rpm --dbpath /usr/local/greenplum-db-6.22.0/share/packages/database --prefix /usr/local/greenplum-db-6.22.0'
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Running Command: rpm --test -i /usr/local/greenplum-db-6.22.0/.tmp/gpss-1.11.0.x86_64.rpm --dbpath /usr/local/greenplum-db-6.22.0/share/packages/database --prefix /usr/local/greenplum-db-6.22.0
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-cmd had rc=127 completed=True halted=False
+  stdout=''
+  stderr='rpm: symbol lookup error: /lib64/libelf.so.1: undefined symbol: ZSTD_compressStream2
+'
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Ending ValidateInstallPackage
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[DEBUG]:-Ending InstallPackage
+20240110:14:49:29:2510501 gppkg:DRGREENPLUM-MSTR01:gpadmin-[CRITICAL]:-Error occurred: non-zero rc: 127
+ Command was: 'rpm --test -i /usr/local/greenplum-db-6.22.0/.tmp/gpss-1.11.0.x86_64.rpm --dbpath /usr/local/greenplum-db-6.22.0/share/packages/database --prefix /usr/local/greenplum-db-6.22.0'
+rc=127, stdout='', stderr='rpm: symbol lookup error: /lib64/libelf.so.1: undefined symbol: ZSTD_compressStream2
+'

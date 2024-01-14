@@ -1,8 +1,10 @@
-source /usr/local/greenplum-db/greenplum_path.sh && \
-gpsscli start {{ gpss_job_name }} --verbose --gpss-port {{ gpss_port }}
+{% for j in gpss.jobs %}
+{% if j.name is defined -%}
+   # {{ j.name }}
+{% endif %}
 
 source /usr/local/greenplum-db/greenplum_path.sh && \
-gpsscli start {{ gpss_load_test_job_name }} --verbose --gpss-port {{ gpss_load_test_port }}
+gpsscli start {{ j.name }} --verbose --gpss-port {{ j.gpss_port }}
 
-source /usr/local/greenplum-db/greenplum_path.sh && \
-gpsscli start {{ gpss_delete_test_job_name }} --verbose --gpss-port {{ gpss_delete_test_port }}
+{%- endfor %}
+

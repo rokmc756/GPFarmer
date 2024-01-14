@@ -16,7 +16,6 @@
 
 #
 - name: Uninstall GPSS rpm package
-  become_user: root
   yum:
     name: gpss
     state: absent
@@ -27,23 +26,17 @@
 
 #
 - name: Delete Kafka Topic
-  become: yes
   shell:
-    "/usr/local/kafka/bin/kafka-topics.sh --bootstrap-server {{ kafka_broker_hosts }}:9092 --topic {{ item }} --delete"
+    "/usr/local/kafka/bin/kafka-topics.sh --bootstrap-server {{ kafka.broker_hosts }}:9092 --topic {{ item.topic_name }} --delete"
   ignore_errors: yes
-  with_items:
-    - "{{ kafka_topic_name }}"
-    - "{{ kafka_load_test_topic_name }}"
-    - "{{ kafka_delete_test_topic_name }}"
+  with_items: "{{ kafka.jobs }}"
   when: inventory_hostname == hostvars[groups['kafka_brokers'][0]].ansible_hostname
-  #  "/usr/local/kafka/bin/kafka-topics.sh --bootstrap-server {{ kafka_broker_hostname }}:9092 --topic {{ kafka_topic_name }} --delete"
 
 #
 - name: Delete Kafka working base directory
-  become: yes
   file:
     owner: root
     group: root
-    path: "{{ kafka_base_dir }}"
+    path: "{{ kafka.base_dir }}"
     state: absent
   when: inventory_hostname in groups['kafka_brokers']

@@ -1,2 +1,6 @@
-/usr/local/kafka/bin/kafka-topics.sh --create --zookeeper {{ zookeeper_hosts }}/gpdb-kafka \
---replication-factor {{ kafka_replication_factor}} --partitions {{ kafka_partitions }} --topic {{ kafka_topic_name }}
+{% for k in kafka.jobs %}
+{% if k.topic_name is defined -%}
+   # {{ k.topic_name }}
+{% endif %}
+/usr/local/kafka/bin/kafka-topics.sh --create --zookeeper {{ kafka.zookeeper_hosts }}/gpdb-kafka --replication-factor {{ kafka.replication_factor}} --partitions {{ kafka.partitions }} --topic {{ k.topic_name }}
+{%- endfor %}
