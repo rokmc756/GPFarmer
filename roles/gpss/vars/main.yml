@@ -48,9 +48,6 @@ kafka:
   broker_hosts: "{{ groups['kafka_brokers'] | map('extract', hostvars, ['ansible_hostname']) | map('regex_replace', '$', ':9092') | join(',') }}"
   zookeeper_hosts: "{{ groups['kafka_brokers'] | map('extract', hostvars, ['ansible_hostname']) | map('regex_replace', '$', ':2181') | join(',') }}"
   upload_kafka_data: true
-  # - { topic_name: topic-json-gpkafka-temp-delete-test, table_name: json_from_kafka_temp_delete_test }
-  # delete_test_topic_name: s_lot_cect001tm
-  # delete_test_table_name: iiblcect001tm
 
 print_debug: true
 setup_kafka: true

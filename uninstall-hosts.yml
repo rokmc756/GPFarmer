@@ -1,12 +1,12 @@
 #
-#- hosts: rk8-master,rk8-slave
+#- hosts: rh8-master,rh8-slave
 #  become: true
 #  become_user: gpadmin
 #  roles:
 #    - { role: gpcc }
 
 #
-#- hosts: rk8-master
+#- hosts: rh8-master
 #  become: true
 #  gather_facts: true
 #  roles:
@@ -17,7 +17,10 @@
   become: true
   gather_facts: true
   roles:
-    - { role: gpss }
+    - { role: gptext }
+#    - { role: gpdb }                 # Need to check if get_facts: true is required
+#    - { role: init-hosts }
+#    - { role: gpss }
 #    - { role: plcontainer }
 #    - { role: DataScienceR }
 #    - { role: DataSciencePython }
@@ -28,9 +31,6 @@
 #    - { role: pxf }
 #    - { role: gpdb }                 # Need to check if get_facts: true is required
 #    - { role: init-hosts }
-#    - { role: gptext }
-#    - { role: init-hosts }
-#    - { role: gpdb }                 # Need to check if get_facts: true is required
 #    - { role: gpupgrade }
 
 #- hosts: rk9-minio

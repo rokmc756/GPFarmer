@@ -4,12 +4,12 @@ remote_machine_username="jomoon"
 remote_machine_password="changeme"
 
 [master]
-rh8-master ansible_ssh_host=192.168.0.51
+rh8-master ansible_ssh_host=192.168.0.141
 
 [standby]
-rh8-slave ansible_ssh_host=192.168.0.52
+rh8-slave ansible_ssh_host=192.168.0.142
 
 [segments]
-rh8-node01 ansible_ssh_host=192.168.0.53
-rh8-node02 ansible_ssh_host=192.168.0.54
-rh8-node03 ansible_ssh_host=192.168.0.55
+rh8-node01 ansible_ssh_host=192.168.0.143
+rh8-node02 ansible_ssh_host=192.168.0.144
+rh8-node03 ansible_ssh_host=192.168.0.145

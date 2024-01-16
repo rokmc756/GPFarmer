@@ -7,10 +7,10 @@ gpdb:
   admin_user: gpadmin
   admin_passwd: changeme
   package_name: greenplum-db
-  major_version: 7
-  minor_version: 0.0
+  major_version: 6
+  minor_version: 26.0
   build_version:
-  os_name: 'el8'
+  os_name: 'rhel8'
   arch_name: 'x86_64'
   binary_type: 'rpm'
   number_segments: 4
@@ -28,8 +28,8 @@ gpdb:
 # gpdb_package_name: open-source-greenplum-db
 
 upgrade:
-  major_version: 7
-  minor_version: 0.1
+  major_version: 6
+  minor_version: 26.1
   build_version:
   os_name: 'el8'
   arch_name: 'x86_64'

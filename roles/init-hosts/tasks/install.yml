@@ -1,5 +1,14 @@
 ---
 #
+- name: Install EPEL Repostory
+  become: true
+  shell: |
+    yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ hostvars[inventory_hostname].ansible_distribution_major_version }}.noarch.rpm
+  register: install_epel
+  changed_when: false
+  when: (  ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' )
+
+#
 - name: Copy script to change package repository
   become: true
   template:

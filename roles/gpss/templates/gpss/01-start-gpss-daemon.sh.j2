@@ -1,15 +1,3 @@
-# source /usr/local/greenplum-db/greenplum_path.sh && \
-# daemonize $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_config.json \
-# --verbose --log-dir /home/gpadmin/gpss-base/logs
-#
-#source /usr/local/greenplum-db/greenplum_path.sh && \
-#daemonize $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_load_test_config.json \
-#--verbose --log-dir /home/gpadmin/gpss-base/logs
-#
-#source /usr/local/greenplum-db/greenplum_path.sh && \
-#daemonize $GPHOME/bin/gpss /home/gpadmin/gpss-base/gpss_delete_test_config.json \
-#--verbose --log-dir /home/gpadmin/gpss-base/logs
-
 {% for j in gpss.jobs %}
 {% if j.name is defined -%}
    # {{ j.name }}

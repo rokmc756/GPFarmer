@@ -7,12 +7,19 @@
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
 #
-- name: Install GPText on {{ ansible_distribution }}
+- name: Apply facts of all nodes during deploy or destroy GPText
+  import_tasks: set-facts.yml
+  tags:
+    - install
+    - uninstall
+
+#
+- name: Install GPText
   import_tasks: install.yml
   tags: install
 
 #
-- name: Uninstall GPText on {{ ansible_distribution }}
+- name: Uninstall GPText
   import_tasks: uninstall.yml
   tags: uninstall
 

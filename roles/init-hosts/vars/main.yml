@@ -12,4 +12,4 @@ domain_name: "jtest.pivotal.io"
 change_kr_mirror: true
 
 gp7_hosts_num: "{{ groups['all'] | length -1 }}"
-
+download_epel: true

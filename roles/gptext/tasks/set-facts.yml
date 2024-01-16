@@ -1,0 +1,22 @@
+#
+- name: Define facts for GPText Nodes
+  set_fact:
+    gptext_all_hosts: "{{ groups['segments'] | join(' ') }}"
+    # gptext_all_hosts: "{{ groups['all'] | join(' ') }}"
+
+#
+- name: Define facts for Zookeeper Nodes
+  set_fact:
+    zookeeper_all_hosts: "{{ groups['segments'] | join(' ') }}"
+    zoo_cluster: "{{ groups['segments'] | map('extract', hostvars, ['ansible_hostname']) | map('regex_replace', '$', ':2181') | join(',') }}"
+
+#
+- name: Print all GPText Hosts
+  debug:
+    msg: "{{ gptext_all_hosts }}"
+
+#
+- name: Print all Zookeeper Hosts
+  debug:
+    msg: "{{ zookeeper_all_hosts }}"
+
