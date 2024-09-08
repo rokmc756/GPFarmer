@@ -1,0 +1,9 @@
+[extras] 
+name=CentOS-$releasever - Extras 
+#mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=extras&infra=$infra
+# baseurl=https://mirror.kakao.com/centos/$releasever/extras/$basearch/
+baseurl=https://mirror.kakao.com/centos/7/extras/x86_64/
+enabled=1
+#gpgcheck=1 
+#gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+#additional packages that extend functionality of existing packages 

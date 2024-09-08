@@ -1,121 +1,126 @@
 ---
-# Fail if OS is not supportable
-- name: Check OS supportable (common)
+# Fail If OS Is Not Supportable
+- name: Check OS Supportable (common)
   fail: msg="{{ ansible_distribution }} is not supported for this ansible playbook!"
   when: ansible_distribution != "RedHat" and ansible_distribution != "CentOS" and ansible_distribution != "Rocky" and ansible_distribution != "Ubuntu" and ansible_distribution != "Debian"
 
-#
-- set_fact:
-    gpdb_network_range: "{{ hostvars[inventory_hostname]['ansible_eth0']['ipv4']['network'] }}/{{ ( hostvars[inventory_hostname]['ansible_eth0']['ipv4']['address'] + '/' + hostvars[inventory_hostname]['ansible_eth0']['ipv4']['netmask'] ) | ansible.utils.ipaddr('prefix') }}"
 
-#
-- name: Get the specific ip address
+- set_fact:
+    gpdb_network_range: "{{ hostvars[inventory_hostname][_netdev]['ipv4']['network'] }}/{{ ( hostvars[inventory_hostname][_netdev]['ipv4']['address'] + '/' + hostvars[inventory_hostname][_netdev]['ipv4']['netmask'] ) | ansible.utils.ipaddr('prefix') }}"
+
+
+- name: Get the Specific IP Address
   set_fact:
     prod_ip_addr_range: "{{ item }}"
   with_items: "{{ ansible_all_ipv4_addresses }}"
   when: "item | ansible.utils.ipaddr( gpdb_network_range )"
 
-#
+
 - set_fact:
-    rhel_install_packages: "{{ rhel_common_packages ~ ',' ~ rhel_common_devel_packages  ~ ',' ~ rhel7_common_devel_packages }}"
+    rh_install_pkgs: "{{ rh_common_pkgs ~ ',' ~ rh_common_devel_pkgs  ~ ',' ~ rh7_common_devel_pkgs }}"
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int <= 7
 
-#
+
 - set_fact:
-    rhel_install_packages: "{{ rhel_common_packages ~ ',' ~ rhel_common_devel_packages  ~ ',' ~ rhel8_common_devel_packages }}"
+    rh_install_pkgs: "{{ rh_common_pkgs ~ ',' ~ rh_common_devel_pkgs  ~ ',' ~ rh8_common_devel_pkgs }}"
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 8
 
-#
-- name: Check if systemd is used (1)
+
+- name: Check if Systemd Is used (1)
   stat: path=/run/systemd/system
   register: systemd_exists
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
 
-#
-- name: Check if systemd is used (2)
+
+- name: Check if Systemd Is used (2)
   fail: msg="systemd is not installed"
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and systemd_exists.stat.exists != True
+
 
 # Update package cache - required for any new software installation
 - name: Update Package Cache
   package: name=* state=latest update_cache=yes
   when: update_cache == true and (  ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
 
+
 # Upgrade packages to latest version
 - name: Upgrade All Packages
   package: name=* state=latest update_cache=yes
   when: upgrade_packages == true and ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
 
-#
-- name: Restart system after upgrade packages
+
+- name: Restart System After Upgrade Packages
   hostname: name={{ inventory_hostname }}
   notify:
-    - Restart system
-    - Waiting for server to come back after restart
+    - Restart System
+    - Waiting for Server to Come Back After Restart
 
-#
-- name: Install firewalld
+
+- name: Install Firewalld
   package: name={{ item }} state=present
   with_items:
     - firewalld
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ansible_distribution_major_version|int >= 7
 
-#
-- name: Stop and disable firewalld
-  become: true
-  become_user: root
+
+- name: Stop and Disable Firewalld
+  # become: true
+  # become_user: root
   service:
     name: firewalld
     state: stopped
     enabled: False
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" or ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" ) and ansible_distribution_major_version|int >= 7
 
-#
-- name: Clean rules on all chains of filter table
-  become: true
-  become_user: root
+
+- name: Clean Rules on All Chains Of Filter table
+  # become: true
+  # become_user: root
   iptables:
     chain: "{{ item }}"
     flush: yes
   with_items:  [ 'INPUT', 'FORWARD', 'OUTPUT' ]
 
-#
-- name: Install Dependent RPM packages for Greenplum in RedHat/CentOS/Rocky Linux
+
+- name: Install Dependent RPM Packages for Greenplum in RedHat/CentOS/Rocky Linux
   package:
-    name: "{{ rhel_install_packages }}"
+    name: "{{ rh_install_pkgs }}"
     state: present
   ignore_errors: true
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
 
-#
-- name: Install basic dependent packages for Ubuntu or Debian
+
+- name: Install Basic Dependent Packages for Ubuntu or Debian
   package:
     name: "{{ ubt_common_packages }}"
     state: present
   when: ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
 
-#
-- name: Install development packages for Ubuntu or Debian
+
+- name: Install Development Packages for Ubuntu or Debian
   package:
     name: "{{ ubt_common_devel_packages }}"
     state: present
   when: ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
+
 
 #- name: install Red Hat version of 'needs-restarting'
 #  get_url:
 #    url: https://raw.githubusercontent.com/rpm-software-management/yum-utils/master/needs-restarting.py
 #    dest: /root/needs-restarting.py
 #    mode: 0700
-#
 
-#
-- name: Import tasks of Reboot required in RHEL/CentOS/Rocky Linux 6 and 7
+#  grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=0 systemd.legacy_systemd_cgroup_controller
+
+- name: Import Tasks of Reboot Required in RHEL/CentOS/Rocky Linux 6 and 7
   import_tasks: reboot_require_rh7.yml
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and hostvars[inventory_hostname].ansible_distribution_major_version|int <= 7
 
-#
-- name: Import tasks of Reboot required in RHEL/CentOS/Rocky Linux 8 or higher versions
+
+- name: Import Tasks of Reboot Required in RHEL/CentOS/Rocky Linux 8 or Higher versions
   import_tasks: reboot_require_rh8.yml
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and hostvars[inventory_hostname].ansible_distribution_major_version|int >= 8
 
+
 - meta: flush_handlers
+

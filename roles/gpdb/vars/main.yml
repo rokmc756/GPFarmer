@@ -1,39 +1,39 @@
 ---
-local_machine_user: "moonja"
-gpdb:
-  master_data_dir: /data/master/gpseg-1
-  data_dir: /data
-  base_dir: /usr/local
-  admin_user: gpadmin
-  admin_passwd: changeme
-  package_name: greenplum-db
-  major_version: 6
-  minor_version: 26.0
-  build_version:
-  os_name: 'rhel8'
-  arch_name: 'x86_64'
-  binary_type: 'rpm'
-  number_segments: 4
-  mirror_enable: true
-  spread_mirrors: ""
-  initdb_single: False
-  initdb_with_standby: True
-  seg_serialized_install: False
+#local_machine_user: "moonja"
+#gpdb:
+#  master_data_dir: /data/master/gpseg-1
+#  data_dir: /data
+#  base_dir: /usr/local
+#  admin_user: gpadmin
+#  admin_passwd: changeme
+#  package_name: greenplum-db
+#  major_version: 6
+#  minor_version: 26.0
+#  build_version:
+#  os_name: 'rhel8'
+#  arch_name: 'x86_64'
+#  binary_type: 'rpm'
+#  number_segments: 4
+#  mirror_enable: true
+#  spread_mirrors: ""
+#  initdb_single: False
+#  initdb_with_standby: True
+#  seg_serialized_install: False
 # os_name: 'ubuntu18.04'
-# arch_name: 'amd64'
-# binary_type: 'deb'
-# greenplum-db-7.0.0-el8-x86_64.rpm
-# greenplum-db-7.0.0-beta.4-el8-x86_64.rpm
-# greenplum-db-6.24.3-ubuntu18.04-amd64.deb
-# gpdb_package_name: open-source-greenplum-db
-
-upgrade:
-  major_version: 6
-  minor_version: 26.1
-  build_version:
-  os_name: 'el8'
-  arch_name: 'x86_64'
-  binary_type: 'rpm'
+## arch_name: 'amd64'
+## binary_type: 'deb'
+## greenplum-db-7.0.0-el8-x86_64.rpm
+## greenplum-db-7.0.0-beta.4-el8-x86_64.rpm
+## greenplum-db-6.24.3-ubuntu18.04-amd64.deb
+## gpdb_package_name: open-source-greenplum-db
+#
+#upgrade:
+#  major_version: 6
+#  minor_version: 26.1
+#  build_version:
+#  os_name: 'el8'
+#  arch_name: 'x86_64'
+#  binary_type: 'rpm'
 
 #
 common_gpdb_kernel_parameters:
@@ -83,3 +83,4 @@ enable_ssl: true
 finalize_gpdb: true
 enable_ldap: false
 enable_kerberos: false
+

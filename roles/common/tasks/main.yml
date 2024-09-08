@@ -1,20 +1,24 @@
 ---
-# Install common role to prepare installing Greenplum Database
-
-#- name: Print OS
-#  debug: msg={{ ansible_distribution }}
-
+# Install Common role to Prepare Installing Greenplum Database
 # for now fail if it's not supported OS
 - name: Check OS ( GPDB )
   fail: msg="{{ ansible_distribution }} is not supported for this ansible playbook!"
   when: ansible_distribution != "RedHat" and ansible_distribution != "CentOS" and ansible_distribution != "Rocky" and ansible_distribution != "Ubuntu" and ansible_distribution != "Debian"
 
-#
-- name: Install common role for Red Hat / CentOS / Rocky / Ubuntu / Debian
+
+- name: Set Facts for Network and Packages Informations
+  import_tasks: set-facts.yml
+  tags:
+    - install
+    - uninstall
+
+
+- name: Install Common Role
   import_tasks: install.yml
   tags: install
 
-#
-- name: Uninstall common role for Red Hat / CentOS / Rocky / Ubuntu / Debian
+
+- name: Uninstall Common Role
   import_tasks: uninstall.yml
   tags: uninstall
+

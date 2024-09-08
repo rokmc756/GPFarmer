@@ -1,18 +1,21 @@
 ---
-# Install Greenplum Command Center on RedHat / CentOS / Rocky / Ubuntu / Debian
-
-# for now fail if it's not supported OS
+# For Now Fail If It's Not Spported OS
 - name: Check OS ( GPCC )
   fail: msg="{{ ansible_distribution }} is not supported for this ansible playbook!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
-#
-- name: Installation for Red Hat / CentOS / Rocky / Ubuntu / Debian
+
+- name: Set Facts for Greenplum Command Center
+  import_tasks: set-gpcc-facts.yml
+  tags: install
+
+
+- name: Install Greenplum Command Center
   import_tasks: install.yml
   tags: install
 
-#
-- name: Installation for Red Hat / CentOS / Rocky / Ubuntu / Debian
+
+- name: Uninstall Greenplum Command Center
   import_tasks: uninstall.yml
   tags: uninstall
 

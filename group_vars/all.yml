@@ -1,10 +1,83 @@
-# ansible_ssh_pass: "changeme"
+ansible_ssh_pass: "changeme"
 ansible_become_pass: "changeme"
-gpdb:
-  base_dir: "/usr/local"
-  admin_home_dir: "/home/gpadmin"
-  admin_user: "gpadmin"
-  master_data_dir: "/data/master/gpseg-1"
-  data_dir: "/data"
+
 gpcc:
   base_dir: "/usr/local"
+  major_version: 6
+  minor_version: 10
+  patch_version: 0
+  metric_arch: 'x86_64'
+  os_name: 'rhel9'
+  gpccws_port: 28080
+  gpmon_password: "changeme"
+  ssl_dir: "/home/gpadmin/certs"
+  ssl_days: 3660
+  ssl_country: "KR"
+  ssl_state: "Seoul"
+  ssl_location: "GangNam"
+  ssl_organization: "Pivotal"
+  ssl_common_name: "jtest.pivotal.io"
+  ssl_email: "jomoon@pivotal.io"
+  net:
+    type: "virtual"                # Or Physical
+    gateway: "192.168.0.1"
+    ipaddr0: "192.168.0.7"
+    ipaddr1: "192.168.1.7"
+    ipaddr2: "192.168.2.7"
+
+
+gpdb:
+  cluster_name: jack-kr-gpdb
+  base_dir: "/usr/local"
+  admin_user: "gpadmin"
+  admin_passwd: "changeme"
+  admin_home_dir: "/home/gpadmin"
+  master_data_dir: "/data/master/gpseg-1"
+  data_dir: "/data"
+  package_name: "greenplum-db"
+  major_version: 6
+  minor_version: 26.1
+  build_version:
+  os_name: 'rhel9'
+  arch_name: 'x86_64'
+  binary_type: 'rpm'
+  number_segments: 4
+  mirror_enable: true
+  spread_mirrors: ""
+  initdb_single: False
+  initdb_with_standby: True
+  seg_serialized_install: False
+  domain: "jtest.pivotal.io"
+  repo_url: ""
+  download_url: ""
+  download: false
+  base_path: /root
+  host_num: "{{ groups['all'] | length }}"
+  cgroup: v1
+  metric_major_version: 6
+  metric_minor_version: 26.0
+  metric_build_version:
+  net:
+    type: "virtual"                # Or Physical
+    gateway: "192.168.0.1"
+    ipaddr0: "192.168.0.7"
+    ipaddr1: "192.168.1.7"
+    ipaddr2: "192.168.2.7"
+  client:
+    net:
+      type: "virtual"              # Or Physical
+      cores: 1
+      ipaddr0: "192.168.0.6"
+      ipaddr1: "192.168.1.6"
+      ipaddr2: "192.168.2.6"
+  ext_storage:
+    net:
+      ipaddr0: "192.168.0."
+      ipaddr1: "192.168.1."
+
+
+vmware:
+  esxi_hostname: "192.168.0.231"
+  esxi_username: "root"
+  esxi_password: "Changeme34#$"
+

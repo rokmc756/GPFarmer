@@ -1,0 +1,16 @@
+- name: Reboot required ( Red Hat ) - Step 1 in RHEL/CentOS/Rocky Linux 9
+  command: /usr/bin/needs-restarting -r
+  register: reboot_required
+  changed_when: False
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and hostvars[inventory_hostname].ansible_distribution_major_version|int >= 9
+- debug: msg={{ reboot_required }}
+
+
+- name: Reboot required ( Red Hat ) - Step 2
+  shell: ( /bin/sleep 5 ; /sbin/shutdown -r now "Ansible updates triggered" ) &
+  async: 1200
+  poll: 0
+  notify:
+    - Waiting for server to come back after restart
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and reboot_required.rc == 1
+

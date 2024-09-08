@@ -1,5 +1,5 @@
 ---
-rhel_common_packages: "vim-enhanced,nano,screen,psmisc,rsync,wget,mutt,yum-utils,zip,unzip,net-tools,ed,m4,expect,nc,java-1.8.0-openjdk,java-1.8.0-openjdk-devel,libcgroup,libcgroup-tools,nmap,openldap,openldap-clients,sed,tar,perl"
+rh_common_pkgs: "vim-enhanced,nano,screen,psmisc,rsync,wget,mutt,yum-utils,zip,unzip,net-tools,ed,m4,expect,nc,java-1.8.0-openjdk,java-1.8.0-openjdk-devel,nmap,openldap,openldap-clients,sed,tar,perl"
 
 # yum-utils
 # dnf-plugins-core
@@ -7,23 +7,24 @@ rhel_common_packages: "vim-enhanced,nano,screen,psmisc,rsync,wget,mutt,yum-utils
 # python3-systemd
 
 # 6 or 7
-# rhel_common_devel_packages: "automake,make,gcc-c++,gcc,ed,lsof,python-setuptools,python-paramiko,git,PyYAML,perl-ExtUtils-MakeMaker,zlib,zlib-devel,curl,curl-devel,openssl,openssl-devel,svn,tcl,gettext,expat-devel,gettext-devel,bison,flex,perl-ExtUtils-Embed,perl-ExtUtils-MakeMaker,
+# rh_common_devel_pkgs: "automake,make,gcc-c++,gcc,ed,lsof,python-setuptools,python-paramiko,git,PyYAML,perl-ExtUtils-MakeMaker,zlib,zlib-devel,curl,curl-devel,openssl,openssl-devel,svn,tcl,gettext,expat-devel,gettext-devel,bison,flex,perl-ExtUtils-Embed,perl-ExtUtils-MakeMaker,
 # readline,readline-devel,apr,apr-devel,apr-util,apr-util-devel,libevent,libxml2,libxml2-devel,bzip2,bzip2-devel,libyaml,python-devel,net-snmp,net-snmp-devel,net-snmp-utils,net-snmp-libs,liblockfile,ccache,python-lockfile,xml2,docbook2X,xmlto,libcgroup,libcgroup-tools,nmap"
 
-rhel_common_devel_packages: "automake,make,gcc-c++,gcc,ed,lsof,python3-setuptools,git,perl-ExtUtils-MakeMaker,zlib,zlib-devel,curl,curl-devel,openssl,openssl-devel,svn,tcl,gettext,expat-devel,gettext-devel,bison,flex,perl-ExtUtils-Embed,perl-ExtUtils-MakeMaker,
-readline,readline-devel,apr,apr-devel,apr-util,apr-util-devel,libevent,libxml2,libxml2-devel,bzip2,bzip2-devel,libyaml,net-snmp,net-snmp-devel,net-snmp-utils,net-snmp-libs,liblockfile,ccache,python3-lockfile,xmlto,libcgroup,libcgroup-tools,nmap,bash,bash-completion"
+rh_common_devel_pkgs: "automake,make,gcc-c++,gcc,ed,lsof,python3-setuptools,git,perl-ExtUtils-MakeMaker,zlib,zlib-devel,curl,curl-devel,openssl,openssl-devel,svn,tcl,gettext,expat-devel,gettext-devel,bison,flex,perl-ExtUtils-Embed,perl-ExtUtils-MakeMaker,
+readline,readline-devel,apr,apr-devel,apr-util,apr-util-devel,libevent,libxml2,libxml2-devel,bzip2,bzip2-devel,libyaml,net-snmp,net-snmp-devel,net-snmp-utils,net-snmp-libs,liblockfile,ccache,python3-lockfile,xmlto,nmap,bash,bash-completion"
 
-rhel7_common_devel_packages: "python-devel"
-rhel8_common_devel_packages: "python3-devel,libcurl,openssl-libs,python3-utils,python3-PyYAML,python3-pathspec,python3-rpm-generators"
+rh7_common_devel_pkgs: "python-devel,libcgroup,libcgroup-tools"
+rh8_common_devel_pkgs: "python3-devel,libcurl,openssl-libs,python3-utils,python3-PyYAML,python3-pathspec,python3-rpm-generators,libcgroup,libcgroup-tools"
+rh9_common_devel_pkgs: "python3-devel,libcurl,openssl-libs,python3-utils,python3-PyYAML,python3-pathspec,python3-rpm-generators"
 
-ubt_common_packages: "vim,nano,screen,psmisc,rsync,wget,mutt,unzip,net-tools,ed,m4,expect,netcat,openjdk-8-jdk,openjdk-8-jre,openjdk-8-demo,openjdk-8-jre-dcevm,openjdk-jdk-headless,openjdk-8-jre-zero,openjdk-8-source,openjdk-8-jre-headless,openjdk-8-dbg,openjdk-8-doc,libcgroup-dev,nmap"
+ubt_common_pkgs: "vim,nano,screen,psmisc,rsync,wget,mutt,unzip,net-tools,ed,m4,expect,netcat,openjdk-8-jdk,openjdk-8-jre,openjdk-8-demo,openjdk-8-jre-dcevm,openjdk-jdk-headless,openjdk-8-jre-zero,openjdk-8-source,openjdk-8-jre-headless,openjdk-8-dbg,openjdk-8-doc,libcgroup-dev,nmap"
 
 # vim-enhanced -> vim
 # nc -> netcat
 # libcgroup-tools --> blank
 # libcgroup --> libcgroup-dev
 
-ubt_common_devel_packages: "automake,make,gcc,g++,build-essential,ed,lsof,python-setuptools,python-paramiko,git,bash,python-yaml,perl,libextutils-makemaker-cpanfile-perl,zlib1g,curl,openssl,libssl-dev,subversion,tcl,gettext,libexpat-dev,bison,bzip2,
+ubt_common_devel_pkgs: "automake,make,gcc,g++,build-essential,ed,lsof,python-setuptools,python-paramiko,git,bash,python-yaml,perl,libextutils-makemaker-cpanfile-perl,zlib1g,curl,openssl,libssl-dev,subversion,tcl,gettext,libexpat-dev,bison,bzip2,
 flex,libreadline-dev,libapr1,libapr1-dev,libaprutil1,libaprutil1-dev,libevent-dev,libxml2,libxml2-dev,bzip2,libyaml-dev,python-dev,snmp,snmpd,libsnmp-dev,liblockfile-bin,ccache,python-lockfile,xml2,docbook,xmlto,libcgroup-dev,krb5-multidev,
 libcurl3-gnutls,libcurl4,libevent-2.1-6,libyaml-0-2,libldap-2.4-2,openssh-client,rsync,sed,tar,zip,less,iproute2,firewalld,policycoreutils,selinux-utils,selinux-basics,libkrb5-dev,cgroupfs-mount,cgroup-tools,cgroup-lite,cgroup-bin,r-base"
 

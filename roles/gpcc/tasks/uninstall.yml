@@ -10,38 +10,38 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Set prefix directory for installation path of Greenplum Command Center
   set_fact: gpcc_prefix_dir=/usr/local/greenplum-cc-web
   when: gpcc.major_version|int <= 6 and gpcc.minor_version|int < 2
 
-#
+
 - name: Set prefix directory for installation path of Greenplum Command Center
   set_fact: gpcc_prefix_dir=/usr/local/greenplum-cc
   when: ( gpcc.major_version|int >= 6 and gpcc.minor_version|int >= 2 ) or ( gpcc.major_version|int >= 7 and gpcc.minor_version|int >= 0 )
 
-#
+
 - name: Check if the Greenplum Command Center Software is already installed
-  stat: path={{ gpcc_prefix_dir }}-{{ gpcc.major_version }}.{{ gpcc.minor_version }}
+  stat: path={{ gpcc_prefix_dir }}-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}
   register: gpcc_installed
 
-#
+
 - name: Define varaibles for the installation and existance and the package name of gppkg
   set_fact:
     gppkg_remove_cmd: "gppkg -r"
     check_gpmetrics_installed: "gppkg -q --all | grep MetricsCollector | cut -d - -f 1"
-    gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}
+    gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}
   when: inventory_hostname in groups['master'] and gpdb.major_version|int <= 6
 
-#
+
 - name: Define varaibles for the installation and existance and the package name of gppkg
   set_fact:
     gppkg_install_cmd: "gppkg -a remove"
     check_gpmetrics_installed: "gppkg query | grep MetricsCollector | awk '{print $1}'"
-    gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}-{{ gpcc.os_name }}-{{ gpcc.metric_arch }}
+    gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}-{{ gpcc.os_name }}-{{ gpcc.metric_arch }}
   when: inventory_hostname in groups['master'] and gpdb.major_version|int >= 7
 
-#
+
 - name: Fail if Greenplum Command Center Software is not installed
   fail: msg="Greenplum Command Center is not installed!"
   when: gpcc_installed.stat.exists == False
@@ -50,14 +50,14 @@
 #    msg: "{{ gpcc_running.stdout_lines[1].split(' ').4.split('/').0 }}"
 #  when: inventory_hostname in groups['standby']
 
-#
+
 - name: Stop Greenplum Command Center instance for 3 and ealier versions
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_prefix_dir }}/gpcc_path.sh && gpcmdr --stop sne )
   when: ( gpcc.major_version <= 6 and gpcc.minor_version < 2 ) and ( inventory_hostname in groups['standby'] and gpcc_installed.stat.exists == True )
 
-#
+
 - name: Stop Greenplum Command Center instance for 4 and higher versions
   become_user: gpadmin
   changed_when: False
@@ -65,7 +65,6 @@
   when: ( gpcc.major_version <= 7 and gpcc.minor_version < 2 ) and ( inventory_hostname in groups['standby'] and gpcc_installed.stat.exists == True )
 
 
-#
 - name: Verify if MetricsCollector extension pakcage is installed
   become_user: gpadmin
   shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_gpmetrics_installed }} )
@@ -76,13 +75,12 @@
   changed_when: False
   when: inventory_hostname in groups['master'] and ( gpcc.major_version >= 6 and gpcc.minor_version >= 7 )
 
-#
+
 - name: Stop if MetricsCollector extension package is not installed
   fail: msg="MetricsCollector extension package is not installed!"
   when: ( gpcc.major_version >= 6 and gpcc.minor_version >= 7 ) and ( inventory_hostname in groups['master'] and 'MetricsCollector' not in mc_installed.stdout )
 
 
-#
 - name: Drop MetricsCollector extension
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d gpperfmon -c "DROP EXTENSION metrics_collector;" )
   args:
@@ -94,13 +92,13 @@
 # shared_preload_libraries = 'metrics_collector'
 # gp_enable_query_metrics = on
 
-#
+
 - name: Unnstall MetricsCollector extension package
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ gpmetrics_package_name }} )
   when: ( gpcc.major_version >= 6 and gpcc.minor_version >= 7 ) and ( inventory_hostname in groups['master'] and 'MetricsCollector' in mc_installed.stdout )
 
-#
+
 - name: Verify that Greenplum Command Center is up and running
   become_user: gpadmin
   changed_when: False
@@ -113,19 +111,19 @@
     - ( inventory_hostname in groups['standby'] and gpcc_installed.stat.exists == True )
     - ( gpcc.major_version >= 6 and gpcc.minor_version >= 2 ) and ( gpcc.major_version < 7 )
 
-#
+
 - name: Check if Greenplum Command Center is running
   debug: msg="Greenplum Command Center is not running normally!"
   when: ( gpcc.major_version >= 6 and gpcc.minor_version >= 7 ) and ( inventory_hostname in groups['standby'] and gpcc_installed.stat.exists == True ) and ( gpcc_running.stdout_lines[1].split(' ').4.split('/').0|int < 1 )
 
-#
+
 - name: Stop Command Center instance for and later versions
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_prefix_dir }}/gpcc_path.sh && gpcc stop )
   when: ( gpcc.major_version >= 6 and gpcc.minor_version >= 2 ) and ( inventory_hostname in groups['standby'] and gpcc_installed.stat.exists == True ) and ( gpcc_running.stdout_lines[1].split(' ').4.split('/').0|int > 0 )
 
-#
+
 - name: Disable the data colleciton agents
   become_user: gpadmin
   changed_when: False
@@ -133,7 +131,7 @@
   register: gpperfmon_disabled
   when: inventory_hostname in groups['master'] and ( gpcc.major_version < 7 )
 
-#
+
 - name: Disable query metrics
   become_user: gpadmin
   changed_when: False
@@ -141,7 +139,7 @@
   register: query_metric_disabled
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Remove GUC of MetricsCollector
   become_user: gpadmin
   changed_when: False
@@ -149,7 +147,7 @@
   register: metrics_collector_removed
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Drop superuser roles from postgres database
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d postgres -c 'DROP {{ item }};' )
@@ -165,7 +163,7 @@
   register: gpmon_role_denpendencies_dropped
   when: inventory_hostname in groups['master'] and ( gpcc.major_version|int <= 6 and gpcc.minor_version|int < 7 )
 
-#
+
 - name: Drop the Greenplum Command Center superuser role from the database
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d template1 -c 'DROP ROLE gpmon;' )
@@ -174,7 +172,7 @@
   when: inventory_hostname in groups['master']
   # when: ( inventory_hostname in groups['master'] and gpmon_role_denpendencies_dropped.rc != 0 )
 
-#
+
 - name: Drop the gpperfmon database if you do not want to keep your historical Greenplum Command Center data
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb gpperfmon )
@@ -182,7 +180,7 @@
   poll: 5
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Clean up any uncommitted Greenplum Command Center data and log files that reside on the master file system
   become_user: gpadmin
   file:
@@ -196,7 +194,7 @@
     - logs
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
-#
+
 - name:  Remove out the gpmon entries in pg_hba.conf
   become: yes
   become_user: gpadmin
@@ -210,7 +208,7 @@
   register: gpmon_entries_removed
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
-#
+
 - name: Remove Greenplum Command Center symlink
   file:
     owner: gpadmin
@@ -221,7 +219,7 @@
   with_items: "{{ groups['all'] }}"
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists == True ) and ( gpcc.major_version >= 6 and gpcc.minor_version >= 2 )
 
-#
+
 - name: Remove Greenplum Command Center directories still remained
   file:
     owner: gpadmin
@@ -232,7 +230,7 @@
   with_items: "{{ groups['all'] }}"
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists == True ) and ( gpcc.major_version >= 6 and gpcc.minor_version >= 2 )
 
-#
+
 - name: Restart Greenplum Database
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )

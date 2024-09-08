@@ -29,24 +29,35 @@ all:
 		echo ""; \
 	done
 
-init:	setup-host.yml update-host.yml
-	$(shell sed -i -e '2s/.*/ansible_become_pass: ${ANSIBLE_TARGET_PASS}/g' ./group_vars/all.yml)
-	@echo ""
-	@for GPHOST in ${GPHOSTS}; do \
-		IP=$${GPHOST#*,}; \
-	    	HOSTNAME=$${LINE%,*}; \
-		echo "It will init host $${IP} and install ssh key and basic packages"; \
-		echo ""; \
-		echo "Note: NEVER use this step to init a host in an untrusted network!"; \
-		echo "Note: this will OVERWRITE any existing keys on the host!"; \
-		echo ""; \
-		echo "3 seconds to abort ..."; \
-		echo ""; \
-		sleep 3; \
-		echo "IP : $${IP} , HOSTNAME : $${HOSTNAME} , USERNAME : ${USERNAME}"; \
-		./init_host.sh "$${IP}" "${USERNAME}"; \
-	done
-	ansible-playbook -i ansible-hosts -u ${USERNAME} --ssh-common-args='-o UserKnownHostsFile=./known_hosts -o VerifyHostKeyDNS=true' install-ansible-prereqs.yml
+#init:	setup-host.yml update-host.yml
+#	$(shell sed -i -e '2s/.*/ansible_become_pass: ${ANSIBLE_TARGET_PASS}/g' ./group_vars/all.yml)
+#	@echo ""
+#	@for GPHOST in ${GPHOSTS}; do \
+#		IP=$${GPHOST#*,}; \
+#	    	HOSTNAME=$${LINE%,*}; \
+#		echo "It will init host $${IP} and install ssh key and basic packages"; \
+#		echo ""; \
+#		echo "Note: NEVER use this step to init a host in an untrusted network!"; \
+#		echo "Note: this will OVERWRITE any existing keys on the host!"; \
+#		echo ""; \
+#		echo "3 seconds to abort ..."; \
+#		echo ""; \
+#		sleep 3; \
+#		echo "IP : $${IP} , HOSTNAME : $${HOSTNAME} , USERNAME : ${USERNAME}"; \
+#		./init_host.sh "$${IP}" "${USERNAME}"; \
+#	done
+#	ansible-playbook -i ansible-hosts -u ${USERNAME} --ssh-common-args='-o UserKnownHostsFile=./known_hosts -o VerifyHostKeyDNS=true' install-ansible-prereqs.yml
+
+
+hosts:
+	make -f makefile_configs/Makefile.hosts r=${r} s=${} c=${c} USERNAME=${USERNAME}
+
+gpdb:
+	make -f makefile_configs/Makefile.gpdb r=${r} s=${} c=${c} USERNAME=${USERNAME}
+
+gpcc:
+	make -f makefile_configs/Makefile.gpcc r=${r} s=${} c=${c} USERNAME=${USERNAME}
+
 
 # - https://ansible-tutorial.schoolofdevops.com/control_structures/
 install: role-update install-hosts.yml

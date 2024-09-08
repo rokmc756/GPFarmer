@@ -1,0 +1,6 @@
+---
+- hosts: all
+  become: true
+  gather_facts: yes
+  roles:
+    - { role: gpdb }                 # Need to check if get_facts: true is required

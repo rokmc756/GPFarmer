@@ -1,0 +1,15 @@
+ansible_ssh_pass: "changeme"
+ansible_become_pass: "changeme"
+sudo_user: "gpadmin"
+sudo_group: "gpadmin"
+local_sudo_user: "moonja"
+wheel_group: "wheel"     # RHEL / CentOS / Rocky
+# wheel_group: "sudo"    # Debian / Ubuntu
+root_user_pass: "changeme"
+sudo_user_pass: "changeme"
+sudo_user_home_dir: "/home/{{ sudo_user }}"
+domain_name: "jtest.pivotal.io"
+change_kr_mirror: true
+
+gp7_hosts_num: "{{ groups['all'] | length -1 }}"
+download_epel: true

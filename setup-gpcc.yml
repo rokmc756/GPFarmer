@@ -1,0 +1,6 @@
+---
+- hosts: rk9-node01,rk9-node02
+  become: true
+  become_user: gpadmin
+  roles:
+    - { role: gpcc }

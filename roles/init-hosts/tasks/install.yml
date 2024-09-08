@@ -1,58 +1,28 @@
 ---
 #
-- name: Install EPEL Repostory
-  become: true
+- name: Install YUM or DNF Config Manager for RedHat Based Linux Distribution
+  package: name={{ item }} state=present
+  with_items:
+    - "dnf-utils"
+  ignore_errors: true
+  when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky"
+  # "yum-utils"
+
+#
+- name: Enable Development Package Repository for RedHat Based Linux Distribution
   shell: |
-    yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ hostvars[inventory_hostname].ansible_distribution_major_version }}.noarch.rpm
-  register: install_epel
-  changed_when: false
-  when: (  ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' )
-
-#
-- name: Copy script to change package repository
-  become: true
-  template:
-    src: "{{ item }}.j2"
-    dest: "/root/{{ item }}"
-    owner: root
-    group: root
-    mode: 0755
+    yum-config-manager --enable {{ item }}
   with_items:
-    - "change-centos-mirror.sh"
-    - "change-rocklinux-mirror.sh"
-
-#
-- name: Change package repository of Naver for CentOS 7.x and lower versions
-  become: true
-  shell: "/root/change-centos-mirror.sh -n"
-  register: centos_mirror_changed
-  when: change_kr_mirror == true and ( ansible_distribution == 'CentOS' and hostvars[inventory_hostname].ansible_distribution_major_version|int == 7 )
-
-#
-- name: Change package repository of Naver for Rocky 8.x and higher versions
-  become: true
-  shell: "/root/change-rocklinux-mirror.sh -n"
-  register: centos_mirror_changed
-  when: change_kr_mirror == true and ( ansible_distribution == 'Rocky' and hostvars[inventory_hostname].ansible_distribution_major_version|int >= 8 )
-
-#
-- name: Install epel-release
-  become: true
-  yum: name={{item}} state=present
-  with_items:
-    - "epel-release"
+    - "devel"
   when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky"
 
 #
-- name: Install sshpass
-  become: true
-  package: name={{item}} state=present
-  with_items:
-    - "sshpass"
+- name: Install Prerequest Software Packages
+  package: name={{ item }} state=present
+  with_items: "{{ install_pkgs }}"
 
 #
 - name: Add the inventory into /etc/hosts
-  become: true
   template:
     src: hosts.j2
     dest: /etc/hosts
@@ -62,17 +32,12 @@
 
 #
 - name: Ensure group "{{ sudo_group }}" exists
-  become: true
-  become_user: root
   group:
     name: "{{ sudo_group }}"
     state: present
-  # become_method: su
 
 #
 - name: Create "{{ sudo_user }}" user
-  become: true
-  become_user: root
   user:
     name: "{{ sudo_user }}"
     state: present
@@ -81,18 +46,14 @@
     group: "{{ sudo_group }}"
     createhome: yes
     home: "/home/{{ sudo_user }}"
-  # become_method: su
 
 # This will overwrite the first line which starts with %wheel
 - name: Add group to /etc/sudoers file without password
-  become: true
-  become_user: root
-  lineinfile: "dest=/etc/sudoers state=present regexp='^%{{ wheel_group }}' line='%{{ wheel_group }} ALL=(ALL) NOPASSWD: ALL'"
-  # become_method: sudo
+  lineinfile: "dest=/etc/sudoers state=present regexp='^%{{ sudo_user }}' line='%{{ sudo_user }} ALL=(ALL) NOPASSWD: ALL'"
 
 #
 - name: Read /etc/group entries
-  become: true
+  # become: true
   shell: "/usr/bin/getent group | grep ^sudo{{':'}} | cut -f4 -d{{':'}}"
   register: etc_group
   changed_when: false
@@ -104,16 +65,14 @@
     changed_when: false
 
 #
-#- name: Add user to 'sudo' group (Debian)
-#  user:
-#    name: "{{ sudo_user }}"
-#    group: sudo
-#    append: true
-#    state: present
-#    createhome: true
-#    become: true
-#  become_user: root
-#  become_method: su
+- name: Add user to 'sudo' group (Debian)
+  user:
+    name: "{{ sudo_user }}"
+    groups: sudo
+    append: true
+    state: present
+    createhome: true
+  when: ansible_distribution == "Debian" or ansible_distribution == "Ubuntu"
 
 #
 - name: Check needed OS tools exist
@@ -126,3 +85,4 @@
   fail:
     msg: "One or more of the: sshpass, ssh-keygen, ssh-copy-id are missing on this machine. Please install them - using your distribution's recommended method - before continuing."
   when: os_tools_exist.rc != 0
+
