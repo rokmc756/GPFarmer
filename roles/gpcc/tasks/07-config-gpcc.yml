@@ -1,0 +1,42 @@
+---
+- name: Add the Path of GPCC Variable File Into .bashrc
+  lineinfile:
+    dest: /home/gpadmin/.bashrc
+    line: "source {{ gpcc.base_dir }}/greenplum-cc/gpcc_path.sh"
+    state: present
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
+
+
+- name: Create Password File for GPMON User to Login Greenplum Command Center
+  copy:
+    dest: "/home/gpadmin/.pgpass"
+    content: "*:5432:gpperfmon:gpmon:changeme"
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
+
+
+- name: Change Permission of Password File for GPMON User to Login Greenplum Command Center
+  file:
+    path: "/home/gpadmin/.pgpass"
+    state: file
+    owner: gpadmin
+    group: gpadmin
+    mode: "0600"
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
+
+
+#- name: Kill zombie process of gpccws
+#  changed_when: False
+#  shell: ( pgrep gpccws | xargs kill > /dev/null 2>&1 )
+#  args:
+#    executable: /bin/bash
+#  ignore_errors: true
+#  when: ( inventory_hostname in groups['standby'] and gpcc_setup_cc_sne == True )
+
+
+- name: Start Greenplum Command Center
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_prefix_dir }}/gpcc_path.sh && gpcc start )
+  args:
+    executable: /bin/bash
+  when: ( inventory_hostname in groups['standby'] and gpcc_setup_cc_sne == True )
+

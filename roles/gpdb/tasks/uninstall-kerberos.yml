@@ -1,6 +1,5 @@
 ---
-#
-- name: Verify that Greenplum Database is up and running
+- name: Verify that Greenplum Database is Up and Running
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
@@ -10,8 +9,8 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
-#
-- name: Drop database for Krb5 Users
+
+- name: Drop Database for Krb5 Users
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb "{{ freeipa.kerberos.database }}" )
@@ -21,8 +20,8 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
-#
-- name: Delete a service for rh7-master.jtest.pivotal.io
+
+- name: Delete a Service for Greenplum Master
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
     ipa service-del postgres/{{ freeipa.client_fqdn }}.{{ freeipa.client_domain }}@{{ freeipa.client_realm }}
@@ -33,8 +32,8 @@
   ignore_errors: true
   when: inventory_hostname in groups['master']
 
-#
-- name: Drop role for Kerberos Users
+
+- name: Drop Role for Kerberos Users
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "DROP USER {{ item.username }}" )
@@ -45,8 +44,8 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
-#
-- name: Delte user in FreeIPA Server
+
+- name: Delte User in FreeIPA Server
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
     echo {{ item.passwd }} | ipa user-del {{ item.username }}
@@ -56,7 +55,7 @@
   with_items: "{{ freeipa.kerberos.users }}"
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Uninstall FreeIPA Client
   shell: ipa-client-install --uninstall -U
   args:
@@ -64,8 +63,9 @@
   register: ipa_client_uninstalled
   when: inventory_hostname in groups['master']
 
+
 # State is set to Absent to remove if the Searching Line is found
-- name: Remove krb5 configuration file to authenticate Kerberos user into Greenplum Database
+- name: Remove krb5 Configuration File to Authenticate Kerberos User into Greenplum Database
   become_user: gpadmin
   lineinfile:
     path: "{{ gpdb.master_data_dir }}/{{ item.file }}"
@@ -76,8 +76,8 @@
   register: gpdb_krb5_config_removed
   when: inventory_hostname in groups['master']
 
-#
-- name: Disable keytab file location replacing it with empty
+
+- name: Disable keytab File Location Replacing It with Empty
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c krb_server_keyfile -v  '' )
@@ -87,8 +87,8 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
-#
-- name: Remove keytab file
+
+- name: Remove keytab File
   shell: |
     rm -f {{ freeipa.kerberos.client_gpdb_keytab }}  {{ freeipa.kerberos.client_keytab }}
   args:
@@ -96,7 +96,7 @@
   register: keytabl_file_removed
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Uninstall FreeIPA Client Package
   package:
     name: ipa-client
@@ -106,7 +106,7 @@
   register: ipa_client_pkgs_uninstalled
   when: inventory_hostname in groups['master']
 
-#
+
 #- name: Add IP address of FreeIPA Server
 #  become: true
 #  lineinfile:
@@ -114,8 +114,8 @@
 #    line: "{{ freeipa.client_ipaddr }}   {{ freeipa.client_server }}  {{ ( freeipa.client_server | split('.') )[0] }}"
 #    state: present
 
-#
-- name: Remove hostname and ip address entries in /etc/hosts
+
+- name: Remove Hostname and IP Address Entries in /etc/hosts
   lineinfile:
     path: "{{ item.file }}"
     regexp: "{{ item.regexp }}"
@@ -124,8 +124,8 @@
     - { file: "/etc/hosts", regexp: "{{ freeipa.client_server }}", state: absent }
   register: hostname_ipaddr_entries_removed
 
-#
-- name: Restart Greenplum Database to apply changes
+
+- name: Restart Greenplum Database to Apply Changes
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
@@ -134,3 +134,4 @@
   register: gpdb_restarted
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
+

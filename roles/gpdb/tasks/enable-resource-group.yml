@@ -1,6 +1,6 @@
 ###########################################################
 # Resource Group configuration
-
+#
 # Downloaded From Here - https://pkgs.sysadmins.ws/el9/base/x86_64/
 - name: Copy libcgroup RPM Packages for Enabling Cgroup v1
   copy: src={{ item }} dest=/home/gpadmin/{{ item }} mode=0644 owner=gpadmin group=gpadmin
@@ -14,7 +14,7 @@
 
 - name: Install libcgroup RPM Packages for Enabling Cgroup v1
   package:
-    name: /home/gpadmin/{{ item }}
+    name: "{{ gpdb.admin_home_dir }}/{{ item }}"
     state: present
     disable_gpg_check: yes
   async: 360
@@ -27,18 +27,18 @@
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 9
 
 
-- name: Create the cgconfig.conf for all nodes
+- name: Create the cgconfig.conf for All Nodes
   template: src=cgconfig.conf.j2 dest=/etc/cgconfig.conf owner=root group=root mode=644 force=yes
   register: cgconfig_created
 
 
-- name: Copy systemd configuration of cgconfig into /etc/systemd/system
+- name: Copy Systemd Configuration of Cgconfig Into /etc/systemd/system
   template: src=cgconfig.systemd.j2 dest=/etc/systemd/system/cgconfig.service owner=root group=root mode=644 force=yes
   register: systemd_cgconfig_created
   when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
 
 
-- name: Enable and Restart cgconfig for applying config
+- name: Enable and Restart Cgconfig for Applying Config
   systemd:
     name: cgconfig
     enabled: yes
@@ -47,7 +47,7 @@
   register: cgconfig_restarted
 
 
-- name: Enabling Resource Groups by gpconfig
+- name: Enabling Resource Groups by Gpconfig
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_resource_manager -v "group" )
@@ -57,7 +57,7 @@
   when: inventory_hostname in groups['master']
 
 
-- name: Apply new changes for Resource Groups
+- name: Apply New Changes for Resource Groups
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
@@ -65,3 +65,4 @@
     executable: /bin/bash
   register: rs_applied
   when: inventory_hostname in groups['master']
+

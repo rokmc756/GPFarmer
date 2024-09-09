@@ -5,26 +5,46 @@
   poll: 0
   ignore_errors: true
 
-
 - name: Waiting for server to come back after reboot
   local_action: wait_for host={{ hostvars[inventory_hostname].ansible_ssh_host }} port=22 state=started delay=10 timeout=300 connect_timeout=300 search_regex=OpenSSH
   become: no
-
 
 - name: Reload sysctl
   shell: |
     /sbin/sysctl -p
     /sbin/sysctl -p /etc/sysctl.conf
 
-
 - name: Reload sshd
   service:
     name: sshd
     state: reloaded
 
-
 - name: Reload systemd-logind
   service:
     name: systemd-logind
     state: restarted
+
+- name: Start Firewalld
+  service: name=firewalld state=started enabled=yes
+
+- name: Stop Firewalld
+  service: name=firewalld state=stopped enabled=no
+
+- name: Restart Firewalld
+  service: name=firewalld state=restarted enabled=yes
+
+- name: Start Iptables
+  service: name=iptables state=started enabled=yes
+
+- name: Stop Iptables
+  service: name=iptables state=stopped enabled=no
+
+- name: Restart Iptables
+  service: name=iptables state=restarted enabled=yes
+
+- name: Enable SELinux
+  selinux: policy=targeted state=enforcing
+
+- name: Disable SELinux
+  selinux: state=disabled
 

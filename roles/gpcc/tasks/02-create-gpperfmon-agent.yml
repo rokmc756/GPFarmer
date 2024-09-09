@@ -1,0 +1,15 @@
+---
+- name: Verify that GPPERFMON Is Not Installed
+  set_fact:
+    gpcc_gpperfmon_install: True
+  when: ( inventory_hostname in groups['master'] and select_gpperfmon.stdout.find('    0') != -1 )
+
+
+- name: Install GPPERFMON Agents
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpperfmon_install --enable --password '{{ gpcc.gpmon_password }}' --port 5432 )
+  args:
+    executable: /bin/bash
+  when: 
+    - ( inventory_hostname in groups['master'] and gpcc_gpperfmon_install == True )
+    - ( gpcc.major_version|int <= 6 and gpcc.minor_version|int < 7.0 ) or ( gpcc.major_version|int >= 7 and gpcc.minor_version|int > 0 )

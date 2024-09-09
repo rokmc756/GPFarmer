@@ -1,9 +1,8 @@
 ---
-#
 # - debug: msg={{ ( freeipa.client_server | split('.') )[0] }}
 # - meta: end_play
 
-- name: Verify that Greenplum Database is up and running
+- name: Verify that Greenplum Database is Up and Running
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
@@ -13,8 +12,8 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
-#
-- name: Install FreeIPA Client Package for Red Hat / CentOS / Rocky Linux
+
+- name: Install FreeIPA Client Package
   package:
     name: "{{ item }}"
     state: present
@@ -25,8 +24,8 @@
     - nss-pam-ldapd
   when: inventory_hostname in groups['master']
 
-#
-- name: Enable and start systemd service for nscld daemon
+
+- name: Enable and Start Systemd Service for Nscld Daemon
   systemd:
     daemon_reload: yes
     enabled: yes
@@ -35,14 +34,14 @@
   register: nslcd_systemd_status
   when: inventory_hostname in groups['master']
 
-#
-- name: Add IP address of FreeIPA Server
+
+- name: Add IP Address of FreeIPA Server
   lineinfile:
     dest: /etc/hosts
     line: "{{ freeipa.client_ipaddr }}   {{ freeipa.client_server }}  {{ ( freeipa.client_server | split('.') )[0] }}"
     state: present
 
-#
+
 - name: Install FreeIPA Client
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
@@ -52,8 +51,8 @@
   register: freeipa_client_installed
   when: inventory_hostname in groups['master']
 
-#
-- name: Add Kerberos user into FreeIPA Server for Greenplum Database Authentication
+
+- name: Add Kerberos User into FreeIPA Server for Greenplum Database Authentication
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
     echo {{ item.passwd }} | ipa user-add {{ item.username }} --first={{ item.first_name }} --last={{ item.last_name }} --password
@@ -64,8 +63,8 @@
   with_items: "{{ freeipa.kerberos.users }}"
   when: inventory_hostname in groups['master']
 
-#
-- name: Add service for Greenplum Database into FreeIPA Server
+
+- name: Add Service for Greenplum Database into FreeIPA Server
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
     ipa service-add postgres/{{ freeipa.client_fqdn }}.{{ freeipa.client_domain }}@{{ freeipa.client_realm }}
@@ -74,8 +73,8 @@
   register: gpdb_service_added
   when: inventory_hostname in groups['master']
 
-#
-- name: Get keytab file for Greenplum Service from FreeIPA Server
+
+- name: Get Keytab File for Greenplum Database Service from FreeIPA Server
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
     ipa-getkeytab -s {{ freeipa.client_server }} -p postgres/{{ freeipa.client_fqdn }}.{{ freeipa.client_domain }}@{{ freeipa.client_realm }} -k {{ freeipa.kerberos.client_keytab }}
@@ -84,8 +83,8 @@
   register: gpdb_keytab_got
   when: inventory_hostname in groups['master']
 
-#
-- name: Copy keytab file, Change file name  and Change permission and ownership of keytab file
+
+- name: Copy Keytab File, Change File Name and Change Permission and Ownership of Keytab File
   shell: |
     cp {{ freeipa.kerberos.client_keytab }} {{ freeipa.kerberos.client_gpdb_keytab }}
     chmod 0400 {{ freeipa.kerberos.client_gpdb_keytab }}
@@ -96,8 +95,7 @@
   when: inventory_hostname in groups['master']
 
 
-#
-- name: Enable the location of keytab file to enable Kerberos Authentication
+- name: Enable the Location of Keytab File to Enable Kerberos Authentication
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c krb_server_keyfile -v  "{{ freeipa.kerberos.client_gpdb_keytab }}" )
@@ -109,8 +107,7 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
 
-#
-- name: Add Kerberos configuration to authenticate Kerberos user into Greenplum Database
+- name: Add Kerberos Configuration to Authenticate Kerberos User into Greenplum Database
   become_user: gpadmin
   lineinfile:
     dest: "{{ gpdb.master_data_dir }}/{{ item.file }}"
@@ -121,8 +118,8 @@
   register: gpdb_krb5_config
   when: inventory_hostname in groups['master']
 
-#
-- name: Create role for Kerberos Users
+
+- name: Create Role for Kerberos Users
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "CREATE USER {{ item.username }}" )
@@ -133,8 +130,8 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
-#
-- name: Create database for Kerberos Users
+
+- name: Create Database for Kerberos Users
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb "{{ freeipa.kerberos.database }}" )
@@ -144,8 +141,8 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
-#
-- name: Restart Greenplum Database to apply changes
+
+- name: Restart Greenplum Database to Apply Changes
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )

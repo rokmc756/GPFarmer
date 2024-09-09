@@ -3,8 +3,7 @@
 # Uninstallation: {{ gpdb.base_dir }}/greenplum-db must not exist
 # Unlinkchange: {{ gpdb.base_dir }} /greenplum-db points to another directory
 
-#
-- name: Create hostfile_all file for all nodes
+- name: Create hostfile_all file for All Nodes
   lineinfile:
     path: "/tmp/hostfile_all"
     line: "{{ hostvars[item]['ansible_hostname'] }}"
@@ -13,31 +12,31 @@
   register: hostfile_all_created
   with_items: "{{ groups['all'] }}"
   when: ( inventory_hostname in groups['master'] )
-
 # when: ( ansible_hostname != "{{ item }}" or ansible_hostname == "{{ item }}" ) and ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb_initdb_single == False or gpdb_initdb_with_standby == True )
 # - meta: end_play
 
-#
-- name: Check if any version of Greenplum Database is already linked
+
+- name: Check if Any Version of Greenplum Database is Already Linked
   stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_link_existed
 
-#
-- name: Check if the Greenplum Database version is already installed
+
+- name: Check if the Greenplum Database Version is Already Installed
   stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}
   register: gpdb_dir_existed
 
-#
-- name: Sanity check for {{ gpdb.base_dir }}/greenplum-db
+
+- name: Sanity Check for {{ gpdb.base_dir }}/greenplum-db
   fail: msg="Greenplum Database Software is not existed"
   when: gpdb_dir_existed.stat.exists != True or gpdb_link_existed.stat.islnk != True
 
-#
-- name: Set name for binary installer file (name includes build number)
+
+- name: Set Name for Binary Installer File ( Name Includes Build Number )
   set_fact:
     gpdb_dir: greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}
     gpdb_package_name: greenplum-db-{{ gpdb.major_version }}
     binary_installer_file: greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.build_version }}-{{ gpdb.os_name }}-{{ gpdb.arch_name }}
+
 
 # Non-existent {{ gpdb.base_dir }}/greenplum-db is a new installation
 - name: Identify Greenplum Database Uninstallation
@@ -45,36 +44,38 @@
     gpdb_uninstall: True
   when: gpdb_dir_existed.stat.exists == True and gpdb_link_existed.stat.exists == True
 
+
 # If the link points to a different existing directory, it's a link change
 - name: Identify Greenplum Database Linkchange
   set_fact:
     gpdb_unlinkchange: True
   when: gpdb_dir_existed.stat.exists == True and gpdb_link_existed.stat.exists == True
 
-#
+
 - name: Greenplum Database Uninstallation
   debug: msg="Uninstall Greenplum Database"
   when: gpdb_uninstall == True
 
-#
+
 - name: Greenplum Database Linkchange
   debug: msg="Delete link to Greenplum Database version"
   when: gpdb_unlinkchange == True
 
-#
+
 - name: Greenplum Database - Nothing to do
   debug: msg="Nothing to do (Uo uninstall/delete link required)"
   when: gpdb_uninstall == False and gpdb_unlinkchange == False
 
+
 # Database Uninstallation
-#
+
 - name: Check if database is running
   stat: path=/tmp/.s.PGSQL.5432
   register: gpdb_running
   when: inventory_hostname in groups['master'] and (  gpdb_uninstall == True or gpdb_unlinkchange == True )
 
-#
-- name: Verify that Greenplum Database is up and running
+
+- name: Verify that Greenplum Database is Up and Running
   become: true
   become_user: gpadmin
   changed_when: False
@@ -84,8 +85,8 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
-#
-- name: Shutdown database
+
+- name: Shutdown Greenplum Database
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
   async: 60
@@ -94,8 +95,8 @@
   ignore_errors: true
   when: ( inventory_hostname in groups['master'] and gpdb_running.stat.exists == True ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
-#
-- name: Uninstall Greenplum Database software package
+
+- name: Uninstall Greenplum Database Software Package
   package:
     name: "{{ gpdb_package_name }}"
     state: absent
@@ -103,8 +104,8 @@
   poll: 5
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
-#
-- name: Delete Greenplum Database directories
+
+- name: Delete Greenplum Database Directories
   file:
     path: "{{ item }}"
     state: absent
@@ -113,16 +114,16 @@
     - "{{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}"
    # when: ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
-#
-- name: Delete {{ gpdb.master_data_dir }} for master data directories
+
+- name: Delete {{ gpdb.master_data_dir }} for Master Data Directories
   file:
     path: "{{ gpdb.master_data_dir }}"
     state: absent
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
   # when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_uninstall == True and gpdb_unlinkchange == True )
 
-#
-- name: Delete {{ gpdb.data_dir }} segment data directories
+
+- name: Delete {{ gpdb.data_dir }} Segment Data Directories
   file:
     path: "{{ gpdb.data_dir }}/{{ item }}"
     state: absent
@@ -133,8 +134,8 @@
 # when: ( gpdb_uninstall == True or gpdb_unlinkchange == True )
 # when: inventory_hostname in groups['segments'] and ( gpdb_uninstall == True or gpdb_unlinkchange == True )
 
-#
-- name: Delete gpinitsystem config file and hostlist file
+
+- name: Delete gpinitsystem Config File and hostlist File
   file:
     path: "{{ item }}"
     state: absent
@@ -145,7 +146,7 @@
     - "/home/gpadmin/{{ binary_installer_file }}.{{ gpdb.binary_type }}"
   when: inventory_hostname in groups['master'] and ( gpdb_uninstall == True or gpdb_unlinkchange == True )
 
-#
+
 #- name: Delete ssh public keys in all hosts
 #  become_user: "{{ item }}"
 #  file:
@@ -156,8 +157,8 @@
 #    - "root"
 #  when: gpdb_uninstall == True or gpdb_unlinkchange == True
 
-#
-- name: Delete sysctl file
+
+- name: Delete Sysctl File
   file:
     path: "/etc/sysctl.d/98-sysctl-gpdb.conf"
     state: absent
@@ -165,25 +166,26 @@
     - Reload sysctl
   when: ( gpdb_uninstall == True or gpdb_unlinkchange == True )
 
+
 # Need to check if it works
-- name: Enable and start iptables
+- name: Enable and Start Iptables
   service: name=iptables state=started enabled=yes
   changed_when: False
   when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' ) and hostvars[inventory_hostname].ansible_distribution_major_version|int <= 6
 
-#
-- name: Enable and Start firewalld
+
+- name: Enable and Start Firewalld
   service: name=firewalld state=started enabled=yes
   changed_when: False
   when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' ) and hostvars[inventory_hostname].ansible_distribution_major_version|int >= 7
 
-#
-- name: Enable selinux
+
+- name: Enable SELinux
   selinux:
     policy: targeted
     state: enforcing
 
-#
+
 - name: Greenplum Database Uninstallation
   debug: msg="Greenplum Database {{ gpdb.major_version }}.{{ gpdb.minor_version }} uninstalled"
   when: gpdb_uninstall == True
@@ -193,3 +195,4 @@
 
 # Status: Greenplum Database up and running
 # FIXME: update bash history
+

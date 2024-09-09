@@ -85,3 +85,33 @@
   with_items: "{{ ansible_all_ipv4_addresses }}"
   when: "item | ansible.utils.ipaddr( gpdb_network_range )"
 
+
+- name: Get the CIDR of GPDB Network
+  set_fact:
+    gpdb_network_range: "{{ hostvars[inventory_hostname][_netdev]['ipv4']['network'] }}/{{ ( hostvars[inventory_hostname][_netdev]['ipv4']['address'] + '/' + hostvars[inventory_hostname][_netdev]['ipv4']['netmask'] ) | ansible.utils.ipaddr('prefix') }}"
+
+
+- name: Get the Specific IP Addresses
+  set_fact:
+    prod_ip_addr_range: "{{ item }}"
+  with_items: "{{ ansible_all_ipv4_addresses }}"
+  when:
+    - ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
+    - "item | ansible.utils.ipaddr( gpdb_network_range )"
+
+
+- name: Define Varaibles for the Installation and Existance and the GPPKG Package Name
+  set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    check_gpmetrics_installed: "gppkg -q --all | grep MetricsCollector | cut -d - -f 1"
+    gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}-{{ gpcc.os_name }}-{{ gpcc.metric_arch }}.gppkg
+  when: inventory_hostname in groups['master'] and gpdb.major_version|int <= 6
+
+
+- name: Define Varaibles for the Installation and Existance and the GPPKG Package Name
+  set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    check_gpmetrics_installed: "gppkg query | grep MetricsCollector | awk '{print $1}'"
+    gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}-{{ gpcc.os_name }}-{{ gpcc.metric_arch }}.gppkg
+  when: inventory_hostname in groups['master'] and gpdb.major_version|int >= 7
+

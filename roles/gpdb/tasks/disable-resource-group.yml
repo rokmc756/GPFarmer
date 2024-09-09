@@ -1,0 +1,70 @@
+###########################################################
+# Resource Group configuration
+#
+# Downloaded From Here - https://pkgs.sysadmins.ws/el9/base/x86_64/
+
+- name: Disabling Resource Groups by Gpconfig
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_resource_manager -v "queue" )
+  args:
+    executable: /bin/bash
+  register: disable_resource_group
+  when: inventory_hostname in groups['master']
+
+
+- name: Apply New Changes for Resource Groups
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  args:
+    executable: /bin/bash
+  register: rs_applied
+  when: inventory_hostname in groups['master']
+
+
+- name: Delete the cgconfig.conf for All Nodes
+  file: path=/etc/cgconfig.conf state=absent
+  register: delete_cgconfig
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 9
+
+
+- name: Delete Systemd Configuration of Cgconfig Into /etc/systemd/system
+  file: path=/etc/systemd/system/cgconfig.service state=absent
+  register: delete_systemd_cgconfig
+  when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+
+- name: Disable and Stop Cgconfig for Applying Config
+  systemd:
+    name: cgconfig
+    enabled: no
+    state: stopped
+    daemon_reload: true
+  register: disable_cgconfig
+
+
+- name: Uninstall libcgroup RPM Packages for Enabling Cgroup v1
+  package:
+    name: "{{ gpdb.admin_home_dir }}/{{ item }}"
+    state: absent
+    disable_gpg_check: yes
+  async: 360
+  poll: 5
+  with_items:
+    - libcgroup
+    - libcgroup-devel
+    - libcgroup-tools
+    - libcgroup-pam
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 9
+
+
+- name: Delete libcgroup RPM Packages for Enabling Cgroup v1
+  file: path=/home/gpadmin/{{ item }} state=absent
+  with_items:
+    - libcgroup-devel-3.0-1.el9.0.1.x86_64.rpm
+    - libcgroup-pam-3.0-1.el9.0.1.x86_64.rpm
+    - libcgroup-3.0-1.el9.0.1.x86_64.rpm
+    - libcgroup-tools-3.0-1.el9.0.1.x86_64.rpm
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 9
+

@@ -9,11 +9,38 @@
   import_tasks: set-gpcc-facts.yml
   tags: install
 
-
 - name: Install Greenplum Command Center
   import_tasks: install.yml
   tags: install
 
+
+#- name: Add GPMON User
+#  import_tasks: 01-add-gpmon-user.yml
+#  tags: install
+#
+#- name: Create GPPerfmon Agent
+#  import_tasks: 02-create-gpperfmon-agent.yml
+#  tags: install
+#
+#- name: Setup Greenplum Command Center Software
+#  import_tasks: 03-setup-gpcc-bin.yml
+#  tags: install
+#
+#- name: Enable SSL Connection for GPCC Web UI
+#  import_tasks: 04-enable-ssl.yml
+#  tags: install
+#
+#- name: Install Greenplum Command Center Software
+#  import_tasks: 05-install-gcc.yml
+#  tags: install
+#
+#- name: Enable Metric Collector
+#  import_tasks: 06-enable-metric-collector.yml
+#  tags: install
+#
+#- name: Configure Greenplum Command Center
+#  import_tasks: 07-config-gpcc.yml
+#  tags: install
 
 - name: Uninstall Greenplum Command Center
   import_tasks: uninstall.yml

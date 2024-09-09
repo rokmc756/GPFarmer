@@ -1,16 +1,13 @@
 ---
 # Install Greenplum Database on RedHat / CentOS / Rocky / Ubuntu / Debian
 #
-# For now fail if it's not suppoted OS
+# For Now Fail if It's Not Suppoted OS
 - name: Check OS ( GPDB )
   fail: msg="{{ ansible_distribution }} is not supported for this ansible playbook!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
-# - name: Install Greenplum Database
-#  import_tasks: install.yml
 
-
-- name: Check if Greenplum is installed already
+- name: Check if Greenplum Database is Installed Already
   import_tasks: check-gpdb-installed.yml
   tags:
     - install
@@ -18,7 +15,7 @@
   when: check_install_gpdb == true
 
 
-- name: Set facts for Greenplum
+- name: Set Facts for Greenplum Database
   import_tasks: set-gpdb-facts.yml
   tags:
     - install
@@ -26,7 +23,7 @@
   when: set_gpdb_facts == true
 
 
-- name: Prepare OS parameters
+- name: Prepare OS Parameters
   import_tasks: prepare-os-parameters.yml
   tags: install
   when: prepare_os_parameters == true
@@ -50,8 +47,8 @@
   when: enable_ldap == true
 
 
-- name: Configure Resource Group
-  import_tasks: config-resource-group.yml
+- name: Enable Resource Group
+  import_tasks: enable-resource-group.yml
   tags: install
   when: config_rg == true
 
@@ -84,6 +81,12 @@
   import_tasks: uninstall-kerberos.yml
   tags: uninstall
   when: enable_kerberos == true
+
+
+- name: Disable Resource Group
+  import_tasks: disable-resource-group.yml
+  tags: uninstall
+  when: config_rg == true
 
 
 - name: Uninstall Greenplum Database

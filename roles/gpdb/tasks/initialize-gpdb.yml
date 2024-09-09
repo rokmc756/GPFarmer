@@ -1,8 +1,9 @@
+###########################################################
 # Status: database software is installed
 ###########################################################
 # Database initialization
-#
-- name: Create empty variable for data directories
+
+- name: Create Empty Variable for Data Directories
   set_fact: data_dirs=""
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
 
@@ -11,30 +12,30 @@
   set_fact: mirror_data_dirs=""
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb.mirror_enable == True and gpdb_install == True )
 
-#
-- name: Loop over number for primary segments
+
+- name: Loop Over Number for Primary Segments
   set_fact: data_dirs="{{ data_dirs | replace('^ *', '') }} {{ gpdb.data_dir }}/primary"
   with_sequence: start=1 end={{ gpdb.number_segments }} stride=1
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and gpdb_install == True
 
-#
-- name: Loop over number for mirror segments
+
+- name: Loop Over Number for Mirror Segments
   set_fact: mirror_data_dirs="{{ mirror_data_dirs | replace('^ *', '') }} {{ gpdb.data_dir }}/mirror"
   with_sequence: start=1 end={{ gpdb.number_segments }} stride=1
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] ) and ( gpdb.mirror_enable == True and gpdb_install == True )
 
-#
-- name: Copy gpinitsystem config file for single node
+
+- name: Copy gpinitsystem Config File for Single Node
   command: creates=/home/gpadmin/gpinitsystem_config cp -a {{ gpdb.base_dir }}/greenplum-db/docs/cli_help/gpconfigs/gpinitsystem_singlenode /home/gpadmin/gpinitsystem_config
   when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb.initdb_single == True )
 
-#
-- name: Copy gpinitsystem config file for multiple nodes
+
+- name: Copy gpinitsystem Config File for Multiple Nodes
   command: creates=/home/gpadmin/gpinitsystem_config cp -a {{ gpdb.base_dir }}/greenplum-db/docs/cli_help/gpconfigs/gpinitsystem_config /home/gpadmin/gpinitsystem_config
   when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb.initdb_with_standby == True )
 
-#
-- name: Create hostfile file for master node
+
+- name: Create hostfile File for Master Node
   lineinfile:
     path: "/home/gpadmin/hostfile"
     line: "{{ hostvars[item]['ansible_hostname'] }}"
@@ -47,8 +48,8 @@
   with_items: "{{ groups['master'] }}"
   when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb.initdb_single == True and gpdb.initdb_with_standby == False )
 
-#
-- name: Create hostfile_all file for all nodes
+
+- name: Create hostfile_all File for All Nodes
   lineinfile:
     path: "/home/gpadmin/hostfile_all"
     line: "{{ hostvars[item]['ansible_hostname'] }}"
@@ -64,8 +65,8 @@
     - "{{ groups['segments'] }}"
   when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb.initdb_single == False and gpdb.initdb_with_standby == True )
 
-#
-- name: Create hostfile file for segment nodes
+
+- name: Create hostfile File for Segment Nodes
   lineinfile:
     path: "/home/gpadmin/hostfile"
     line: "{{ hostvars[item]['ansible_hostname'] }}"
@@ -75,8 +76,8 @@
   with_items: "{{ groups['segments'] }}"
   when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb.initdb_single == False and gpdb.initdb_with_standby == True )
 
-#
-- name: Fix permissions and ownership for gpinitsystem config file and hostlist file
+
+- name: Fix Permissions and Ownership for gpinitsystem Config File and hostlist File
   file: path=/home/gpadmin/{{ item.path }} owner={{ item.owner }} group={{item.group }} mode={{ item.mode }}
   with_items:
     - { path: 'gpinitsystem_config', owner: 'gpadmin', group: 'gpadmin', mode: '0664' }
@@ -84,16 +85,16 @@
     - { path: 'hostfile_all', owner: 'gpadmin', group: 'gpadmin', mode: '0700' }
   when: ( inventory_hostname in groups['master'] and gpdb_install == True )
 
-#
-- name: Fix hostname in hostfile
+
+- name: Fix Hostname in hostfile
   replace:
     dest: /home/gpadmin/hostfile
     regexp: '^replace_this_with_hostname_of_your_machine$'
     replace: '{{ ansible_hostname }}'
   when: ( inventory_hostname in groups['master'] and gpdb_install == True )
 
-#
-- name: Fix settings in gpinitsystem config file
+
+- name: Fix Settings in gpinitsystem Config File
   lineinfile:
     dest: /home/gpadmin/gpinitsystem_config
     regexp: "{{ item.regexp }}"
@@ -112,8 +113,8 @@
     - { regexp: '^MIRROR_PORT_BASE=', line: 'MIRROR_PORT_BASE=7000', state: present }
   when: ( inventory_hostname in groups['master'] and gpdb_install == True )
 
-#
-- name: Change permission of Greenplum Database directory
+
+- name: Change Permission of Greenplum Database Directory
   file:
     path: "{{ item.dir }}"
     state: "{{ item.state }}"
@@ -125,59 +126,60 @@
     - { "state": "directory", "perm": "0755", "recurse": "yes", "dir": "{{ gpdb.base_dir }}/{{ install_path }}" }
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
-#
-- name: Change permission of Greenplum Database link since above task does not work for link
+
+- name: Change Permission of Greenplum Database Link since Above Task does not Work for Link
   shell: "chown -R gpadmin:gpadmin {{ gpdb.base_dir }}/greenplum-db"
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
+
 # Status: Config files ready, initialize database if required.
 # Check if the 'known_hosts' file exists - this is taken as sign that the ssh key exchange happened before. that is not very reliable
-- name: Check if the ssh login for gpadmin is already setup
+- name: Check if the SSH Login for gpadmin is Already Setup
   stat: path=/home/gpadmin/.ssh/known_hosts
   register: ssh_initialized_gpadmin
 
-#
-- name: Check if the ssh login for root is already setup
+
+- name: Check if the SSH Login for Root is Already Setup
   stat: path=/root/.ssh/known_hosts
   register: ssh_initialized_root
 
-#
-- name: Check if the database is already initialized
+
+- name: Check if the Database is Already Initialized
   stat: path={{ gpdb.data_dir }}
   register: gpdb_initialized
 
-#
-- name: Create {{ gpdb.data_dir }} directories
+
+- name: Create {{ gpdb.data_dir }} Directories
   file: path={{ item.path }} state=directory owner=gpadmin group=gpadmin mode=0770
   with_items:
     - { path: '{{ gpdb.data_dir }}' }
   when: gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True
 
-#
-- name: Create {{ gpdb.data_dir }}/master directories for master and standby
+
+- name: Create {{ gpdb.data_dir }}/master Directories for Master and Standby
   file: path={{ item.path }} state=directory owner=gpadmin group=gpadmin mode=0770
   with_items:
     - { path: '{{ gpdb.data_dir }}/master' }
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
-#
-- name: Create {{ gpdb.data_dir }}/primary and mirror directories for only master
+
+- name: Create {{ gpdb.data_dir }}/primary and mirror Directories for Only Master
   file: path={{ item.path }} state=directory owner=gpadmin group=gpadmin mode=0770
   with_items:
     - { path: '{{ gpdb.data_dir }}/primary' }
     - { path: '{{ gpdb.data_dir }}/mirror' }
   when: ( inventory_hostname in groups['master'] and gpdb.initdb_single == True ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
-#
-- name: Create {{ gpdb.data_dir }}/primary and mirror directories for only segments
+
+- name: Create {{ gpdb.data_dir }}/primary and mirror Directories for Only Segments
   file: path={{ item.path }} state=directory owner=gpadmin group=gpadmin mode=0770
   with_items:
     - { path: '{{ gpdb.data_dir }}/primary' }
     - { path: '{{ gpdb.data_dir }}/mirror' }
   when: ( inventory_hostname in groups['segments'] and gpdb.initdb_with_standby == true ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
-#
-- name: Install greeplum binary into segment nodes by running gpseginstall
+
+- name: Install Greeplum Database Binary into Segment Nodes by Running gpseginstall
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpseginstall -f /home/gpadmin/hostfile )
   async: 120
@@ -190,7 +192,7 @@
 # python -m pip install --upgrade pip
 # python -m pip install psutil
 
-#
+
 - name: Initialize Greenplum Database Cluster
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -a -c /home/gpadmin/gpinitsystem_config -h /home/gpadmin/hostfile {{ gpdb.spread_mirrors }} )
@@ -202,7 +204,7 @@
   when: inventory_hostname in groups['master'] and  gpdb.initdb_with_standby == False
   failed_when: init_db.rc > 1
 
-#
+
 - name: Initialize Greenplum Database Cluster with Standby Master
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -c /home/gpadmin/gpinitsystem_config -a {{ gpdb.spread_mirrors }} -h /home/gpadmin/hostfile -s {{ hostvars[groups['standby'][0]]['ansible_hostname'] }} )
@@ -213,6 +215,7 @@
   register: init_db
   when: inventory_hostname in groups['master'] and gpdb.initdb_with_standby == True
   failed_when: init_db.rc > 1
+
 
 # the greenplum_path.sh from the new installation does not have $MASTER_DATA_DIRECTORY
 - name: Add MASTER_DATA_DIRECTORY to greenplum_path.sh
@@ -226,24 +229,25 @@
     - { regexp: '^export MASTER_DATA_DIRECTORY=', line: 'export MASTER_DATA_DIRECTORY={{ gpdb.master_data_dir }}', state: present }
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_install == True or gpdb_linkchange == True )
 
-#
-- name: Restart Greenplum Database after initialization
+
+- name: Restart Greenplum Database after Initialization
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
   when: inventory_hostname in groups['master'] and ( gpdb_install == True or gpdb_linkchange == True )
 
-#
-- name: Check if database is running
+
+- name: Check if Greenplum Database is Running
   stat: path=/tmp/.s.PGSQL.5432
   register: gpdb_running_nothing
   when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_linkchange == True )
 
-#
-- name: Start database
+
+- name: Start Greenplum Database
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstart -a )
   async: 60
   poll: 5
   when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_linkchange == True and gpdb_running_nothing.stat.exists != True )
+

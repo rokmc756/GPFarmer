@@ -5,17 +5,17 @@
 #   linkchange: {{ gpdb.base_dir }}/greenplum-db points to another directory
 
 
-- name: Check if any version of Greenplum Database is already installed
+- name: Check if Any Version of Greenplum Database is Already Installed
   stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_link_existed
 
 
-- name: Check if the Greenplum Database version is already installed
+- name: Check if the Greenplum Database Version is Already Installed
   stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}
   register: gpdb_dir_existed
 
 
-- name: Sanity check for {{ gpdb.base_dir }}/greenplum-db
+- name: Sanity Check for {{ gpdb.base_dir }}/greenplum-db
   fail: msg="{{ gpdb.base_dir }}/greenplum-db is supposed to be a symlink!"
   when: gpdb_link_existed.stat.exists == True and gpdb_link_existed.stat.islnk != True
 

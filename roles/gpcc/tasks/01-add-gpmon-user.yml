@@ -1,0 +1,72 @@
+---
+- name: Check if the Greenplum Database Software is Already Installed
+  stat: path={{ gpdb.base_dir }}/greenplum-db
+  register: gpdb_installed
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
+
+
+- name: Stop if Greenplum Dtabase Software is not Installed
+  fail: msg="Greenplum Database software is not installed!"
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_installed.stat.exists != True )
+
+
+- name: Verify that Greenplum Database is up and Running
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c 'SELECT VERSION()' )
+  args:
+    executable: /bin/bash
+  register: select_version
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+  when: inventory_hostname in groups['master']
+
+
+# Status: Greenplum Command Center software is  installed
+- name: Set Default Values for Run Mode Variables
+  set_fact:
+    gpcc_gpperfmon_install: False
+    gpcc_setup_cc_sne: False
+  when: inventory_hostname in groups['master']
+
+
+- name: Verify that GPPERFMON Is Not Installed
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT COUNT(*) AS count FROM pg_database WHERE datname = 'gpperfmon'" )
+  args:
+    executable: /bin/bash
+  register: select_gpperfmon
+  when: inventory_hostname in groups['master']
+
+
+- name: Set Fact for the Status of GPPERFMON Database
+  set_fact:
+    gpperfmon_status: "{{ ( select_gpperfmon.stdout.find('    0') ) }}"
+  delegate_to: "{{ item }}"
+  delegate_facts: True
+  with_items: "{{ groups['all'] }}"
+  when: inventory_hostname in groups['master']
+- debug: msg={{ gpperfmon_status }}
+
+
+- name: Add GPMON User to pg_hba.conf to Authenticate Greenplum Command Center
+  lineinfile:
+    dest: "{{ gpdb.master_data_dir }}/pg_hba.conf"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { line: "local    gpperfmon   gpmon                           md5",           state: present }
+    - { line: "host     all         gpmon         127.0.0.1/28      md5",           state: present }
+    - { line: "host     all         gpmon         ::1/128           md5",           state: present }
+    - { line: "host     all         gpmon         {{ prod_ip_addr_range }}/24 md5", state: present }
+    - { line: "host     all         gpmon         {{ gpdb_network_range }} md5",    state: present }
+  register: gpmon_pg_hba_config
+  when: ( inventory_hostname in groups['master'] and gpperfmon_status|int != -1 ) or ( inventory_hostname in groups['standby'] and gpperfmon_status|int != -1 )
+  # when: ( inventory_hostname in groups['master'] and select_gpperfmon.stdout.find('    0') != -1 ) or ( inventory_hostname in groups['standby'] and select_gpperfmon.stdout.find('    0') != -1 )
+
+
+- name: Reload Greenplum Database
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  args:
+    executable: /bin/bash
+  async: 360
+  poll: 5
+  when: inventory_hostname in groups['master'] and gpmon_pg_hba_config.changed == True

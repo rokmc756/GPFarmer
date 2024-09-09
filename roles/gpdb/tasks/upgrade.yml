@@ -1,43 +1,43 @@
 ---
-
 # Upgrade Greenplum Database on Red Hat / CentOS / Rocky / Ubuntu / Debian
 # upgrade: {{ gpdb.base_dir }}/greenplum-db-{ new version } must not exist
 # linkchange: {{ gpdb.base_dir }} /greenplum-db points to another directory
 
-#
-- name: Check if GPDB link is already existed
+
+- name: Check if GPDB link is Already Existed
   stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_linked
 
-#
-- name: Check if the GPDB is already installed
+
+- name: Check if the GPDB is Already Installed
   stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}
   register: gpdb_installed
 
-#
-- name: Sanity check for {{ gpdb.base_dir }}/greenplum-db
+
+- name: Sanity Check for {{ gpdb.base_dir }}/greenplum-db
   fail: msg="{{ gpdb.base_dir }}/greenplum-db is supposed to be a symlink!"
   when: gpdb_linked.stat.exists == True and gpdb_linked.stat.islnk != True
 
-#
-- name: Set name for binary upgrade greenplum ( name includes build number )
+
+- name: Set Name for Binary Upgrade Greenplum ( name includes build number )
   set_fact:
     binary_upgrade_file: greenplum-db-{{ upgrade.major_version }}.{{ upgrade.gpdb_minor_version }}.{{ upgrade.build_version }}-{{ upgrade.os_name }}-x86_64
     upgrade_path: greenplum-db-{{ upgrade.major_version }}.{{ upgrade.minor_version }}.{{ upgrade.build_version }}
   when: upgrade.build_version is defined and upgrade.build_version != None
 
-#
-- name: Set name for binary installer file ( name does not include build number )
+
+- name: Set Name for Binary Installer file ( Name does not Include Build Number )
   set_fact:
     binary_upgrade_file: greenplum-db-{{ upgrade.major_version }}.{{ upgrade.minor_version }}-{{ upgrade.os_name }}-x86_64
     upgrade_path: greenplum-db-{{ upgrade.major_version }}.{{ upgrade.minor_version }}
   when: upgrade.build_version is not defined or (upgrade.build_version is defined and upgrade.build_version == None)
 
-#
+
 - name: Set default values for run mode variables
   set_fact:
     gpdb_upgrade: False
     gpdb_linkchange: False
+
 
 # If {{ gpd.base_dir }}/greenplum-db-{ new version } does not exists, it's an upgrade
 - name: Identify Greenplum Database Upgrade
@@ -45,24 +45,24 @@
     gpdb_upgrade: True
   when: gpdb_linked.stat.exists == True and gpdb_installed.stat.exists != True
 
+
 # If the link points to a different existing directory, it's a link change
 - name: Identify Greenplum Database Linkchange
   set_fact:
     gpdb_linkchange: True
   when: ( gpdb_linked.stat.exists == True and gpdb_installed.stat.exists == True and gpdb_linked.stat.lnk_source != "{{ gpdb.base_dir }}/greenplum-db-{{ upgrade.major_version }}.{{ upgrade.minor_version }}" )
 
-#
-- name: Check if database is running
+
+- name: Check if Greenplum Database is Running
   stat: path=/tmp/.s.PGSQL.5432
   register: gpdb_running
   when:
     - inventory_hostname in groups['master']
     - gpdb_upgrade == True or gpdb_linkchange == True
-
 - debug: msg={{ gpdb_running }}
 
-#
-- name: Shutdown database
+
+- name: Shutdown Greenplum Database
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
   async: 60
@@ -71,19 +71,18 @@
   when:
    - inventory_hostname in groups['master']
    - ( gpdb_upgrade == True or gpdb_linkchange == True ) and gpdb_running.stat.exists == True
-
 - debug: msg={{ database_shutdowned }}
 
-#
-- name: Copy Greenplum Database {{ upgrade.major_version }} {{ upgrade.binary_type }} package
+
+- name: Copy Greenplum Database {{ upgrade.major_version }} {{ upgrade.binary_type }} Package
   copy: src={{ binary_upgrade_file }}.rpm dest=/home/gpadmin/{{ binary_upgrade_file }}.rpm mode=0644 owner=gpadmin group=gpadmin
   when:
     - gpdb_upgrade == True or gpdb_linkchange == True
     - upgrade.binary_type == 'rpm'
 
-#
-- name: Install Greenplum Database software in {{ gpdb.base_dir }}
-  yum:
+
+- name: Install Greenplum Database Software in {{ gpdb.base_dir }}
+  package:
     name: /home/gpadmin/{{ binary_upgrade_file }}.rpm
     state: latest
   async: 60
@@ -92,11 +91,10 @@
   when:
     - gpdb_upgrade == True or gpdb_linkchange == True
     - upgrade.binary_type == 'rpm'
-
 - debug: msg={{ gpdb_software_upgrade }}
 
-#
-- name: Update the permissions for the new installation
+
+- name: Update the Permissions for the New Installation
   become: true
   file:
     path: "{{ gpdb.base_dir }}/{{ upgrade_path }}"
@@ -107,8 +105,8 @@
   when:
     - gpdb_upgrade == True or gpdb_linkchange == True
 
-#
-- name: Replace database directory
+
+- name: Replace Database Directory
   replace:
     path: "{{ gpdb.base_dir }}/{{ upgrade_path }}/greenplum_path.sh"
     regexp: "^(.*)GPHOME=(.*)$"
@@ -118,8 +116,8 @@
     - gpdb_upgrade == True or gpdb_linkchange == True
     - inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
-#
-- name: Replace source .bashrc in gpadmin home directory
+
+- name: Replace Source .bashrc in gpadmin Home Directory
   become: true
   replace:
     path: /home/gpadmin/.bashrc
@@ -130,8 +128,8 @@
     - gpdb_upgrade == True or gpdb_linkchange == True
     - inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
-#
-- name: Delete a symlink to point the old GPDB version
+
+- name: Delete a Symlink to Point the Old GPDB version
   become: true
   file:
     path: "{{ gpdb.base_dir }}/greenplum-db"
@@ -139,11 +137,12 @@
   when:
     - gpdb_upgrade == True or gpdb_linkchange == True
 
-#
-- name: Uupdate the link to point to the newly installed GPDB version
+
+- name: Uupdate the Link to Point to the Newly Installed GPDB version
   file: path={{ gpdb.base_dir }}/greenplum-db src={{ gpdb.base_dir }}/{{ upgrade_path }} state=link
   when:
     - gpdb_upgrade == True or gpdb_linkchange == True
+
 
 # the greenplum_path.sh from the new installation does not have $MASTER_DATA_DIRECTORY
 - name: Add MASTER_DATA_DIRECTORY to greenplum_path.sh
@@ -157,8 +156,8 @@
   when:
     - gpdb_upgrade == True or gpdb_linkchange == True
 
-#
-- name: Start Greenplum Database after upgrade
+
+- name: Start Greenplum Database after Upgrade
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/{{ upgrade_path }}/greenplum_path.sh && gpstart -a )
   async: 60
@@ -169,3 +168,4 @@
     - gpdb_upgrade == True or gpdb_linkchange == True
 
 - debug: msg={{ gpdb_started }}
+

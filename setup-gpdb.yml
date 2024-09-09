@@ -2,5 +2,16 @@
 - hosts: all
   become: true
   gather_facts: yes
+  vars:
+    check_install_gpdb: true
+    set_gpdb_facts: true
+    prepare_os_parameters: true
+    install_gpdb: true
+    initialize_gpdb: true
+    config_rg: true
+    enable_ssl: true
+    finalize_gpdb: true
+    enable_ldap: false
+    enable_kerberos: false
   roles:
     - { role: gpdb }                 # Need to check if get_facts: true is required
