@@ -29,52 +29,6 @@
     _ipaddr: "{{ ipaddr1 }}"
 
 
-#- name: Set Default Values for Run Mode Variables
-#  set_fact:
-#    gpdb_install: False
-#    gpdb_linkchange: False
-#
-#- name: Identify Greenplum Database Installation
-#  set_fact:
-#    gpdb_install: True
-#  when: gpdb_dir_existed.stat.exists != True and gpdb_dir_existed.stat.exists != True
-#
-## If the link points to a different existing directory, it's a link change
-#- name: Identify Greenplum Database Linkchange
-#  set_fact:
-#    gpdb_linkchange: True
-#  when: gpdb_link_existed.stat.exists != True
-#
-#
-#- name: Greenplum Database Installation
-#  debug: msg="New Greenplum Database installation"
-#  when: gpdb_install == True
-#
-#
-#- name: Greenplum Database Link Change
-#  debug: msg="Changing link to Greenplum Database version"
-#  when: gpdb_linkchange == True
-#
-#
-#- name: Greenplum Database - Nothing to do
-#  debug: msg="Nothing to do (no installation/upgrade required)"
-#  when: gpdb_install == False and gpdb_linkchange == False
-#
-#
-#- name: Set name for binary installer file (name includes build number)
-#  set_fact:
-#    binary_installer_file: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}-{{ gpdb.os_name }}-{{ gpdb.arch_name }}"
-#    install_path: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}"
-#  when: gpdb_build_version is defined and gpdb_build_version != None
-#
-#
-#- name: Set name for binary installer file (name does not include build number)
-#  set_fact:
-#    binary_installer_file: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}-{{ gpdb.os_name }}-{{ gpdb.arch_name }}"
-#    install_path: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}"
-#  when: gpdb_build_version is not defined or ( gpdb_build_version is defined and gpdb_build_version == None )
-
-
 - set_fact:
     gpdb_network_range: "{{ hostvars[inventory_hostname][_netdev]['ipv4']['network'] }}/{{ ( hostvars[inventory_hostname][_netdev]['ipv4']['address'] + '/' + hostvars[inventory_hostname][_netdev]['ipv4']['netmask'] ) | ansible.utils.ipaddr('prefix') }}"
 
@@ -98,23 +52,6 @@
   when:
     - ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
     - "item | ansible.utils.ipaddr( gpdb_network_range )"
-
-
-#- name: Define Varaibles for the Installation and Existance and the GPPKG Package Name
-#  set_fact:
-#    gppkg_install_cmd: "gppkg -i"
-#    check_gpmetrics_installed: "gppkg -q --all | grep MetricsCollector | cut -d - -f 1"
-#    gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}-{{ gpcc.os_name }}-{{ gpcc.metric_arch }}.gppkg
-#  when: inventory_hostname in groups['master'] and gpdb.major_version|int <= 6
-
-
-#- name: Define Varaibles for the Installation and Existance and the GPPKG Package Name
-#  set_fact:
-#    gppkg_install_cmd: "gppkg -a install"
-#    check_gpmetrics_installed: "gppkg query | grep MetricsCollector | awk '{print $1}'"
-#    gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}-{{ gpcc.os_name }}-{{ gpcc.metric_arch }}.gppkg
-#  when: inventory_hostname in groups['master'] and gpdb.major_version|int >= 7
-
 
 
 - name: Define Varaibles for the Installation and Existance and the GPPKG Package Name
