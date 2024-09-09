@@ -100,18 +100,39 @@
     - "item | ansible.utils.ipaddr( gpdb_network_range )"
 
 
+#- name: Define Varaibles for the Installation and Existance and the GPPKG Package Name
+#  set_fact:
+#    gppkg_install_cmd: "gppkg -i"
+#    check_gpmetrics_installed: "gppkg -q --all | grep MetricsCollector | cut -d - -f 1"
+#    gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}-{{ gpcc.os_name }}-{{ gpcc.metric_arch }}.gppkg
+#  when: inventory_hostname in groups['master'] and gpdb.major_version|int <= 6
+
+
+#- name: Define Varaibles for the Installation and Existance and the GPPKG Package Name
+#  set_fact:
+#    gppkg_install_cmd: "gppkg -a install"
+#    check_gpmetrics_installed: "gppkg query | grep MetricsCollector | awk '{print $1}'"
+#    gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}-{{ gpcc.os_name }}-{{ gpcc.metric_arch }}.gppkg
+#  when: inventory_hostname in groups['master'] and gpdb.major_version|int >= 7
+
+
+
 - name: Define Varaibles for the Installation and Existance and the GPPKG Package Name
   set_fact:
     gppkg_install_cmd: "gppkg -i"
+    gppkg_remove_cmd: "gppkg -r"
     check_gpmetrics_installed: "gppkg -q --all | grep MetricsCollector | cut -d - -f 1"
     gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}-{{ gpcc.os_name }}-{{ gpcc.metric_arch }}.gppkg
+    gpmetrics_package_version: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}
   when: inventory_hostname in groups['master'] and gpdb.major_version|int <= 6
 
 
 - name: Define Varaibles for the Installation and Existance and the GPPKG Package Name
   set_fact:
     gppkg_install_cmd: "gppkg -a install"
+    gppkg_remove_cmd: "gppkg -a remove"
     check_gpmetrics_installed: "gppkg query | grep MetricsCollector | awk '{print $1}'"
     gpmetrics_package_name: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}-{{ gpcc.os_name }}-{{ gpcc.metric_arch }}.gppkg
+    gpmetrics_package_version: MetricsCollector-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}_gp_{{ gpdb.metric_major_version }}.{{ gpdb.metric_minor_version }}
   when: inventory_hostname in groups['master'] and gpdb.major_version|int >= 7
 

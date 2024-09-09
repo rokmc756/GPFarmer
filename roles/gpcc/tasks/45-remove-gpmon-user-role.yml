@@ -1,0 +1,44 @@
+---
+- name: Drop SuperUser Roles from Greenplum Database
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d postgres -c 'DROP {{ item }};' )
+  with_items:
+    - "function gpcc_schema.pghba_list_version()"
+    - "function gpcc_schema.pghba_check_reload(text)"
+    - "function gpcc_schema.replace_pghba(text,text,boolean)"
+    - "function gpcc_schema.write_pghba(text)"
+    - "function gpcc_schema.read_pghba(text)"
+    - "table gpcc_schema.pghba_lock"
+    - "function gpcc_schema.read_file(text)"
+  ignore_errors: yes
+  register: gpmon_role_denpendencies_dropped
+  when: inventory_hostname in groups['master'] and ( gpcc.major_version|int <= 6 and gpcc.minor_version|int < 7 )
+# when: gpmon_role_denpendencies_dropped.rc != 0 )
+
+
+- name: Repeat to Run Query for Terminating Process IDs Used by GPMon User Before Dropping GPPerfmon Database
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -qAt -d template1 -c "select pg_terminate_backend(pid) from pg_stat_activity where datname = 'gpperfmon' and usename = 'gpmon';" )
+  register: terminate_pids
+  until: terminate_pids.stdout == ""
+  retries: 10
+  delay: 5
+  when: inventory_hostname in groups['master']
+
+
+- name: Drop the GPPerfmon Database if You Do Not Want to Keep Your Historical Greenplum Command Center Data
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb gpperfmon )
+  async: 180
+  poll: 5
+  when: inventory_hostname in groups['master']
+
+
+- name: Drop the Greenplum Command Center SuperUser Role from the Database
+  become_user: gpadmin
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d template1 -c 'REASSIGN OWNED BY gpmon TO gpadmin; DROP OWNED BY gpmon; DROP ROLE gpmon;'
+  register: gpmon_role_dropped
+  ignore_errors: yes
+  when: inventory_hostname in groups['master']
+

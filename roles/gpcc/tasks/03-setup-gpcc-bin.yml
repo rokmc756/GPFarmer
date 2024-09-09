@@ -1,56 +1,55 @@
 ---
-- name: Check if the Greenpum Command Center version is already installed
+- name: Check if the Greenpum Command Center Version is Already Installed
   stat: path={{ gpcc.base_dir }}/greenplum-cc-web-{{ gpcc.major_version }}.{{ gpcc.minor_version }}
   register: gpcc_installed
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
 
 
-- name: Copy Greenplum Command Center zip file
+- name: Copy Greenplum Command Center Zip File
   copy: src=greenplum-cc-web-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}-gp{{ gpdb.major_version }}-{{ gpcc.os_name}}-x86_64.zip dest={{ gpdb.admin_home_dir }}/gpcc.zip mode=0644 owner=gpadmin group=gpadmin
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True )
-  # copy: src=greenplum-cc-web-{{ gpcc.major_version }}.{{ gpcc.minor_version }}-gp{{ gpdb.major_version }}-{{ gpcc.os_name}}-x86_64.zip dest={{ gpdb.admin_home_dir }}/gpcc.zip mode=0644 owner=gpadmin group=gpadmin
 
 
-- name: Remove old temp Greenplum Command Center installer directory
+- name: Remove Old Temp Greenplum Command Center Installer Directory
   file: path={{ gpdb.admin_home_dir }}/gpcc-tmp-install state=absent
   changed_when: False
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True )
 
 
-- name: Create new temp installer directory
+- name: Create New Temp Installer Directory
   file: path={{ gpdb.admin_home_dir }}/gpcc-tmp-install state=directory owner=gpadmin group=gpadmin
   changed_when: False
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True )
 
 
-- name: Unzip Greenplum Command Center archive
+- name: Unzip Greenplum Command Center Archive
   unarchive: src={{ gpdb.admin_home_dir }}/gpcc.zip dest={{ gpdb.admin_home_dir }}/gpcc-tmp-install remote_src=yes owner=gpadmin group=gpadmin
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True )
 
 
 # Make next tasks easier by not always using the Ansible variables in the filename
-- name: Rename .bin file
+- name: Rename .bin File
   command: creates={{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpdb.admin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc.major_version }}.{{ gpcc.minor_version }}-LINUX-x86_64.bin {{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin
   when: ( inventory_hostname in groups['master'] and gpcc.major_version|int <= 3 )
 
 
 # Make next tasks easier by not always using the Ansible variables in the filename
-- name: Rename .bin file
+- name: Rename .bin File
   command: creates={{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin mv {{ gpdb.admin_home_dir }}/gpcc-tmp-install/greenplum-cc-web-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}-gp{{ gpdb.major_version }}-{{ gpcc.os_name }}-x86_64/gpccinstall-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }} {{ gpdb.admin_home_dir }}/gpcc-tmp-install/gpcc.bin
   when: inventory_hostname in groups['master'] and ( gpcc.major_version|int <= 7 and gpcc.major_version|int > 3 )
 
 
-- name: Copy Command Center setup config file
+- name: Copy Command Center Setup Config file
   copy: src=gpcc_config.ini dest={{ gpdb.admin_home_dir }}/gpcc_config.ini mode=0644 owner=gpadmin group=gpadmin
   when: inventory_hostname in groups['master'] and ( gpcc.major_version|int <= 7 and gpcc.major_version|int > 3 )
 
 
-- name: Copy Command Center setup config file
+- name: Copy Command Center Setup Config File
   copy: src=gpcmdr_setup.ini dest={{ gpdb.admin_home_dir }}/gpcmdr_setup.ini mode=0644 owner=gpadmin group=gpadmin
   when: ( inventory_hostname in groups['master'] and gpcc.major_version|int <= 3 )
 
 
-- name: Copy Command Center install script file
+- name: Copy Command Center Install Script File
   copy: src=install_gpcc.sh dest={{ gpdb.admin_home_dir }}/install_gpcc.sh mode=0755 owner=gpadmin group=gpadmin
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists != True ) and ( gpcc.major_version|int <= 7 and gpcc.major_version|int > 3 )
 

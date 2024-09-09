@@ -161,25 +161,7 @@
   ignore_errors: yes
   register: gpmon_role_denpendencies_dropped
   when: inventory_hostname in groups['master'] and ( gpcc.major_version|int <= 6 and gpcc.minor_version|int < 7 )
-
-
-#- name: Drop the Greenplum Command Center Superuser Role from the Database
-#  become_user: gpadmin
-#  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d template1 -c 'DROP OWNED BY gpmon; DROP ROL gpmon;' )
-#  register: gpmon_role_dropped
-#  ignore_errors: yes
-#  when: inventory_hostname in groups['master']
-#  # when: ( inventory_hostname in groups['master'] and gpmon_role_denpendencies_dropped.rc != 0 )
-
-
-#  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d template1 -c 'DROP ROLE gpmon;' )
-- name: Drop the Greenplum Command Center Superuser Role from the Database
-  become_user: gpadmin
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d postgres -c 'DROP OWNED BY gpmon; DROP ROLE gpmon;' )
-  register: gpmon_role_dropped
-  ignore_errors: yes
-  when: inventory_hostname in groups['master']
-  # when: ( inventory_hostname in groups['master'] and gpmon_role_denpendencies_dropped.rc != 0 )
+# when: ( inventory_hostname in groups['master'] and gpmon_role_denpendencies_dropped.rc != 0 )
 
 
 - name: Repeat to Run Query for Terminating Process IDs Used by GPMon User Before Dropping GPPerfmon Database
@@ -198,6 +180,17 @@
   async: 180
   poll: 5
   when: inventory_hostname in groups['master']
+
+
+#    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d template1 -c 'REASSIGN OWNED BY gpmon TO gpadmin; DROP OWNED BY gpmon; DROP USER gpmon;'
+- name: Drop the Greenplum Command Center SuperUser Role from the Database
+  become_user: gpadmin
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d template1 -c 'REASSIGN OWNED BY gpmon TO gpadmin; DROP OWNED BY gpmon; DROP ROLE gpmon;'
+  register: gpmon_role_dropped
+  ignore_errors: yes
+  when: inventory_hostname in groups['master']
+
 
 
 - name: Clean Up Any Uncommitted Greenplum Command Center Data and Log Files that Reside on the Master File System

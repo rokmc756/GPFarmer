@@ -1,18 +1,18 @@
 ---
-- name: Check if SSL Directory is already existed
+- name: Check if SSL Directory Already Exists
   stat: path={{ gpdb.admin_home_dir }}/certs
   register: check_dir_sslkey_installed
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
 
 
-- name: Create SSL directory
+- name: Create SSL Directory
   file: path={{ gpdb.admin_home_dir }}/certs state=directory owner=gpadmin group=gpadmin
   changed_when: False
   register: dir_sslkey_installed
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and check_dir_sslkey_installed.stat.exists != True
 
 
-- name: Create SSL key for Greenplum Command Center Web UI
+- name: Create SSL Key for Greenplum Command Center
   shell: ( openssl req -newkey rsa:2048 -x509 -keyout {{ gpcc.ssl_dir }}/cert.pem -out {{ gpcc.ssl_dir }}/cert.pem -days {{ gpcc.ssl_days }} -nodes -subj "/C={{ gpcc.ssl_country }}/ST={{ gpcc.ssl_state }}/L={{ gpcc.ssl_location }}/O={{ gpcc.ssl_organization }}/CN={{ gpcc.ssl_common_name }}/emailAddress={{ gpcc.ssl_email }}" )
   args:
     executable: /bin/bash

@@ -1,14 +1,5 @@
 ---
-#- name: Drop extension of metrics_collector if it exists
-#  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d gpperfmon -c "DROP EXTENSION metrics_collector;" )
-#  args:
-#    executable: /bin/bash
-#  ignore_errors: yes
-#  register: mc_extension_dropped
-#  when: inventory_hostname in groups['master']
-
-
-- name: Verify if MetricsCollector GPPKG Package is Installed
+- name: Verify if MetricsCollector GPPKG Pakcage is Installed
   shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_gpmetrics_installed }} )
   args:
     executable: /bin/bash

@@ -1,0 +1,59 @@
+---
+- name: Clean Up Any Uncommitted Greenplum Command Center Data and Log Files that Reside on the Master File System
+  become_user: gpadmin
+  file:
+    owner: gpadmin
+    group: gpadmin
+    path: "{{ gpdb.master_data_dir }}/gpperfmon/{{ item }}"
+    state: absent
+  register: gpcc_data_logs_cleaned
+  with_items:
+    - data
+    - logs
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
+
+
+- name:  Remove Out the GPMON Entries in pg_hba.conf
+  become: yes
+  become_user: gpadmin
+  lineinfile:
+    path: "{{ gpdb.master_data_dir }}/pg_hba.conf"
+    # String to Search
+    regexp: "gpmon"
+    # State is set to Absent to remove if the Searching Line is found
+    state: absent
+    backup: yes
+  register: gpmon_entries_removed
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
+
+
+- name: Remove Greenplum Command Center Symlink
+  file:
+    owner: gpadmin
+    group: gpadmin
+    path:  "{{ gpcc_prefix_dir }}"
+    state: absent
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['all'] }}"
+  when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists == True ) and ( gpcc.major_version >= 6 and gpcc.minor_version >= 2 )
+
+
+- name: Remove Greenplum Command Center Directories Still Remained
+  file:
+    owner: gpadmin
+    group: gpadmin
+    path: "{{ gpcc_prefix_dir }}-{{ gpcc.major_version }}.{{ gpcc.minor_version }}"
+    state: absent
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['all'] }}"
+  when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists == True ) and ( gpcc.major_version >= 6 and gpcc.minor_version >= 2 )
+
+
+- name: Restart Greenplum Database
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 180
+  poll: 5
+  register: gpdb_restarted
+  when: inventory_hostname in groups['master']
+

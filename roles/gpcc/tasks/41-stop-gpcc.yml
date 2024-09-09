@@ -1,0 +1,46 @@
+---
+- name: Verify that Greenplum Database is Up and Running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  register: select_version
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+  when: inventory_hostname in groups['master']
+
+
+- name: Set Prefix Directory for Installation Path of Greenplum Command Center
+  set_fact: gpcc_prefix_dir=/usr/local/greenplum-cc-web
+  when: gpcc.major_version|int <= 6 and gpcc.minor_version|int < 2
+
+
+- name: Set Prefix Directory for Installation Path of Greenplum Command Center
+  set_fact: gpcc_prefix_dir=/usr/local/greenplum-cc
+  when: ( gpcc.major_version|int >= 6 and gpcc.minor_version|int >= 2 ) or ( gpcc.major_version|int >= 7 and gpcc.minor_version|int >= 0 )
+
+
+- name: Check if the Greenplum Command Center Software is Already Installed
+  stat: path={{ gpcc_prefix_dir }}-{{ gpcc.major_version }}.{{ gpcc.minor_version }}.{{ gpcc.patch_version }}
+  register: gpcc_installed
+
+
+- name: Fail if Greenplum Command Center Software is Not Installed
+  fail: msg="Greenplum Command Center is not installed!"
+  when: gpcc_installed.stat.exists == False
+#- debug:
+#    msg: "{{ gpcc_running.stdout_lines[1].split(' ').4.split('/').0 }}"
+#  when: inventory_hostname in groups['standby']
+
+
+- name: Stop Greenplum Command Center Instance for 3 and Ealier Versions
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_prefix_dir }}/gpcc_path.sh && gpcmdr --stop sne )
+  when: ( gpcc.major_version <= 6 and gpcc.minor_version < 2 ) and ( inventory_hostname in groups['standby'] and gpcc_installed.stat.exists == True )
+
+
+- name: Stop Greenplum Command Center Instance for 4 and Higher Versions
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_prefix_dir }}/gpcc_path.sh && gpcc stop )
+  when: ( gpcc.major_version <= 7 and gpcc.minor_version < 2 ) and ( inventory_hostname in groups['standby'] and gpcc_installed.stat.exists == True )
+

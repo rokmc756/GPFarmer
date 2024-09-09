@@ -1,5 +1,5 @@
 ---
-- name: Add the Path of GPCC Variable File Into .bashrc
+- name: Add the Path of GPCC Variable File into .bashrc
   lineinfile:
     dest: /home/gpadmin/.bashrc
     line: "source {{ gpcc.base_dir }}/greenplum-cc/gpcc_path.sh"
@@ -7,14 +7,14 @@
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
 
-- name: Create Password File for GPMON User to Login Greenplum Command Center
+- name: Create Password File for GPMon User to Login Greenplum Command Center
   copy:
     dest: "/home/gpadmin/.pgpass"
     content: "*:5432:gpperfmon:gpmon:changeme"
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
 
-- name: Change Permission of Password File for GPMON User to Login Greenplum Command Center
+- name: Change Permission of Password File for GPMon User to Login Greenplum Command Center
   file:
     path: "/home/gpadmin/.pgpass"
     state: file
@@ -33,7 +33,7 @@
 #  when: ( inventory_hostname in groups['standby'] and gpcc_setup_cc_sne == True )
 
 
-- name: Start Greenplum Command Center
+- name: Start Greenplum Command Center {{ gpcc.major_version  }}.{{ gpcc.minor_version }}
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_prefix_dir }}/gpcc_path.sh && gpcc start )
   args:

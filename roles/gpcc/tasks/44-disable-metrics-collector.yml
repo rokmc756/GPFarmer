@@ -1,0 +1,24 @@
+---
+- name: Disable the Data Colleciton Agents
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_enable_gpperfmon -v off )
+  register: gpperfmon_disabled
+  when: inventory_hostname in groups['master'] and ( gpcc.major_version < 7 )
+
+
+- name: Disable Query Metrics
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c gp_enable_query_metrics -v off )
+  register: query_metric_disabled
+  when: inventory_hostname in groups['master']
+
+
+- name: Remove GUC of MetricsCollector
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c shared_preload_libraries -v '' )
+  register: metrics_collector_removed
+  when: inventory_hostname in groups['master']
+
