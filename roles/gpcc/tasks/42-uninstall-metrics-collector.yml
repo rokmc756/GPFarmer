@@ -21,7 +21,7 @@
     executable: /bin/bash
   ignore_errors: yes
   register: mc_extension_dropped
-  when: ( gpcc.major_version >= 6 and gpcc.minor_version >= 7 ) and ( inventory_hostname in groups['master'] and 'MetricsCollector' in mc_installed.stdout )
+  when: ( gpcc.major_version >= 6 and gpcc.minor_version <= 7 ) and ( inventory_hostname in groups['master'] and 'MetricsCollector' in mc_installed.stdout )
   # shared_preload_libraries = 'metrics_collector'
   # gp_enable_query_metrics = on
 

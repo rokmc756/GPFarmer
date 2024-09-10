@@ -1,15 +1,14 @@
 ---
-#
 - name: Check if the PXF Cluster is runnong on each segment host for Hadoop
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( source ~/.bashrc && PXF_BASE={{ hadoop.base_work_dir }} pxf cluster status )
   ignore_errors: yes
   register: pxf_running_checked_hadoop
   when: inventory_hostname in groups['master'] and hadoop.access == true
 
-#
+
 - name: Stop PXF Cluster runnong on each segment host for Hadoop
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( source ~/.bashrc && export PXF_BASE={{ hadoop.base_work_dir }} && pxf cluster stop )
   ignore_errors: yes
   when:

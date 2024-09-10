@@ -1,48 +1,46 @@
 ---
-# Uninstall PXF on GPDB for Red Hat
-#
-- name: Check if the pxf cluster is runnong on each segment host
-  become_user: "{{ gpdb.user }}"
-  shell: ( source ~/.bashrc && pxf cluster status )
+- name: Check if the PXF Cluster is Runnong on Each Segment hosts
+  become_user: "{{ gpdb.admin_user }}"
+  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && export PXF_BASE=/usr/local/pxf-{{ pxf.gpdb_version }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster status )
   ignore_errors: yes
   register: pxf_running_checked
   when: inventory_hostname in groups['master']
 
-#
-- name: Stop PXF Cluster runnong on each segment host
-  become_user: "{{ gpdb.user }}"
-  shell: ( source ~/.bashrc && pxf cluster stop )
+
+- name: Stop PXF Cluster Runnong on Each Segment Hosts
+  become_user: "{{ gpdb.admin_user }}"
+  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && export PXF_BASE=/usr/local/pxf-{{ pxf.gpdb_version }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster stop )
   ignore_errors: yes
   when: inventory_hostname in groups['master'] and 'PXF is running on' in pxf_running_checked.stdout
 
-#
-- name: Killall java processes running for PXF
-  become_user: "{{ gpdb.user }}"
-  shell: ( killall java )
-  ignore_errors: yes
-  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
-#
-- name: Remove the PXF library
-  become_user: "{{ gpdb.user }}"
+#- name: Killall Java Processes Running for PXF
+#  become_user: "{{ gpdb.admin_user }}"
+#  shell: ( killall java )
+#  ignore_errors: yes
+#  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+
+
+- name: Remove the PXF Library
+  become_user: "{{ gpdb.admin_user }}"
   file:
     path: "{{ gpdb.base_dir }}/greenplum-db/lib/postgresql/pxf.so"
     state: absent
   ignore_errors: yes
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
-#
-- name: Find the PXF extension files named with pxf under extension directory
-  become_user: "{{ gpdb.user }}"
+
+- name: Find the PXF Extension Files Named with PXF Under Extension Directory
+  become_user: "{{ gpdb.admin_user }}"
   find:
     paths: "{{ gpdb.base_dir }}/greenplum-db/share/postgresql/extension"
     patterns: "^pxf*"
   register: wildcard_files_to_delete
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
-#
-- name: Remove the PXF extension files named with pxf under extension directory
-  become_user: "{{ gpdb.user }}"
+
+- name: Remove the PXF Extension Files Named with PXF Under Extension Directory
+  become_user: "{{ gpdb.admin_user }}"
   file:
     path: "{{ item.path }}"
     state: absent
@@ -50,8 +48,8 @@
   with_items: "{{ wildcard_files_to_delete.files }}"
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
-#
-- name: Remove PXF rpm package
+
+- name: Remove PXF RPM Package
   become: yes
   become_user: root
   yum: name=pxf-{{ pxf.gpdb_version }} state=absent
@@ -59,9 +57,9 @@
     -  inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
     - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
 
-#
-- name: Check if PXF extension is installed on GPDB
-  become_user: "{{ gpdb.user }}"
+
+- name: Check if PXF Extension is Installed on Greenplum Database
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -t -c "select count(*) FROM pg_extension where extname='pxf';" | tr -d " " | sed '/^$/d' )
   register: pxf_extension_install_checked
   when: inventory_hostname in groups['master']
@@ -69,29 +67,30 @@
 # - debug: msg={{ pxf_extension_install_checked.stdout }}
 #  when: inventory_hostname in groups['master']
 
-#
-- name: Drop PXF extension
+
+- name: Drop PXF Extension
   become: yes
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "DROP EXTENSION pxf;")
   register: pxf_extension_dropped
   ignore_errors: yes
   when: inventory_hostname in groups['master'] and '1' in pxf_extension_install_checked.stdout
 
-#
-- name: Drop database for PXF
+
+- name: Drop Database for PXF
   become: yes
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ pxf.database_name }} )
   register: pxf_database_dropped
   ignore_errors: yes
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Drop User for PXF
   become: yes
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "DROP USER {{ pxf.username }};" )
   register: pxf_user_dropped
   ignore_errors: yes
   when: inventory_hostname in groups['master']
+

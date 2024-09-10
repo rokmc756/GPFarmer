@@ -1,83 +1,81 @@
 ---
-# Install PXF for GPDB
-#
-# for now fail if it's not a Red Hat based system
-- name: Check OS ( GPDB )
+- name: Check OS ( PXF )
   fail: msg="Not a Red Hat based system!"
   when: ansible_os_family != 'RedHat' or ansible_os_family != 'CentOS' or ansible_os_family != 'Rocky'
 
-#
+
 - name: Install PXF
   import_tasks: install.yml
   tags: install
   when: pxf.install == true
 
-#
+
 - name: Setup NFS Access
   import_tasks: setup-nfs-access.yml
   tags: install
   when: nfs.access == true
 
-#
+
 - name: Setup HDFS Access
   import_tasks: setup-hadoop-access.yml
   tags: install
   when: hadoop.access == true
 
-#
+
 - name: Setup Oracle Access
   import_tasks: setup-oracle-access.yml
   tags: install
   when: oracle.access == true
 
-#
+
 - name: Setup MS-SQL Access
   import_tasks: setup-mssql-access.yml
   tags: install
   when: mssql.access == true
 
-#
+
 - name: Setup Minio Access
   import_tasks: setup-minio-access.yml
   tags: install
   when: minio.access == true
 
-#
+
 - name: Uninstall NFS Access
   import_tasks: uninstall-nfs.yml
   tags: uninstall
   when: nfs.access == true
 
-#
+
 - name: Uninstall HDFS Access
   import_tasks: uninstall-hadoop.yml
   tags: uninstall
   when: hadoop.access == true
 
-#
+
 - name: Uninstall Oracle Access
   import_tasks: uninstall-oracle.yml
   tags: uninstall
   when: oracle.access == true
 
-#
+
 - name: Uninstall MS-SQL Access
   import_tasks: uninstall-mssql.yml
   tags: uninstall
   when: mssql.access == true
 
-#
+
 - name: Uninstall Minio Access
   import_tasks: uninstall-minio.yml
   tags: uninstall
   when: minio.access == true
 
-#
+
 - name: Uninstall PXF
   import_tasks: uninstall.yml
   tags: uninstall
 
-#
+
 - name: Upgrade PXF
   import_tasks: upgrade.yml
   tags: upgrade.yml
+

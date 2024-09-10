@@ -2,7 +2,7 @@
 # Uninstall PXF on GPDB for Red Hat
 #
 - name: Check if the PXF cluster is runnong on each segment host for MSSQL
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( source ~/.bashrc && PXF_BASE={{ mssql.base_work_dir }} pxf cluster status )
   ignore_errors: yes
   register: pxf_running_checked
@@ -10,7 +10,7 @@
 
 #
 - name: Stop pxf cluster runnong on each segment host for MSSQL
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( source ~/.bashrc && export PXF_BASE={{ mssql.base_work_dir }} && pxf cluster stop )
   ignore_errors: yes
   when:

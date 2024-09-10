@@ -1,8 +1,6 @@
 ---
-# Uninstall PXF on GPDB for Red Hat
-#
 - name: Check if the PXF Cluster is runnong on each segment host for Oracle
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( source ~/.bashrc && PXF_BASE={{ oracle.base_work_dir }} pxf cluster status )
   ignore_errors: yes
   register: pxf_running_checked_oracle
@@ -10,7 +8,7 @@
 
 #
 - name: Stop PXF Cluster running on each segment hosts for Oracle
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( source ~/.bashrc && export PXF_BASE={{ oracle.base_work_dir }} && pxf cluster stop )
   ignore_errors: yes
   when: inventory_hostname in groups['master'] and 'PXF is running on' in pxf_running_checked_oracle.stdout

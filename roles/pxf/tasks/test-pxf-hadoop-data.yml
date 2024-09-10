@@ -2,14 +2,14 @@
 #
 - name: Restart PXF on master for hadoop access
   become: yes
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( source ~/.bashrc && PXF_BASE={{ hadoop.base_work_dir }} pxf cluster restart )
   register: pxf_cluster_hadoop_restarted
   when: hadoop.access and inventory_hostname in groups['master']
 
 #
 - name: Delete query-examles directory on GPDB master
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   file: path={{ item }} state=absent
   with_items:
     - "{{ gpdb.admin_home_dir }}/query-examples"
@@ -25,7 +25,7 @@
 #
 - name: Initial connecton to avoid Host Verfication failed
   become: yes
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( source ~/.bashrc && sshpass -p 'changeme' ssh-copy-id -i ~/.ssh/id_rsa.pub {{ hadoop.user }}@{{ hostvars[groups['hdfs_master'][0]]['ansible_hostname'] }} )
   register: ssh_initial_connection
   when: hadoop.access and inventory_hostname in groups['master']
@@ -65,7 +65,7 @@
 
 #
 - name: Create PXF base directory for Hadoop Access and query examples directory on all master and segment hosts
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
   with_items:
     - "{{ hadoop.base_work_dir }}"
@@ -82,7 +82,7 @@
 
 #
 - name: Copy query examples for Hadoop Access
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   template: src={{ item }} dest={{ hadoop.home_dir }}/query-examples/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
   loop: "{{ hadoop.access_test_queries }}"
   when: hadoop.access and inventory_hostname in groups['master']
@@ -111,7 +111,7 @@
 
 #
 - name: Copy test scripts into GPDB Master
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   template: src={{ item }} dest={{ gpdb.admin_home_dir }}/query-examples/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
   register: gpdb_test_scripts_copied
   loop: "{{ gpdb.access_test_scripts }}"
@@ -126,7 +126,7 @@
 
 #
 - name: Run example queries on GPDB Master
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d testdb -f {{ gpdb.admin_home_dir }}/query-examples/{{ item }} )
   register: hadoop_test_queries_run
   loop: "{{ hadoop.access_test_queries }}"
@@ -134,7 +134,7 @@
 
 #
 - name: Print the output of running test queries
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   debug: msg={{ hadoop_test_queries_run }}
   when: hadoop.access and inventory_hostname in groups['master']
 
@@ -154,7 +154,7 @@
 
 #
 - name: Run test scripts on GPDB Master
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   shell: ( source ~/.bashrc && /bin/bash {{ gpdb_home_dir }}/query-examples/{{ item }} )
   register: gpdb_test_scripts_run
   loop: "{{ hadoop.access_test_scripts }}"
@@ -162,6 +162,6 @@
 
 #
 - name: Print the output of running test scripts
-  become_user: "{{ gpdb.user }}"
+  become_user: "{{ gpdb.admin_user }}"
   debug: msg={{ gpdb_test_scripts_run }}
   when: hadoop.access and inventory_hostname in groups['master']

@@ -67,6 +67,11 @@ postgis:
 pgb:
 	make -f makefile_configs/Makefile.pgbouncer r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 
+gptext:
+	make -f makefile_configs/Makefile.gptext r=${r} s=${s} c=${c} USERNAME=${USERNAME}
+
+pxf:
+	make -f makefile_configs/Makefile.pxf r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 
 
 boot: role-update control-vms.yml

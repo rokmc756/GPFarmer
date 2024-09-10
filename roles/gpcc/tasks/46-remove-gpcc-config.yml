@@ -49,6 +49,16 @@
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists == True ) and ( gpcc.major_version >= 6 and gpcc.minor_version >= 2 )
 
 
+- name: Remove a Line Including PATH Variable for GPCC
+  lineinfile:
+    path: "{{ item }}"
+    regexp: "^source (.*)greenplum-cc(.*)gpcc_path.sh$"
+    state: absent
+  register: remove_gpcc_path
+  with_items:
+    - "/home/{{ gpdb.admin_user }}/.bashrc"
+
+
 - name: Restart Greenplum Database
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )

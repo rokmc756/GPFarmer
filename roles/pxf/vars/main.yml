@@ -3,10 +3,10 @@ pxf:
   major_version: 6
   minor_version: 9.0
   patch_version: 2
-  gpdb_version: gp7
+  gpdb_version: gp6
   arch_type: x86_64
   binary_type: rpm
-  os_version: el8
+  os_version: el9
   database_name: pxf_testdb
   username: pxf_user
   install: true
