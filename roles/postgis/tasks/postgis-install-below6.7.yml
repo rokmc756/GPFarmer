@@ -2,45 +2,52 @@
 
 # Install postgis on GPDB
 
-- name: Copy postgis gppkg file
+- name: Copy PostGIS GPPKG File
   copy: src=postgis-{{ postgis_prefix_major_version }}{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}-{{ postgis_gpdb_version }}-{{ postgis_rhel_version }}-x86_64.gppkg dest={{ gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   # copy: src=postgis-{{ postgis_major_version }}.{{ postgis_minor_version }}.{{ postgis_patch_version }}+pivotal.2-{{ postgis_gpdb_version }}-{{ postgis_rhel_version }}-x86_64.gppkg dest=/home/gpadmin/ mode=0644 owner=gpadmin group=gpadmin
   #  when: postgis_installed.stat.exists != True
 
-- name: Install postgis package
+
+- name: Install Postgis Package
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpadmin_home_dir }}/postgis-{{ postgis_prefix_major_version }}{{ postgis_major_version }}.{{ postgis_minor_version }}{{ postgis_patch_version }}-{{ postgis_gpdb_version }}-{{ postgis_rhel_version }}-x86_64.gppkg )
   #  when: postgis_installed.stat.exists != True
 
-- name: Verify that database for postgis is installed
+
+- name: Verify that Database for PostGIS is Installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ postgis_database_name }}'" )
   register: postgis_database_installed
   when: inventory_hostname in groups['master']
 
-- name: Create database for postgis
+
+- name: Create Database for Postgis
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ postgis_database_name }} )
   register: postgis_database_created
   when: "'100' not in postgis_database_installed.stdout"
 
-- name: Enable PostGIS Support for database created
+
+- name: Enable PostGIS Support for Database Created
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && {{ gpdb_base_dir }}/greenplum-db/share/postgresql/contrib/postgis-{{ postgis_major_version }}.{{ postgis_minor_version }}/postgis_manager.sh {{ postgis_database_name }} install )
   register: postgis_database_installed
   when: inventory_hostname in groups['master'] and postgis_major_version == 2 and postgis_minor_version >= 0
 
-- name: Enable PostGIS Support for database created
+
+- name: Enable PostGIS Support for Database Created
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis_database_name }} -f $GPHOME/share/postgresql/contrib/postgis-{{ postgis_major_version }}.{{ postgis_minor_version }}/postgis.sql && psql -d {{ postgis_database_name }} -f $GPHOME/share/postgresql/contrib/postgis-{{ postgis_major_version }}.{{ postgis_minor_version }}/spatial_ref_sys.sql )
   register: postgis_database_installed
   when: inventory_hostname in groups['master'] and postgis_major_version < 2 and postgis_minor_version >= 0
-
   # export GDAL_DATA=$GPHOME/share/gdal
   # export POSTGIS_ENABLE_OUTDB_RASTERS=0
   # export POSTGIS_GDAL_ENABLED_DRIVERS=ENABLE_ALL
 
-  #- name: Check if postgis function are added
-  #become_user: root
-  #  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/postgis/bin/madpack -s postgis -p greenplum -c gpadmin@mdw:5432/{{ postgis_database_name }} install-check )
-  #  when: postgis_installed.stat.exists != True
+
+#- name: Check if postgis function are added
+#  become_user: root
+#  shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/postgis/bin/madpack -s postgis -p greenplum -c gpadmin@mdw:5432/{{ postgis_database_name }} install-check )
+#  when: postgis_installed.stat.exists != True
+
+

@@ -1,34 +1,5 @@
 ---
-#gpdb:
-#  major_version: 7
-#  minor_version: 0.0
-#  build_version:
-#  metric_major_version: 7
-#  metric_minor_version: 0.0
-#  metric_build_version:
-#  base_dir: "/usr/local"
-#  data_dir: "/data"
-#  gpadmin_home_dir: "/home/gpadmin"
-#  master_data_dir: "/data/master/gpseg-1"
-#
-#gpcc:
-#  base_dir: "/usr/local"
-#  major_version: 7
-#  minor_version: 0.0
-#  metric_arch: 'x86_64'
-#  os_name: 'el8'
-#  gpccws_port: 28080
-#  gpmon_password: "changeme"
-#  ssl_dir: "/home/gpadmin/certs"
-#  ssl_days: 3660
-#  ssl_country: "KR"
-#  ssl_state: "Seoul"
-#  ssl_location: "GangNam"
-#  ssl_organization: "Pivotal"
-#  ssl_common_name: "jtest.pivotal.io"
-#  ssl_email: "jomoon@pivotal.io"
-# metric_arch: 'amd64'
-# os_name: 'ubuntu18.04'
+
 
 # RHEL
 # greenplum-cc-web-6.0.0-beta.5-rhel7_x86_64.zip

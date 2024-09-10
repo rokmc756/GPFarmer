@@ -61,6 +61,9 @@ gpcc:
 madlib:
 	make -f makefile_configs/Makefile.madlib r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 
+postgis:
+	make -f makefile_configs/Makefile.postgis r=${r} s=${s} c=${c} USERNAME=${USERNAME}
+
 
 boot: role-update control-vms.yml
 	ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} control-vms.yml --extra-vars "power_state=powered-on power_title=Power-On VMs"

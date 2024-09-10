@@ -1,17 +1,15 @@
 ---
-# Uninstall PostGIS Extention on Greenplum database
-#
-- name: Check if the GPDB software is already installed
+- name: Check if the Greenplum Database Software is Already Installed
   stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_installed
 
-#
-- name: Stop if GPDB software is not installed
+
+- name: Stop if Greenplum Database Software is Not Installed
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_installed.stat.exists != True
 
-#
-- name: Verify that database is up and running
+
+- name: Verify that Database is Up and Running
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
@@ -19,29 +17,29 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
   when: inventory_hostname in groups['master']
 
-#
-- name: Verify that database for PostGIS extention is installed
+
+- name: Verify that Database for PostGIS Extention is Installed
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ postgis.database_name }}'" )
   register: postgis_database_installed
   when: inventory_hostname in groups['master']
 
-#
+
 - set_fact:
     postgis_package_name: "postgis-{{ postgis.major_version }}.{{ postgis.minor_version }}{{ postgis.patch_version }}"
     gppkg_remove_cmd: "gppkg -r"
     check_postgis_installed: "gppkg -q --all | grep postgis | cut -d - -f 1"
   when: inventory_hostname in groups['master'] and postgis.gpdb_version|int <= 6
 
-#
+
 - set_fact:
     postgis_package_name: "postgis"
     gppkg_remove_cmd: "gppkg -a -f remove"
     check_postgis_installed: "gppkg query | grep postgis | awk '{print $1}'"
   when: inventory_hostname in groups['master'] and postgis.gpdb_version|int >= 7
 
-#
-- name: Verify if PostGIS gppkg is installed
+
+- name: Verify if PostGIS GPPKG is Installed
   become_user: gpadmin
   shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_postgis_installed }} )
   ignore_errors: true
@@ -49,19 +47,19 @@
   changed_when: False
   when: inventory_hostname in groups['master']
 
-#
-- name: Print the result if PostGIS is not installed
+
+- name: Print the Result if PostGIS is Not Installed
   debug:
     msg: "{{ postgis_installed.stdout }}"
   when: inventory_hostname in groups['master']
 
-#
-- name: Stop if PostGIS gppkg package is not installed
+
+- name: Stop if PostGIS GPPKG Package is Not Installed
   fail: msg="PostGIS gppkg package is not installed!"
   when: ( inventory_hostname in groups['master'] and 'postgis' not in postgis_installed.stdout )
 
-#
-- name: Drop Extensions of PostGIS
+
+- name: Drop PostGIS Extensions
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis.database_name }} -c "{{ item }}" )
   register: postgis_database_installed
@@ -75,15 +73,15 @@
     - inventory_hostname in groups['master']
     - postgis.major_version >= 2 and postgis.minor_version >= 5
 
-#
-- name: Drop database for PostGIS
+
+- name: Drop PostGIS Database
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ postgis.database_name }} )
   register: postgis_database_dropped
   when: inventory_hostname in groups['master']
 
-#
-- name: Uninstall the GPDB PostGIS Pakcage
+
+- name: Uninstall the PostGIS GPPKG Pakcage
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ postgis_package_name }} )
   register: postgis_package_uninstalled
@@ -94,11 +92,12 @@
   changed_when: postgis_database_installed == True
   when: inventory_hostname in groups['master']
 
-#
-- name: Check if the directory of PostGIS Package is still remained
+
+- name: Check if the Directory of PostGIS Package is Still Remained
   stat: path={{ gpdb.base_dir }}/greenplum-db/postgis
   register: postgis_dir_remained
   when: inventory_hostname in groups['master']
+
 
 #- name: Remove PostGIS Directory still remained
 #  file:
@@ -110,8 +109,8 @@
 #    - inventory_hostname in groups['master']
 #    - postgis_dir_remained.stat.exists == True
 
-#
-- name: Delete lines enabled in greenplum_path.sh for GDAL raster drivers
+
+- name: Delete Lines Enabled in greenplum_path.sh for GDAL Raster Drivers
   lineinfile:
     path: "{{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh"
     regexp: "{{ item }}"
@@ -123,8 +122,8 @@
     - "^export POSTGIS_ENABLE_OUTDB_RASTERS=*"
     - "^export POSTGIS_GDAL_ENABLED_DRIVERS=*"
 
-#
-- name: Restart GPDB after removing PostGIS Extension
+
+- name: Restart Greenplum Database after Removing PostGIS Extension
   become_user: gpadmin
   shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
