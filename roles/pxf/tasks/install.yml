@@ -12,7 +12,7 @@
     - gpdb_installed.stat.exists != True or gpdb_installed.stat.islnk != True
 
 
-- name: t
+- name: Set Java Home and PXF Version Info
   set_fact:
     java_home: "/usr/lib/jvm/jre-1.8.0"
     pxf_binary_type: "rpm"
@@ -22,7 +22,7 @@
     - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
 
 
-- name: t
+- name: Set PXF Package Name
   set_fact:
     pxf_package_name: pxf-{{ pxf.gpdb_version }}-{{ pxf.major_version }}.{{ pxf.minor_version }}-{{ pxf.patch_version }}.{{ pxf.os_version }}.{{ pxf.arch_type }}.{{ pxf.binary_type }}
   when:
@@ -30,7 +30,7 @@
     - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
 
 
-- name: t
+- name: Set Java Home and PXF Version Info
   set_fact:
     java_home: "/usr/lib/jvm/java-8-openjdk-amd64/jre"
     pxf_binary_type: "deb"
@@ -40,7 +40,7 @@
     - ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
 
 
-- name: t
+- name: Set PXF Package Name
   set_fact:
     pxf_package_name: pxf-{{ pxf.gpdb_version }}-{{ pxf.major_version }}.{{ pxf.minor_version }}-{{ pxf.patch_version }}-{{ pxf.os_version }}-{{ pxf.arch_type }}.{{ pxf.binary_type }}
   when:
@@ -48,18 +48,14 @@
     - ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
 
 
-- name: Install JAVA RPM Package for PXF
-  become: yes
-  become_user: root
+- name: Install Java RPM Package for PXF
   package: name="java-1.8.0" state=present
   when:
     - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
     - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5
 
 
-- name: Install JAVA Dep Package for PXF
-  become: yes
-  become_user: root
+- name: Install Java Depend Package for PXF
   package: name={{ item }} state=present
   with_items:
     - openssl
@@ -80,15 +76,11 @@
 
 
 - name: Copy the PXF .{{ pxf.binary_type }} File to All Hosts in Greenplum Cluster
-  become: yes
-  become_user: root
   copy: src={{ pxf_package_name }} dest={{ gpdb.admin_home_dir }}/{{ pxf_package_name }} mode=0644 owner=gpadmin group=gpadmin
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 
 - name: Install PXF Package on Each Greenplum Database Hosts Using Package Management Utility for RedHat/CentOS/Rocky
-  become: yes
-  become_user: root
   yum:
     name: "{{ gpdb.admin_home_dir }}/{{ pxf_package_name }}"
     state: present
@@ -100,9 +92,7 @@
     - ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky"
 
 
-- name: Install PXF Package on Each Greenplum Database Hosts Using Package Management Utility for Ubuntu/Debian
-  become: yes
-  become_user: root
+- name: Install PXF DEB Package on Each Greenplum Database Hosts Using Package Management Utility for Ubuntu/Debian
   apt:
     deb: "{{ gpdb.admin_home_dir }}/{{ pxf_package_name }}"
     state: present
@@ -114,8 +104,6 @@
 
 
 - name: Set the Ownership and Permissions of the PXF Installation Files to Enable Access By the GPAdmin User
-  become: yes
-  become_user: root
   file:
     path: "{{ item }}"
     owner: gpadmin
@@ -127,7 +115,6 @@
 
 
 - name: Add the PXF Binary Directory to the PXF Owner’s $PATH
-  become: yes
   become_user: gpadmin
   lineinfile:
     path: "{{ gpdb.admin_home_dir }}/.bashrc"
@@ -140,8 +127,6 @@
 
 
 - name: Chown GPAmdin User for PXF Directory
-  become: yes
-  become_user: root
   file:
     dest: "{{ gpdb.base_dir }}/pxf-{{ pxf.gpdb_version }}"
     owner: gpadmin
@@ -152,7 +137,6 @@
 
 
 - name: Change JAVA_HOME in PXF_HOME/conf/pxf-env.sh
-  become: yes
   become_user: gpadmin
   lineinfile:
     dest: /usr/local/pxf-{{ pxf.gpdb_version }}/conf/pxf-env.sh
@@ -164,40 +148,80 @@
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 
+#    source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_CONF=/usr/local/pxf-{{ pxf.gpdb_version }}/conf /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster register
 - name: Export the PXF JAVA_HOME Setting and Run the PXF Cluster Init Command to Initialize the PXF Service on All GPDB Hosts
-  become: yes
   become_user: gpadmin
-  shell: ( source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_CONF=/usr/local/pxf-{{ pxf.gpdb_version }}/conf /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster register )
+  shell: |
+    source ~/.bashrc && export PXF_CONF=/usr/local/pxf-{{ pxf.gpdb_version }}/conf && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster register
   args:
     executable: /bin/bash
-  register: pxf_cluster_initialized
+  register: init_pxf_cluster
   when: inventory_hostname in groups['master']
   # pxf cluster init has been deprecated
 
 
 - name: Print Initializtion of PXF Cluster
-  debug: msg={{ pxf_cluster_initialized }}
+  debug: msg={{ init_pxf_cluster }}
   when: inventory_hostname in groups['master']
 
 
-- name: Run the PXF Cluster Start Command to Start PXF on Each Sgment Hosts
-  become: yes
+# source /usr/local/greenplum-db/greenplum_path.sh && export PXF_BASE=/usr/local/pxf-{{ pxf.gpdb_version }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster sync
+- name: Synchronize the PXF Server Configuration to the Greenplum Cluster
   become_user: gpadmin
-  shell: ( source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start )
+  shell: |
+    source ~/.bashrc && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster sync
+  register: sync_pxf_cluster
   args:
     executable: /bin/bash
-  register: pxf_cluster_started
+  when: inventory_hostname in groups['master']
+
+
+- name: Print Initializtion of PXF Cluster
+  debug: msg={{ sync_pxf_cluster }}
+  when: inventory_hostname in groups['master']
+
+
+# source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start
+- name: Run the PXF Cluster Start Command to Start PXF on Each Sgment Hosts
+  become_user: gpadmin
+  shell: |
+    source ~/.bashrc && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start
+  args:
+    executable: /bin/bash
+  register: start_pxf_cluster
   when: inventory_hostname in groups['master']
 
 
 - name: Print Staring PXF Cluster
-  debug: msg={{ pxf_cluster_started }}
+  debug: msg={{ start_pxf_cluster }}
   when: inventory_hostname in groups['master']
 
 
+#- pause:
+#    seconds: 60
+
+# source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start
+#- name: Run the PXF Cluster Status Command to check PXF on Each Sgment Hosts
+#  become_user: gpadmin
+#  shell: |
+#    source ~/.bashrc && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster status
+#  args:
+#    executable: /bin/bash
+#  register: status_pxf_cluster
+#  when: inventory_hostname in groups['master']
+#
+#
+#- name: Print the Status of PXF Cluster
+#  debug: msg={{ status_pxf_cluster }}
+#  when: inventory_hostname in groups['master']
+
+
+#- meta: end_play
+
 - name: Verify that Database for PXF Extention is Installed
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ pxf.database_name }}'" )
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ pxf.database_name }}';"
   args:
     executable: /bin/bash
   register: pxf_database_installed
@@ -206,7 +230,8 @@
 
 - name: Create Database for PXF
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ pxf.database_name }} )
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ pxf.database_name }}
   args:
     executable: /bin/bash
   register: pxf_database_created
@@ -215,7 +240,8 @@
 
 - name: Create the PXF Extension
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "CREATE EXTENSION pxf;" )
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "CREATE EXTENSION pxf;"
   args:
     executable: /bin/bash
   register: pxf_extension_created
@@ -224,7 +250,8 @@
 
 - name: Check if PXF Extension is Installed on Greenplum Database
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "select count(*) FROM pg_extension where extname='pxf';" | tr -d " " | sed '/^$/d' )
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "select count(*) FROM pg_extension where extname='pxf';" | tr -d " " | sed '/^$/d'
   args:
     executable: /bin/bash
   register: pxf_extension_install_checked
@@ -238,7 +265,8 @@
 
 - name: Create User for PXF
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "CREATE USER {{ pxf.username }};" )
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "CREATE USER {{ pxf.username }};"
   args:
     executable: /bin/bash
   register: pxf_user_created
@@ -247,7 +275,8 @@
 
 - name: Add a Role into User for PXF
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "ALTER ROLE {{ pxf.username }} superuser createdb;" )
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "ALTER ROLE {{ pxf.username }} superuser createdb;"
   args:
     executable: /bin/bash
   register: pxf_role_added
@@ -256,7 +285,8 @@
 
 - name: Grant a Specific Role Access to the PXF Protocol
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "GRANT SELECT ON PROTOCOL pxf TO {{ pxf.username }};" )
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "GRANT SELECT ON PROTOCOL pxf TO {{ pxf.username }};"
   args:
     executable: /bin/bash
   register: pxf_role_access_granted
@@ -265,26 +295,53 @@
 
 - name: Write Data to an External Data Store with PXF
   become_user: gpadmin
-  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "GRANT INSERT ON PROTOCOL pxf TO {{ pxf.username }};" )
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "GRANT INSERT ON PROTOCOL pxf TO {{ pxf.username }};"
   args:
     executable: /bin/bash
   register: pxf_data_writed
   when: inventory_hostname in groups['master'] and '100' not in pxf_database_installed.stdout
 
 
-- name: Synchronize the PXF Server Configuration to the Greenplum Cluster
+#- name: Synchronize the PXF Server Configuration to the Greenplum Cluster
+#  become_user: gpadmin
+#  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && export PXF_BASE=/usr/local/pxf-{{ pxf.gpdb_version }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster status )
+#  register: sync_pxf
+#  until: sync_pxf is succeeded
+#  retries: 5
+#  delay: 30
+#  args:
+#    executable: /bin/bash
+#  when: inventory_hostname in groups['master']
+
+
+# source /usr/local/greenplum-db/greenplum_path.sh && export PXF_BASE=/usr/local/pxf-{{ pxf.gpdb_version }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start
+- name: Restart PXF Server Configuration to the Greenplum Cluster
   become_user: gpadmin
-  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && export PXF_BASE=/usr/local/pxf-{{ pxf.gpdb_version }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster sync )
+  shell: |
+    . /home/gpadmin/.bashrc && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster restart
+  register: restart_pxf
+  until: restart_pxf is succeeded
+  retries: 5
+  delay: 30
   args:
     executable: /bin/bash
-  register: pxf_cluster_hadoop_synced
   when: inventory_hostname in groups['master']
 
 
-- name: Start PXF Server Configuration to the Greenplum Cluster
+- name: Run the PXF Cluster Status Command to check PXF on Each Sgment Hosts
   become_user: gpadmin
-  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && export PXF_BASE=/usr/local/pxf-{{ pxf.gpdb_version }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start )
+  shell: |
+    source ~/.bashrc && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster status
   args:
     executable: /bin/bash
-  register: pxf_cluster_hadoop_synced
+  register: status_pxf_cluster
   when: inventory_hostname in groups['master']
+
+
+- name: Print the Status of PXF Cluster
+  debug: msg={{ status_pxf_cluster }}
+  when: inventory_hostname in groups['master']
+
+
+
