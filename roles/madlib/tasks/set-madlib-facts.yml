@@ -1,0 +1,51 @@
+---
+- name: Get Network Interface name From Prefix of IP Addresses Provided for Greenplum Nodes
+  set_fact:
+    netdev0: "{{ ansible_interfaces | map('regex_replace', '^', 'ansible_') | map('extract', vars) | selectattr('ipv4', 'defined') | selectattr('ipv4.address', 'match', gpcc.net.ipaddr0 ) | map(attribute='device') | first }}"
+    netdev1: "{{ ansible_interfaces | map('regex_replace', '^', 'ansible_') | map('extract', vars) | selectattr('ipv4', 'defined') | selectattr('ipv4.address', 'match', gpcc.net.ipaddr1 ) | map(attribute='device') | first }}"
+
+
+- name: Get IP Address from Provided Network Device Name
+  set_fact:
+    ipaddr0: "{{ hostvars[inventory_hostname]['ansible_'~netdev0].ipv4.address }}"
+    ipaddr1: "{{ hostvars[inventory_hostname]['ansible_'~netdev1].ipv4.address }}"
+
+
+- name: Set Default Network Device and Address
+  set_fact:
+    _netdev: "{{ 'ansible_'~ netdev1 }}"
+    _ipaddr: "{{ ipaddr1 }}"
+
+
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    gppkg_remove_cmd: "gppkg -r"
+    madpack_cmd: "madlib/bin/madpack"
+    madlib_package_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}+{{ madlib.build_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
+    madlib_package_bin_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}+{{ madlib.build_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}.gppkg
+    madlib_directory_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}+{{ madlib.build_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
+    check_madlib_installed: "gppkg -q --all | grep madlib | cut -d - -f 1"
+  when: inventory_hostname in groups['master'] and madlib.gpdb_version|int <= 6 and ( madlib.os_version | regex_replace('[^0-9]','')|int <= 9 ) and madlib.major_version <= 1
+
+
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    gppkg_remove_cmd: "gppkg -r"
+    madpack_cmd: "madlib/bin/madpack"
+    madlib_package_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
+    madlib_package_bin_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}.gppkg
+    madlib_directory_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
+    check_madlib_installed: "gppkg -q --all | grep madlib | cut -d - -f 1"
+  when: inventory_hostname in groups['master'] and madlib.gpdb_version|int <= 6 and ( madlib.os_version | regex_replace('[^0-9]','')|int <= 9 ) and madlib.major_version >= 2
+
+
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    gppkg_remove_cmd: "gppkg -a -f remove"
+    # madpack_cmd: "madlib/Versions/2.0.0/bin/madpack"
+    madpack_cmd: "madlib/bin/madpack"
+    madlib_package_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
+    madlib_package_bin_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}.gppkg
+    madlib_directory_name: madlib-{{ madlib.major_version }}.{{ madlib.minor_version }}.{{ madlib.patch_version }}-gp{{ madlib.gpdb_version }}-{{ madlib.os_version }}-{{ madlib.arch_type }}
+    check_madlib_installed: "gppkg query | grep madlib | awk '{print $1}'"
+  when: inventory_hostname in groups['master'] and madlib.gpdb_version|int >= 7 and ( madlib.os_version | regex_replace('[^0-9]','')|int >= 8 ) and madlib.major_version >= 2

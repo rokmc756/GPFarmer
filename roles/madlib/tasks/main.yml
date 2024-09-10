@@ -1,16 +1,53 @@
 ---
-# for now fail if it's not a Red Hat based system
-- name: Check OS (PGCC v2)
+# For Now Fail if it's not a Red Hat or Ubuntu based system
+- name: Check OS (MADLib v{{ madlib.major_version }})
   fail: msg="Not a Red Hat based system!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
-#
-- name: Install MADLib on {{ ansible_distribution }}
-  import_tasks: install.yml
+
+- name: Set Facts for MADLib Extension
+  import_tasks: set-madlib-facts.yml
+  tags:
+    - install
+    - uninstall
+
+
+#- name: Install MADLib on {{ ansible_distribution }}
+#  import_tasks: install.yml
+#  tags: install
+
+
+- name: Check Greenplum Database Installed on {{ ansible_distribution }}
+  import_tasks: 01-check-gpdb-installed.yml
   tags: install
 
-#
-- name: Uninstall MADLib on {{ ansible_distribution }}
-  import_tasks: uninstall.yml
+
+- name: Install MADLib Package on {{ ansible_distribution }}
+  import_tasks: 02-install-madlib-pkg.yml
+  tags: install
+
+
+- name: Create MADLib Database on {{ ansible_distribution }}
+  import_tasks: 03-create-madlib-database.yml
+  tags: install
+
+
+- name: Create MADLib Extension on {{ ansible_distribution }}
+  import_tasks: 04-create-madlib-extension.yml
+  tags: install
+
+
+- name: Check MADLib Database Installed on {{ ansible_distribution }}
+  import_tasks: 41-check-gpdb-database.yml
+  tags: uninstall
+
+
+- name: Uninstall MADLib Extension on {{ ansible_distribution }}
+  import_tasks: 42-uninstall-madlib-extension.yml
+  tags: uninstall
+
+
+- name: Uninstall MADLib Config on {{ ansible_distribution }}
+  import_tasks: 43-uninstall-madlib-config.yml
   tags: uninstall
 

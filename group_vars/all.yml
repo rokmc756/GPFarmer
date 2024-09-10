@@ -75,6 +75,25 @@ gpdb:
       ipaddr0: "192.168.0."
       ipaddr1: "192.168.1."
 
+# madlib-1.21.0+1-gp6-rhel9-x86_64.tar.gz
+# madlib-2.1.0-gp6-rhel9-x86_64.tar.gz
+
+# gpdb:
+#  base_dir: "/usr/local"
+#  admin_home_dir: "/home/gpadmin"
+
+madlib:
+  prefix_major_version: ""
+  major_version: 2
+  minor_version: 1
+  patch_version: 0
+  build_version:
+  gpdb_version: 6
+  os_version: rhel9
+  arch_type: x86_64
+  database_name: madlib_testdb
+  # arch_type: amd64
+  # os_version: ubuntu18
 
 vmware:
   esxi_hostname: "192.168.0.231"

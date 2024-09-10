@@ -1,0 +1,25 @@
+---
+- name: Check if the Directory of MADLib Package is Still Remained
+  stat: path={{ gpdb.base_dir }}/greenplum-db/madlib
+  register: madlib_dir_remained
+  ignore_errors: true
+
+
+- name: Remove MADLib Directory Still Remained
+  become: true
+  file:
+    owner: gpadmin
+    group: gpadmin
+    path: "{{ gpdb.base_dir }}/greenplum-db/madlib"
+    state: absent
+  ignore_errors: true
+  when: madlib_dir_remained.stat.exists == True
+
+
+- name: Restart Grenplum Database after Removing MADLib Extension
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  ignore_errors: true
+  when: ( inventory_hostname in groups['master'] )

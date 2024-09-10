@@ -50,13 +50,16 @@ all:
 
 
 hosts:
-	make -f makefile_configs/Makefile.hosts r=${r} s=${} c=${c} USERNAME=${USERNAME}
+	make -f makefile_configs/Makefile.hosts r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 
 gpdb:
-	make -f makefile_configs/Makefile.gpdb r=${r} s=${} c=${c} USERNAME=${USERNAME}
+	make -f makefile_configs/Makefile.gpdb r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 
 gpcc:
-	make -f makefile_configs/Makefile.gpcc r=${r} s=${} c=${c} USERNAME=${USERNAME}
+	make -f makefile_configs/Makefile.gpcc r=${r} s=${s} c=${c} USERNAME=${USERNAME}
+
+madlib:
+	make -f makefile_configs/Makefile.madlib r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 
 
 boot: role-update control-vms.yml

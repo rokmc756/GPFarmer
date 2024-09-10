@@ -1,0 +1,28 @@
+---
+- name: Add MADLib Function
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/{{ madpack_cmd }} -s madlib -p greenplum -c gpadmin@{{ hostvars[groups['master'][0]]['ansible_hostname'] }}:5432/{{ madlib.database_name }} install )
+  args:
+    executable: /bin/bash
+  register: madlib_function_added
+  until: madlib_function_added is succeeded
+  retries: 5
+  delay: 120
+  changed_when: madlib_database_created == True
+  when: inventory_hostname in groups['master']
+
+
+# Need to debug why errors occurs in the part items
+#- name: Check if MADLib function are added
+#  become_user: gpadmin
+#  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && $GPHOME/madlib/bin/madpack -s madlib -p greenplum -c gpadmin@{{ hostvars[groups['master'][0]]['ansible_hostname'] }}:5432/{{ madlib.database_name }} install-check )
+#  args:
+#    executable: /bin/bash
+#  register: madlib_function_checked
+#  ignore_errors: true
+#  # until: madlib_function_checked is succeeded
+#  # retries: 3
+#  # delay: 300
+#  changed_when: madlib_function_installed == True
+#  when: inventory_hostname in groups['master']
+

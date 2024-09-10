@@ -1,0 +1,18 @@
+---
+- name: Verify that MADLib Database is Installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ madlib.database_name }}'" )
+  args:
+    executable: /bin/bash
+  register: madlib_database_installed
+  when: inventory_hostname in groups['master']
+
+
+- name: Create MADLib Database
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ madlib.database_name }} )
+  args:
+    executable: /bin/bash
+  register: madlib_database_created
+  when: inventory_hostname in groups['master'] and "'100' not in madlib_database_installed.stdout"
+
