@@ -1,41 +1,40 @@
 ---
-#
-- name: Start pgbouncer
+- name: Start PGBouncer
   become: yes
   service:
     name: pgbouncer
     state: started
 
-#
-- name: Stop pgbouncer
+
+- name: Stop PGBouncer
   become: yes
   service:
     name: pgbouncer
     state: stopped
 
-#
-- name: Restart pgbouncer
+
+- name: Restart PGBouncer
   become: yes
   service:
     name: pgbouncer
     state: restarted
 
-#
-- name: Reload pgbouncer
+
+- name: Reload PGBouncer
   become: yes
   service:
     name: pgbouncer
     state: reloaded
 
-#
-- name: Restart monit
+
+- name: Restart MonIT
   become: yes
   service:
     name: monit
     state: restarted
 
-#
-- name: Restart collectd
+
+- name: Restart Collectd
   become: yes
   service:
     name: collectd

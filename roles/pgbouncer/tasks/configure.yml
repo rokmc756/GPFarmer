@@ -1,6 +1,5 @@
 ---
-#
-- name: Create directory with necessary privileges
+- name: Create Directory with Necessary Privileges
   file:
     dest: "{{ item }}"
     owner: "{{ _pgbouncer.user }}"
@@ -11,14 +10,13 @@
     - "{{ gpdb.master_data_dir }}/pgbouncer"
     - "{{ gpdb.base_dir }}/greenplum-db/etc/pgbouncer"
 
-#
 #- name: Divert pgbouncer main configuration file {{ pgbouncer_confdir }}/pgbouncer.ini
 #  command: dpkg-divert --quiet --local --divert {{ pgbouncer_confdir }}/pgbouncer.ini.dpkg-divert --rename {{ pgbouncer_confdir }}/pgbouncer.ini
 # args:
 #    creates: "{{ pgbouncer_confdir }}/pgbouncer.ini.dpkg-divert"
 
-#
-- name: PGBouncer update restart witness
+
+- name: PGBouncer Update Restart Witness
   template:
     src: "pgbouncer.ini.restart-witness.j2"
     dest: "{{ _pgbouncer.confdir }}/.pgbouncer.ini.restart-witness"
@@ -26,9 +24,10 @@
     group: "{{ _pgbouncer.group }}"
     mode: 0600
   notify:
-    - Restart pgbouncer
+    - Restart PGBouncer
 
-- name: PGBouncer main configuration file {{ _pgbouncer.confdir }}/pgbouncer.ini
+
+- name: PGBouncer Main Configuration File, {{ _pgbouncer.confdir }}/pgbouncer.ini
   template:
     src: pgbouncer.ini.j2
     dest: "{{ _pgbouncer.confdir }}/pgbouncer.ini"
@@ -36,14 +35,16 @@
     group: "{{ _pgbouncer.group }}"
     mode: 0640
   notify:
-    - Reload pgbouncer
+    - Restart PGBouncer
+
 
 #- name: Divert pgbouncer hba file {{ pgbouncer_confdir }}/pgbouncer_hba.conf
 #  command: dpkg-divert --quiet --local --divert {{ pgbouncer_confdir }}/pgbouncer_hba.conf.dpkg-divert --rename {{ pgbouncer_confdir }}/pgbouncer_hba.conf
 #  args:
 #    creates: "{{ pgbouncer_confdir }}/pgbouncer_hba.conf.dpkg-divert"
 
-- name: PGBouncer hba file {{ _pgbouncer.confdir }}/pgbouncer_hba.conf
+
+- name: PGBouncer HBA File, {{ _pgbouncer.confdir }}/pgbouncer_hba.conf
   template:
     src: pgbouncer_hba.conf.j2
     dest: "{{ _pgbouncer.confdir }}/pgbouncer_hba.conf"
@@ -51,14 +52,16 @@
     group: "{{ _pgbouncer.group }}"
     mode: 0640
   notify:
-    - Reload pgbouncer
+    - Reload PGBouncer
+
 
 #- name: Divert PGBouncer user list file {{ pgbouncer_confdir }}/userlist.txt
 #  command: dpkg-divert --quiet --local --divert {{ pgbouncer_confdir }}/userlist.txt.dpkg-divert --rename {{ pgbouncer_confdir }}/userlist.txt
 #  args:
 #    creates: "{{ pgbouncer_confdir }}/userlist.txt.dpkg-divert"
 
-- name: Add users to userlist.txt
+
+- name: Add Users to userlist.txt File
   copy:
     dest: "{{ _pgbouncer.confdir }}/userlist.txt"
     owner: "{{ _pgbouncer.user }}"
@@ -70,15 +73,17 @@
       "{{ user.name }}" "md5{{ (user.pass + user.name) | hash('md5') }}"
       {% endfor %}
   notify:
-    - Reload pgbouncer
+    - Reload PGBouncer
+
 
 #- name: Divert pgbouncer default file /etc/default/pgbouncer
 #  command: dpkg-divert --quiet --local --divert /etc/default/pgbouncer.dpkg-divert --rename /etc/default/pgbouncer
 #  args:
 #    creates: "/etc/default/pgbouncer.dpkg-divert"
 
+
 # - name: pgbouncer default file /etc/default/pgbouncer
-- name: PGBouncer default file {{ gpdb.base_dir }}/greenplum-db/etc/pgbouncer
+- name: PGBouncer Default File, {{ gpdb.base_dir }}/greenplum-db/etc/pgbouncer
   template:
     src: pgbouncer_default.j2
     dest: "{{ gpdb.base_dir }}/greenplum-db/etc/pgbouncer"
@@ -86,16 +91,16 @@
     group: "{{ _pgbouncer.group }}"
     mode: 0644
   notify:
-    - Restart pgbouncer
+    - Restart PGBouncer
 
-#
-- name: Copy systemd configuration of pgbouncer into /etc/systemd/system
+
+- name: Copy Systemd Configuration of PGBouncer into /etc/systemd/system
   become: true
   template: src=pgbouncer.systemd.j2 dest=/etc/systemd/system/pgbouncer.service owner=root group=root mode=644 force=yes
   register: pgbouncer_systemd_config_copied
 
-#
-- name: Reload and start pgbouncer via systemd
+
+- name: Reload and Start PGBouncer via Systemd
   become: true
   systemd:
     daemon_reload: yes
@@ -108,9 +113,10 @@
     - collectd
     - monit
 
-#
-- name: Ensure pgbouncer is running
+
+- name: Ensure PGBouncer is Running
   become: true
   service:
     name: pgbouncer
     state: started
+

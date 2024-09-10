@@ -1,37 +1,40 @@
 ---
 # for now fail if it's not a Red Hat based system
-- name: Check OS (PGCC v2)
+- name: Check OS ( PGBouncer )
   fail: msg="Not a Red Hat based system!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
-#
+
+- name: Set Facts for PGBouncer
+  import_tasks: set-pgbouncer-facts.yml
+  tags:
+    - install
+    - uninstall
+
+
 - name: Install PGBounder for {{ ansible_distribution }}
   import_tasks: install.yml
   tags: install
-  # tags: [pgbouncer, pgbouncer-install]
 
-#
+
 - name: Configure PGBouncer for {{ ansible_distribution }}
   import_tasks: configure.yml
   tags: install
-  # tags: [pgbouncer, pgbouncer-configure]
 
-#
+
 - name: Install monit for {{ ansible_distribution }}
   import_tasks: monit.yml
   when: monit_protection is defined and monit_protection == true
   tags: install
-  # tags: [pgbouncer, pgbouncer-monit]
 
-#
+
 - name: Install collectd for {{ ansible_distribution }}
   import_tasks: collectd.yml
   when: collectd_monitoring is defined and collectd_monitoring == true
   tags: install
-  # tags: [pgbouncer, pgbouncer-collectd]
 
-#
+
 - name: Uninstall PGBouncer for {{ ansible_distribution }}
   import_tasks: uninstall.yml
   tags: uninstall
-  # tags: [pgbouncer, pgbouncer-install]
+

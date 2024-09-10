@@ -6,7 +6,7 @@ pgbouncer:
       pass: changeme
   - databases:
     - name: "db1"
-      host: "{{ hostvars[groups['master'][0]]['ansible_eth0']['ipv4']['address'] }}"
+      host: "{{ hostvars[groups['master'][0]][_netdev]['ipv4']['address'] }}"
       port: 5432
   - max_client_conn: 300
   - max_db_connections: 300
@@ -16,3 +16,4 @@ pgbouncer:
 
 monit_protection: true
 collectd_monitoring: true
+

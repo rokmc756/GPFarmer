@@ -1,6 +1,5 @@
-#
-- name: Stop services for Monit, Collectd, PGBouncer
-  become: yes
+---
+- name: Stop Services for Monit, Collectd, PGBouncer
   systemd:
     name: "{{ item }}"
     state: stopped
@@ -10,10 +9,8 @@
     - collectd
     - pgbouncer
 
-#
-- name: Delete all configuraion files for Monit, Collectd, PGBouncer
-  become: true
-  become_user: root
+
+- name: Delete All Configuraion Files for Monit, Collectd, PGBouncer
   file:
     dest: "{{ item }}"
     state: absent
@@ -25,25 +22,21 @@
     - "/etc/monit.d/pgbouncer"
     - "/etc/systemd/system/pgbouncer.service"
 
-#
-- name: Reload systemd daemon after deleting PGBouncer service
-  become: true
+
+- name: Reload Systemd Daemon after Deleting PGBouncer Service
   systemd:
     daemon_reload: yes
 
-#
+
 - name: Uninstall RPM Packages for PGBouncer Info
-  become: true
   package:
     name: "{{ item }}"
     state: "{{ _pgbouncer.package_state }}"
   with_items: "{{ _pgbouncer.packages }}"
 
-#
-- name: Uninstall Python collectd modules for PGBouncer monitoring
-  become: true
-  become_user: root
-  shell: ( pip2 uninstall {{ item }} -y )
+
+- name: Uninstall Python Collectd Modules for PGBouncer Monitoring
+  shell: ( pip3 uninstall {{ item }} -y )
   async: 60
   poll: 5
   ignore_errors: yes
@@ -51,9 +44,8 @@
   with_items:
     - "collectd"
 
-#
+
 - name: Uninstall Collectd and Monit Package
-  become: true
   package:
     name: "{{ item }}"
     state: absent
@@ -62,15 +54,15 @@
     - collectd-web
     - collectd-python
     - collectd
-    - python2-psycopg2
-    - python2
+    - python-psycopg2
+  # - python2
 
-#
-- name: Alternative Python version to python3 for returning back
-  become: true
-  become_user: root
-  command: alternatives --set python /usr/bin/python3
+
+- name: Alternative Python Version to Python3 for Returning Back
+  shell: |
+    alternatives --set python3 /usr/bin/python3.9
+    alternatives --set python /usr/bin/python3.9
   ignore_errors: yes
   register: python_version_alternative
-  when: hostvars[inventory_hostname].ansible_distribution_major_version|int <= 8
+  when: hostvars[inventory_hostname].ansible_distribution_major_version|int <= 9
 

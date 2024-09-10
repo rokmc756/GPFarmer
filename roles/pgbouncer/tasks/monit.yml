@@ -1,8 +1,10 @@
+---
 - name: Ensure monit is running
   become: yes
   service:
     name: monit
     state: started
+
 
 # template a config file
 - name: (Monit) copy the pgbouncer monit service file
@@ -11,10 +13,12 @@
   template:
     src: etc_monit_conf.d_pgbouncer.j2
     dest: /etc/monit.d/pgbouncer
-  notify: Restart monit
+  notify: Restart MonIT
+
 
 # we need to restart before monit is called
 - meta: flush_handlers
+
 
 # Manage the state of program "pgbouncer" to be in "started" state.
 - name:  Manage the state of program "pgbouncer" to be in "started" state.

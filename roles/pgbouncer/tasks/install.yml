@@ -1,41 +1,48 @@
 ---
-#
 - name: Install RPM Packages for PGBouncer Info
   package:
     name: "{{ item }}"
     state: "{{ _pgbouncer.package_state }}"
   with_items: "{{ _pgbouncer.packages }}"
 
-#
-- name: Install Collectd and Monit package
+
+- name: Install Collectd and Monit Package
   package:
     name: "{{ item }}"
     state: present
   with_items:
-    - python2
-    - python2-psycopg2
+    - python3
+    - python-psycopg2
     - monit
     - collectd
     - collectd-python
     - collectd-web
+  # - python2-psycopg2
+  # - python2
 
-#
+
 - name: Install Python Collectd Modules for PGBouncer Monitoring
-  become: true
-  become_user: root
-  shell: ( pip2 install {{ item }} )
+  shell: ( pip3 install {{ item }} )
   async: 60
   poll: 5
-  register: pip3_python_collectd_modules_for_pgbouncer
+  register: pip_python_collectd_modules_for_pgbouncer
   with_items:
     - "collectd"
 
-#
-- name: Alternative Python Version to Python2 for installing collectd and jevent RPM packages
-  become: true
-  become_user: root
-  command: alternatives --set python /usr/bin/python2
+
+- name: Alternative Python Version to Python2 for Installing Collectd and Jevent RPM packages
+  shell: |
+    alternatives --set python /usr/bin/python2
   ignore_errors: yes
   register: python_version_alternative
   when: hostvars[inventory_hostname].ansible_distribution_major_version|int <= 8
+
+
+- name: Alternative Python Version to Python3 for Installing Collectd and Jevent RPM packages
+  shell: |
+    i=0; for p in /usr/bin/python*.* ; do update-alternatives --install /usr/bin/python python $p $((5 + i)) ; i=$((i+1)) ; done
+    # update-alternatives --config python
+  ignore_errors: yes
+  register: python_version_alternative
+  when: hostvars[inventory_hostname].ansible_distribution_major_version|int >= 9
 
