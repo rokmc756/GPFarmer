@@ -1,0 +1,36 @@
+---
+- name: Check if PXF Extension is Installed on Greenplum Database
+  become_user: "{{ gpdb.admin_user }}"
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -t -c "select count(*) FROM pg_extension where extname='pxf';" | tr -d " " | sed '/^$/d' )
+  register: pxf_extension_install_checked
+  when: inventory_hostname in groups['master']
+- debug: msg={{ pxf_extension_install_checked.stdout }}
+  when: inventory_hostname in groups['master']
+
+
+- name: Drop PXF Extension
+  become: yes
+  become_user: "{{ gpdb.admin_user }}"
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "DROP EXTENSION pxf;")
+  register: pxf_extension_dropped
+  ignore_errors: yes
+  when: inventory_hostname in groups['master'] and '1' in pxf_extension_install_checked.stdout
+
+
+- name: Drop Database for PXF
+  become: yes
+  become_user: "{{ gpdb.admin_user }}"
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ pxf.database_name }} )
+  register: pxf_database_dropped
+  ignore_errors: yes
+  when: inventory_hostname in groups['master']
+
+
+- name: Drop User for PXF
+  become: yes
+  become_user: "{{ gpdb.admin_user }}"
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "DROP USER {{ pxf.username }};" )
+  register: pxf_user_dropped
+  ignore_errors: yes
+  when: inventory_hostname in groups['master']
+

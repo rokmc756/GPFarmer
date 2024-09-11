@@ -1,0 +1,54 @@
+---
+#- name: "Check if Greenplum Streaming Server RPM Package is Installed"
+#  package_facts:
+#    manager: "auto"
+#  when: inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
+
+
+#- name: Stop if Greenplum Streaming Server RPM Package is Not Installed
+#  fail: msg="GPSS rpm package is not installed!"
+#  when:
+#    - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
+#    - "'gpss' not in ansible_facts.packages"
+
+
+- name: Check File List of Greenplum Streaming Server Tarball File
+  stat:
+    path: "/usr/local/greenplum-db/{{ tarball_loop }}"
+  loop: "{{ gpss.file_vars }}"
+  loop_control:
+    loop_var: tarball_loop
+  register: tarball_stat_var
+  when: inventory_hostname in groups['master']
+
+
+- name: Delete a File of Greenplum Streaming Server Tarball File if Not Exists
+  file:
+    owner: gpadmin
+    group: gpadmin
+    path: "{{ item.tarball_loop }}"
+    state: "{{ 'absent' if item.stat.exists else 'absent'}}"
+  loop: "{{ tarball_stat_var.results }}"
+  when: inventory_hostname in groups['master']
+
+
+- name: Delete Working Base Directory for Greenplum Streaming Server
+  become: yes
+  file:
+    owner: gpadmin
+    group: gpadmin
+    path: "{{ gpss.base_dir }}"
+    state: absent
+  when: inventory_hostname in groups['master']
+
+
+- name: Delete GPKafka Duplicated in Greenplum Base Directory
+  file:
+    owner: gpadmin
+    group: gpadmin
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "/usr/local/greenplum-db/bin/gpkafka"
+#    - "/usr/local/greenplum-db/bin/gpss"
+#    - "/usr/local/greenplum-db/bin/gpsscli"

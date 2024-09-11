@@ -1,33 +1,83 @@
 ---
-#
 # Install / Uninstall Greenplum Streaming Server v1.x
-#
 # for now fail if it's not a Red Hat based system
+#
 - name: Check OS (PGCC v2)
   fail: msg="Not a Red Hat based system!"
   when: ansible_os_family != 'RedHat' or ansible_os_family != 'CentOS' or ansible_os_family != 'Rocky'
 
-#
+
+- name: Set Facts for Greenplum Streaming Server
+  import_tasks: set-gpss-facts.yml
+  tags:
+    - install
+    - uninstall
+
+
 - name: Setup Kafka
   import_tasks: setup-kafka.yml
   tags: install
-  when: setup_kafka == true
+  when: setup_kafka is defined and setup_kafka == true
 
+
+######################################################################################
 #
-- name: Setup GPSS
-  import_tasks: setup-gpss.yml
+- name: Check if Greenplum Database is Installed and Running
+  import_tasks: 01-check-gpdb.yml
   tags: install
-  when: setup_gpss == true
+  when: setup_gpss is defined and setup_gpss == true
 
+
+- name: Setup Greenplum Streaming Server
+  import_tasks: 02-install-gpss.yml
+  tags: install
+  when: setup_gpss is defined and setup_gpss == true
+
+
+- name: Configure Greenplum Streaming Server
+  import_tasks: 03-config-gpss.yml
+  tags: install
+  when: setup_gpss is defined and setup_gpss == true
+
+
+- name: Start Greenplum Streaming Server and Submit GPSS Jobs
+  import_tasks: 04-start-gpss.yml
+  tags: install
+  when: setup_gpss is defined and setup_gpss == true
+
+
+######################################################################################
 #
-- name: Uninstall GPSS
-  import_tasks: uninstall-gpss.yml
+- name: Check if Greenplum Database is Installed and Running
+  import_tasks: 41-check-gpdb.yml
   tags: uninstall
-  when: remove_gpss == true
+  when: remove_gpss is defined and remove_gpss == true
 
+- name: Check if Greenplum Streaming Server is Installed and Running
+  import_tasks: 42-check-gpss-installed.yml
+  tags: uninstall
+  when: remove_gpss is defined and remove_gpss == true
+
+- name: Stop Greenplum Streaming Server
+  import_tasks: 43-stop-gpss.yml
+  tags: uninstall
+  when: remove_gpss is defined and remove_gpss == true
+
+- name: Remove Greenplum Streaming Server Packages and Extensions
+  import_tasks: 44-remove-gpss-pkg.yml
+  tags: uninstall
+  when: remove_gpss is defined and remove_gpss == true
+
+- name: Remove Greenplum Streaming Server Configuration
+  import_tasks: 45-remove-gpss-config.yml
+  tags: uninstall
+  when: remove_gpss is defined and remove_gpss == true
+
+
+######################################################################################
 #
 - name: Uninstall Kafka
   import_tasks: uninstall-kafka.yml
   tags: uninstall
-  when: remove_kafka == true
+  when: remove_kafka is defined and remove_kafka == true
 

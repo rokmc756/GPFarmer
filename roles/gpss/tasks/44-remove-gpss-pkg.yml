@@ -1,0 +1,54 @@
+---
+- name: Verify that Database for Greenplum Streaming Server Extention is Installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ gpss.database_name }}'" )
+  register: gpss_database_installed
+  when: inventory_hostname in groups['master']
+
+
+- name: Drop Extension for Greenplum Streaming Server
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ gpss.database_name }} -tAc "drop extension gpss" )
+  register: gpss_extension_dropped
+  when: inventory_hostname in groups['master'] and "'100' in gpss_database_installed.stdout"
+
+
+- name: Drop Database for Greenplum Streaming Server
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ gpss.database_name }} )
+  register: gpss_database_dropped
+  when: inventory_hostname in groups['master'] and "'100' in gpss_database_installed.stdout"
+
+
+#- name: Verify if Greenplum Streaming Server Gppkg is Installed
+#  become_user: gpadmin
+#  command: 'rpm -q gpss --dbpath /usr/local/greenplum-db/share/packages/database'
+#  register: select_gpss_version
+#  ignore_errors: yes
+#  when:  inventory_hostname in groups['master']
+#  # failed_when:  select_gpss_version.rc != 1
+
+
+#- name: Verify if Greenplum Streaming Server Gppkg is Installed
+#  become_user: gpadmin
+#  command: 'rpm -q gpss --dbpath /usr/local/greenplum-db/share/packages/database'
+#  ignore_errors: true
+#  register: select_gpss_version
+#  changed_when: False
+#  when: inventory_hostname in groups['master']
+#  command: '/usr/bin/rpm -qa custom-rpm --queryformat %{VERSION}'
+
+
+#- name: Stop if Greenplum Streaming Server Gppkg Package is not Installed
+#  fail: msg="GPSS gppkg package is not installed!"
+#  ignore_errors: true
+#  when:
+#    - inventory_hostname in groups['master']
+#    - "'package gpss is not installed' in select_gpss_version.stdout"
+
+
+- name: Uninstall Greenplum Streaming Server Gppkg Package
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ remove_package_name }} )
+  when: ( inventory_hostname in groups['master'] ) and ( '{{ remove_package_name }}' in gpss_installed.stdout )
+

@@ -1,0 +1,23 @@
+---
+- name: Stop Job by Greenplum Streaming Server CLI
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpsscli stop {{ item.name }} --gpss-port {{ item.gpss_port }} )
+  register: gpss_job_stopped
+  with_items: "{{ gpss.jobs }}"
+  when: start_gpss_job == true and inventory_hostname in groups['master']
+
+
+- name: Remove Job by Greenplum Streaming Server CLI
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpsscli remove {{ item.name }} --gpss-port {{ item.gpss_port }} )
+  register: gpss_job_removed
+  with_items: "{{ gpss.jobs }}"
+  when: start_gpss_job == true and inventory_hostname in groups['master']
+
+
+- name: Kill Greenplum Streaming Server Daemon
+  become_user: gpadmin
+  shell: kill -9 $(pidof gpss)
+  register: gpss_daemon_killed
+  when: inventory_hostname in groups['master']
+

@@ -1,0 +1,16 @@
+---
+- hosts: all
+  become: true
+  gather_facts: yes
+  vars:
+    print_debug: true
+    setup_kafka: false
+    remove_kafka: false
+    setup_gpss: true
+    remove_gpss: true
+    check_gpss_installed: true
+    submit_gpss_job: false
+    start_gpss_job: false
+  roles:
+    - { role: gpss }
+

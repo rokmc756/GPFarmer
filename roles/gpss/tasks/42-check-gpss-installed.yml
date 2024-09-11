@@ -1,0 +1,19 @@
+---
+- name: Verify if Greenplum Streaming Server Gppkg is Installed
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_gpss_installed }} )
+  register: gpss_installed
+  changed_when: False
+  when: inventory_hostname in groups['master']
+
+
+- name: Print the Result if Greenplum Streaming Server is Not Installed
+  debug:
+    msg: "{{ gpss_installed.stdout }}"
+  when: inventory_hostname in groups['master']
+
+
+- name: Stop if GPSS GPPKG Package is Not Installed
+  fail: msg="GPSS gppkg package is not installed!"
+  when: ( inventory_hostname in groups['master'] and 'gpss' not in gpss_installed.stdout )
+

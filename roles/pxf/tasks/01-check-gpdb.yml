@@ -1,0 +1,12 @@
+---
+- name: Check if Any Version of Greenplum Database is Installed
+  stat: path={{ gpdb.base_dir }}/greenplum-db
+  register: gpdb_installed
+  when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments'] )
+
+
+- name: Sanity Check for {{ gpdb.base_dir }}/greenplum-db
+  fail: msg="{{ gpdb.base_dir }}/greenplum-db is not existed"
+  when:
+    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    - gpdb_installed.stat.exists != True or gpdb_installed.stat.islnk != True

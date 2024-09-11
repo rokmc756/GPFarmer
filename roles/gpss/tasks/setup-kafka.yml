@@ -1,19 +1,18 @@
 ---
 # Install Greenplum Streaming Server on Kafka Broker and load sample data onto it
-#
-#
-- name: Unset variables of kafka_major_version retruned from kafka-topics.sh
+
+- name: Unset Variables of kafka_major_version Retruned from kafka-topics.sh
   set_fact:
     kafka_major_version:
 
-#
-- name: Check Kafka version
+
+- name: Check Kafka Version
   shell: ( /bin/bash /usr/local/kafka/bin/kafka-topics.sh --version )
   register: kafka_version
   when: inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
-#
-- name: Set fact for kafka major version
+
+- name: Set Fact for Kafka Major Version
   set_fact:
     kafka_major_version: "{{(kafka_version.stdout_lines|last|split('.')|first|int)}}"
   delegate_to: "{{ item }}"
@@ -21,30 +20,30 @@
   with_items: "{{ groups['all'] }}"
   when: inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
-#
-- name: Stop if Kafka major_version is not 2 or 3
+
+- name: Stop if Kafka Major Version is not 2 or 3
   fail: msg="(This playbook only allow kafka major version 2 or 3. This is currently {{ kafka_major_version }})"
   when: inventory_hostname in groups['kafka_brokers'] and ( kafka_major_version != "2" and kafka_major_version != "3" )
 
-#
-- name: Check if GPSS rpm package is installed on Kafka Brokers
+
+- name: Check if GPSS RPM Package is Installed on Kafka Brokers
   package_facts:
     manager: "auto"
   when: inventory_hostname in groups['kafka_brokers']
 
-#
-- name: Stop if GPSS rpm package is installed on Kafka Brokers
+
+- name: Stop if GPSS RPM Package is Installed on Kafka Brokers
   fail: msg="GPSS rpm package is already installed!"
   when: inventory_hostname in groups['kafka_brokers'] and 'gpss' in ansible_facts.packages
 
-#
-- name: Copy GPSS rpm package on Kafka Brokers
+
+- name: Copy GPSS RPM Package on Kafka Brokers
   become_user: gpadmin                                 # ETL user
   copy: src=gpss-{{ gpss.gpdb_version }}-{{ gpss.major_version }}.{{ gpss.minor_version }}{{ gpss.patch_version }}-{{ kafka.os_version }}-x86_64.rpm dest={{ gpdb.admin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when: inventory_hostname in groups['kafka_brokers']
 
-#
-- name: Install GPSS rpm package in {{ gpdb.base_dir }} on Kafka Brokers
+
+- name: Install GPSS RPM Package in {{ gpdb.base_dir }} on Kafka Brokers
   yum:
     name: /home/gpadmin/gpss-{{ gpss.gpdb_version }}-{{ gpss.major_version }}.{{ gpss.minor_version }}{{ gpss.patch_version }}-{{ kafka.os_version }}-x86_64.rpm
     state: present
@@ -53,8 +52,8 @@
   poll: 5
   when: inventory_hostname in groups['kafka_brokers']
 
-#
-- name: Chown gpamdin for GPSS install directory on Kafka Brokers
+
+- name: Chown GPAdmin User for GPSS Install Directory on Kafka Brokers
   file:
     dest: "{{ gpdb.base_dir }}/gpss"
     owner: gpadmin
@@ -64,8 +63,8 @@
     recurse: yes
   when: inventory_hostname in groups['kafka_brokers']
 
-#
-- name: Creates working base directory on Kafka Brokers
+
+- name: Create Working Base Directory on Kafka Brokers
   file:
     path: "{{ kafka.base_dir }}"
     state: directory
@@ -74,8 +73,8 @@
     mode: 0775
   when: inventory_hostname in groups['kafka_brokers']
 
-#
-- name: Copy scripts to manage Kafka Topics
+
+- name: Copy Scripts to Manage Kafka Topics
   template: src=kafka-{{ kafka.major_version}}.x/{{ item }}.j2 dest={{ kafka.base_dir }}/{{ item }} owner=root group=root mode=755 force=yes
   register: create_table_query_copied
   with_items:
@@ -87,8 +86,8 @@
     - "06-delete-topic.sh"
   when: inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
-#
-- name: Copy data source files on Kafka Brokers
+
+- name: Copy Data Source Files on Kafka Brokers
   become_user: gpadmin
   copy: src={{ item }} dest={{ kafka.base_dir }} owner=gpadmin group=gpadmin mode=644 force=yes
   with_items:
@@ -96,8 +95,8 @@
     - "data_source.json.gz"
   when: kafka.upload_kafka_data == true and inventory_hostname in hostvars[groups['kafka_brokers'][0]]['ansible_hostname']
 
-#
-- name: Gunzip data_source files on Kafka Brokers
+
+- name: Gunzip Data_Source Files on Kafka Brokers
   shell: ( gunzip {{ kafka.base_dir }}/{{ item }} )
   register: data_gunzipped
   with_items:
@@ -105,17 +104,17 @@
     - "data_source.json.gz"
   when: kafka.upload_kafka_data == true and inventory_hostname in hostvars[groups['kafka_brokers'][0]]['ansible_hostname']
 
-#
+
 - name: Create Kafka Topic
   shell: ( /bin/bash {{ kafka.base_dir }}/01-create-topic.sh )
   register: topic_created
   when: inventory_hostname in hostvars[groups['kafka_brokers'][0]]['ansible_hostname']  # At Kafka Broker
 
-#
+
 - debug: msg={{ topic_created }}
   when: inventory_hostname in groups['kafka_brokers'] and print_debug
 
-#
+
 - name: List Kafka Topics
   shell: ( /bin/bash {{ kafka.base_dir }}/04-list-topics.sh )
   register: topic_listed
@@ -125,41 +124,43 @@
 - debug: msg={{ topic_listed }}
   when: inventory_hostname in hostvars[groups['kafka_brokers'][0]]['ansible_hostname'] and print_debug
 
+
 # kafka-verifiable로 시작하는 2개의 스크립트를 사용하면 String 타입 메시지 값을 코드 없이 주고받을 수 있다.
 # 카프카 클러스터 설치가 완료된 이후에 토픽에 데이터를 전송하여 간단한 네트워크 통신 테스트를 할 대 유용하다.
 # kafka-verifiable-producer.sh --bootstrap-server localhost:9092 \
 # --max-messages 10 \
 # --topic verify-test
 
-#
-- name: Copy json sammple data onto Kafka Brokers
+
+- name: Copy JSON Sammple Data onto Kafka Brokers
   template: src=kafka-{{ kafka.major_version }}.x/sample_data.json dest={{ kafka.base_dir }}/sample_data.json owner=gpadmin group=gpadmin mode=644 force=yes
   register: json_sample_data_copied
 
-#
+
 - debug: msg={{ json_sample_data_copied }}
   when: inventory_hostname in hostvars[groups['kafka_brokers'][0]]['ansible_hostname'] and print_debug
 
-#
-- name: Stream data into Kafka Topic
+
+- name: Stream Data into Kafka Topic
   shell: ( /bin/bash {{ kafka.base_dir }}/02-stream-data-into-topic.sh )
   register: topic_data_streamed
   when: inventory_hostname in hostvars[groups['kafka_brokers'][0]]['ansible_hostname']
 
-#
+
 - debug: msg={{ topic_data_streamed }}
   when: inventory_hostname in hostvars[groups['kafka_brokers'][0]]['ansible_hostname'] and print_debug
 
-#
-- name: Check Replication factors on Kafka Brokers
+
+- name: Check Replication Factors on Kafka Brokers
   become: yes
   shell: ( /bin/bash {{ kafka.base_dir }}/05-check-replica.sh )
   register: replica_factors_checked
   when: inventory_hostname in hostvars[groups['kafka_brokers'][0]]['ansible_hostname']
 
-#
+
 - debug: msg={{ replica_factors_checked }}
   when: inventory_hostname in hostvars[groups['kafka_brokers'][0]]['ansible_hostname'] and print_debug
+
 
 #- name: Check if data is inserting into Kafka Topic
 #  become: yes
@@ -171,3 +172,4 @@
 #  become: yes
 #  shell: ( source /usr/local/gpss/gpss_path.sh )
 #  when: inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
+

@@ -4,8 +4,39 @@
   when: ansible_os_family != 'RedHat' or ansible_os_family != 'CentOS' or ansible_os_family != 'Rocky'
 
 
-- name: Install PXF
-  import_tasks: install.yml
+- name: Set Facts for Greenplum PXF
+  import_tasks: set-pxf-facts.yml
+  tags:
+    - install
+    - uninstall
+
+
+- name: Check if Greenplum Database is Installed
+  import_tasks: 01-check-gpdb.yml
+  tags: install
+  when: pxf.install == true
+
+
+- name: Install Java
+  import_tasks: 02-install-java.yml
+  tags: install
+  when: pxf.install == true
+
+
+- name: Install Greenplum PXF
+  import_tasks: 03-install-pxf.yml
+  tags: install
+  when: pxf.install == true
+
+
+- name: Start Greenplum PXF
+  import_tasks: 04-start-pxf.yml
+  tags: install
+  when: pxf.install == true
+
+
+- name: Config Greenplum PXF
+  import_tasks: 05-config-pxf.yml
   tags: install
   when: pxf.install == true
 
@@ -70,8 +101,18 @@
   when: minio.access == true
 
 
-- name: Uninstall PXF
-  import_tasks: uninstall.yml
+- name: Stop Greenplum PXF
+  import_tasks: 41-stop-pxf.yml
+  tags: uninstall
+
+
+- name: Remove Greenplum PXF Extension Package and Config Files
+  import_tasks: 42-remove-pxf-extension.yml
+  tags: uninstall
+
+
+- name: Remove Greenplum PXF Extension in Database
+  import_tasks: 43-remove-pxf-db.yml
   tags: uninstall
 
 

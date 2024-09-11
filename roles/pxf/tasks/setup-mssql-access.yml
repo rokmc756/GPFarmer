@@ -1,16 +1,16 @@
 # Start line to configure MS-SQL Access
-#
-#
+
+
 - set_fact:
     java_home: "/usr/lib/jvm/jre-1.8.0"
   when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
 
-#
+
 - set_fact:
     java_home: "/usr/lib/jvm/java-8-openjdk-amd64/jre"
   when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
 
-#
+
 - name: Stop the PXF Cluster start command to start PXF on each segment hosts
   become: yes
   become_user: gpadmin
@@ -21,11 +21,11 @@
   ignore_errors: yes
   when: inventory_hostname in groups['master']
 
-#
+
 - debug: msg={{ pxf_cluster_stopped }}
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Killall java process for PXF Server
   become: yes
   become_user: gpadmin
@@ -35,24 +35,20 @@
   ignore_errors: yes
   register: pxf_java_processes_killed
   when: mssql.access == true and inventory_hostname in groups['master']
-
-#
 - debug: msg={{ pxf_java_processes_killed }}
   # when: inventory_hostname in groups['master']
 
-#
+
 - name: Create PXF base directory for MS-SQL Access and query examples directory on all master and segment hosts
   become_user: gpadmin
   file: path={{ item }} state=directory mode=0755 owner=gpadmin group=gpadmin
   register: pxf_base_dir_created
   with_items:  "{{ mssql.base_work_dir }}"
   when: mssql.access == true and inventory_hostname in groups['master']
-
-#
 - debug: msg={{ pxf_base_dir_created }}
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Prepare PXF on master for MS-SQL Access
   become: yes
   become_user: gpadmin
@@ -61,33 +57,27 @@
     executable: /bin/bash
   register: pxf_cluster_mssql_prepared
   when: mssql.access == true and inventory_hostname in groups['master']
-
-#
 - debug: msg={{ pxf_cluster_mssql_prepared }}
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Copy MS-SQL JDBC Driver to PXF_BASE/lib
   copy: src=mssql/mssql-jdbc-12.2.0.jre8.jar dest={{ mssql.base_work_dir }}/lib/mssql-jdbc-12.2.0.jre8.jar owner=gpadmin group=gpadmin mode=0644
   register: mssql_jdbc_copied
   when: inventory_hostname in groups['master']
-
-#
 - debug: msg={{ mssql_jdbc_copied }}
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Copy the jdbc-site.xml file to the default configuration directory.
   become_user: gpadmin
   template: src=mssql/jdbc-site.xml.j2 dest={{ mssql.base_work_dir }}/servers/default/jdbc-site.xml owner=gpadmin group=gpadmin mode=644 force=yes
   register: jdbc_site_copied
   when: mssql.access == true and inventory_hostname in groups['master']
-
-#
 - debug: msg={{ jdbc_site_copied }}
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Copy the query files to the base directory
   become_user: gpadmin
   template: src=mssql/{{ item }} dest={{ mssql.base_work_dir }}/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
@@ -95,12 +85,10 @@
   with_items:
     - "create-external-table.sql"
   when: mssql.access == true and inventory_hostname in groups['master']
-
-#
 - debug: msg={{ query_files_copied }}
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Synchronize the PXF server configuration to the GPDB cluster
   become: yes
   become_user: gpadmin
@@ -109,12 +97,10 @@
     executable: /bin/bash
   register: pxf_cluster_mssql_synced
   when: mssql.access == true and inventory_hostname in groups['master']
-
-#
 - debug: msg={{ pxf_cluster_mssql_synced }}
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Start PXF on GPDB Master for MS-SQL Access
   become_user: gpadmin
   shell: ( source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_BASE={{ mssql.base_work_dir }} /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start )
@@ -122,12 +108,10 @@
     executable: /bin/bash
   register: pxf_cluster_mssql_started
   when: mssql.access == true and inventory_hostname in groups['master']
-
-#
 - debug: msg={{ pxf_cluster_mssql_started }}
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Create External Table for MS-SQL
   become_user: gpadmin
   shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -f {{ mssql.base_work_dir }}/create-external-table.sql )
@@ -135,12 +119,10 @@
     executable: /bin/bash
   register: mssql_external_table_created
   when: inventory_hostname in groups['master']
-
-#
 - debug: msg={{ mssql_external_table_created }}
   when: inventory_hostname in groups['master']
 
-#
+
 - name: Select data from MS-SQL Server
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c 'select * from countries' )
@@ -149,7 +131,7 @@
   register: mssql_data_selected
   when: inventory_hostname in groups['master']
 
-#
 - name: Print select data from MS-SQL Server
   debug: msg={{ mssql_data_selected }}
   when: inventory_hostname in groups['master']
+

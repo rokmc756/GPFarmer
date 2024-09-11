@@ -1,0 +1,85 @@
+---
+- name: Verify that Database for PXF Extention is Installed
+  become_user: gpadmin
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ pxf.database_name }}';"
+  args:
+    executable: /bin/bash
+  register: pxf_database_installed
+  when: inventory_hostname in groups['master']
+
+
+- name: Create Database for PXF
+  become_user: gpadmin
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ pxf.database_name }}
+  args:
+    executable: /bin/bash
+  register: pxf_database_created
+  when: inventory_hostname in groups['master'] and '100' not in pxf_database_installed.stdout
+
+
+- name: Create the PXF Extension
+  become_user: gpadmin
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "CREATE EXTENSION pxf;"
+  args:
+    executable: /bin/bash
+  register: pxf_extension_created
+  when: inventory_hostname in groups['master'] and '100' not in pxf_database_installed.stdout
+
+
+- name: Check if PXF Extension is Installed on Greenplum Database
+  become_user: gpadmin
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "select count(*) FROM pg_extension where extname='pxf';" | tr -d " " | sed '/^$/d'
+  args:
+    executable: /bin/bash
+  register: pxf_extension_install_checked
+  when: inventory_hostname in groups['master'] and '100' not in pxf_database_installed.stdout
+
+
+- debug: msg={{ pxf_extension_install_checked.stdout }}
+  become_user: gpadmin
+  when: inventory_hostname in groups['master']
+
+
+- name: Create User for PXF
+  become_user: gpadmin
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "CREATE USER {{ pxf.username }};"
+  args:
+    executable: /bin/bash
+  register: pxf_user_created
+  when: inventory_hostname in groups['master'] and '100' not in pxf_database_installed.stdout
+
+
+- name: Add a Role into User for PXF
+  become_user: gpadmin
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "ALTER ROLE {{ pxf.username }} superuser createdb;"
+  args:
+    executable: /bin/bash
+  register: pxf_role_added
+  when: inventory_hostname in groups['master'] and '100' not in pxf_database_installed.stdout
+
+
+- name: Grant a Specific Role Access to the PXF Protocol
+  become_user: gpadmin
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "GRANT SELECT ON PROTOCOL pxf TO {{ pxf.username }};"
+  args:
+    executable: /bin/bash
+  register: pxf_role_access_granted
+  when: inventory_hostname in groups['master'] and '100' not in pxf_database_installed.stdout
+
+
+- name: Write Data to an External Data Store with PXF
+  become_user: gpadmin
+  shell: |
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "GRANT INSERT ON PROTOCOL pxf TO {{ pxf.username }};"
+  args:
+    executable: /bin/bash
+  register: pxf_data_writed
+  when: inventory_hostname in groups['master'] and '100' not in pxf_database_installed.stdout
+

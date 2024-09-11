@@ -73,6 +73,9 @@ gptext:
 pxf:
 	make -f makefile_configs/Makefile.pxf r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 
+gpss:
+	make -f makefile_configs/Makefile.gpss r=${r} s=${s} c=${c} USERNAME=${USERNAME}
+
 
 boot: role-update control-vms.yml
 	ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} control-vms.yml --extra-vars "power_state=powered-on power_title=Power-On VMs"

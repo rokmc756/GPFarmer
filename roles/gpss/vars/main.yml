@@ -3,8 +3,8 @@ gpss:
   major_version: 1
   minor_version: 11.0
   patch_version: ""
-  gpdb_version: gpdb7
-  os_version: rhel8
+  gpdb_version: gpdb6
+  os_version: rhel9
   arch_type: x86_64
   database_name: gpss_testdb
   mdw_hostname: "{{ hostvars[groups['master'][0]].ansible_hostname }}"
@@ -49,9 +49,9 @@ kafka:
   zookeeper_hosts: "{{ groups['kafka_brokers'] | map('extract', hostvars, ['ansible_hostname']) | map('regex_replace', '$', ':2181') | join(',') }}"
   upload_kafka_data: true
 
-print_debug: true
-setup_kafka: true
-remove_kafka: true
-setup_gpss: false
-remove_gpss: false
+# print_debug: true
+# setup_kafka: false
+# remove_kafka: false
+# setup_gpss: false
+# remove_gpss: false
 

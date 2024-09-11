@@ -1,0 +1,79 @@
+---
+- name: Start Greenplum Streaming Server Daemon
+  # become: yes
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && nohup $GPHOME/bin/gpss {{ gpss.base_dir }}/{{ item.gpss_config }} --verbose --log-dir {{ gpss.log_dir }} & )
+  # async: 45
+  # poll: 0
+  register: gpss_daemon_started
+  with_items: "{{ gpss.jobs }}"
+  when: inventory_hostname in groups['master']
+- debug: msg={{ gpss_daemon_started }}
+  when: inventory_hostname in groups['master'] and print_debug
+
+
+- name: Sumit Job
+  # become: yes
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpsscli submit --verbose --name {{ item.name }} --gpss-port {{ item.gpss_port }} {{ gpss.base_dir }}/{{ item.job_config }} )
+  register: gpss_job_submitted
+  with_items: "{{ gpss.jobs }}"
+  when: submit_gpss_job == true and inventory_hostname in groups['master']
+- debug: msg={{ gpss_job_submitted }}
+  when: print_debug == true and submit_gpss_job == true and inventory_hostname in groups['master']
+
+
+- name: List All Jobs
+  become: yes
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpsscli list --verbose --all --gpss-port {{ item.gpss_port }} )
+  register: gpss_all_jobs_listed
+  with_items: "{{ gpss.jobs }}"
+  when: submit_gpss_job == true and inventory_hostname in groups['master']
+- debug: msg={{ gpss_all_jobs_listed }}
+  when: inventory_hostname in groups['master'] and print_debug
+
+
+- name: Start Greenplum Streaming Server Job
+  become: yes
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpsscli start {{ item.name }} --verbose --gpss-port {{ item.gpss_port }} )
+  register: gpss_job_started
+  with_items: "{{ gpss.jobs }}"
+  when: start_gpss_job == true and inventory_hostname in groups['master']
+- debug: msg={{ gpss_job_started }}
+  when: print_debug == true and start_gpss_job == true and inventory_hostname in groups['master']
+
+
+- name: Print New Contents
+  become: yes
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ gpss.database_name }} -c "SELECT count(*) FROM public.{{ item.table_name }};" )
+  register: gpss_new_contents_printed
+  with_items: "{{ kafka.jobs }}"
+  when: start_gpss_job == true and inventory_hostname in groups['master']
+- debug: msg={{ gpss_new_contents_printed }}
+  when: print_debug == true and start_gpss_job == true and inventory_hostname in groups['master']
+
+
+- name: Print the Status of Greenplum Streaming Server Job
+  become: yes
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpsscli status {{ item.name }} --gpss-port {{ item.gpss_port }} )
+  register: gpss_job_status_printed
+  with_items: "{{ gpss.jobs }}"
+  when: start_gpss_job == true and inventory_hostname in groups['master']
+- debug: msg={{ gpss_job_status_printed }}
+  when: print_debug == true and start_gpss_job == true and inventory_hostname in groups['master']
+
+
+#- name: Print the progress of Greenplum Streaming Server job
+#  become: yes
+#  become_user: gpadmin
+#  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpsscli progress {{ gpss.name }} --gpss-port {{ gpss.port }} )
+#  with_items: "{{ gpss.jobs }}"
+#  register: gpss_job_progress_printed
+#  when: inventory_hostname in groups['master']
+#- debug: msg={{ gpss_job_progress_printed }}
+#  when: inventory_hostname in groups['master'] and print_debug
+

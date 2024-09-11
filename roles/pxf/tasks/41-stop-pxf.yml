@@ -1,0 +1,15 @@
+---
+- name: Check if the PXF Cluster is Running on Each Segment Hosts
+  become_user: "{{ gpdb.admin_user }}"
+  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && export PXF_BASE=/usr/local/pxf-{{ pxf.gpdb_version }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster status )
+  ignore_errors: yes
+  register: pxf_running_checked
+  when: inventory_hostname in groups['master']
+
+
+- name: Stop PXF Cluster Running on Each Segment Hosts
+  become_user: "{{ gpdb.admin_user }}"
+  shell: ( source /usr/local/greenplum-db/greenplum_path.sh && export PXF_BASE=/usr/local/pxf-{{ pxf.gpdb_version }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster stop )
+  ignore_errors: yes
+  when: inventory_hostname in groups['master'] and 'PXF is running on' in pxf_running_checked.stdout
+

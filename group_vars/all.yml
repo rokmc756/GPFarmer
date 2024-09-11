@@ -76,9 +76,27 @@ gpdb:
       ipaddr1: "192.168.1."
 
 
+jdk:
+  oss:
+    install: true
+    jvm_home: "/usr/lib/jvm"
+    major_version: 1
+    minor_version: 8
+    patch_version: 0
+    # 1.8.0
+    # 11.0.4
+    # 17.0.2
+  oracle:
+    install: false
+    jvm_home: "/usr/lib/jvm"
+    major_version: 13
+    minor_version: 0
+    patch_version: 2
+    download: false
+
+
 vmware:
   esxi_hostname: "192.168.0.231"
   esxi_username: "root"
   esxi_password: "Changeme34#$"
-
 

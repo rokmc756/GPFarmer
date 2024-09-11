@@ -1,0 +1,77 @@
+---
+# source ~/.bashrc && export PXF_CONF=/usr/local/pxf-{{ pxf.gpdb_version }}/conf && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster register
+- name: Export the PXF JAVA_HOME Setting and Run the PXF Cluster Init Command to Initialize the PXF Service on All GPDB Hosts
+  become_user: gpadmin
+  shell: |
+    source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_CONF=/usr/local/pxf-{{ pxf.gpdb_version }}/conf /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster register
+  args:
+    executable: /bin/bash
+  register: init_pxf_cluster
+  when: inventory_hostname in groups['master']
+  # pxf cluster init has been deprecated
+
+
+- name: Print Initializtion of PXF Cluster
+  debug: msg={{ init_pxf_cluster }}
+  when: inventory_hostname in groups['master']
+
+
+# source /usr/local/greenplum-db/greenplum_path.sh && export PXF_BASE=/usr/local/pxf-{{ pxf.gpdb_version }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster sync
+- name: Synchronize the PXF Server Configuration to the Greenplum Cluster
+  become_user: gpadmin
+  shell: |
+    source ~/.bashrc && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster sync
+  register: sync_pxf_cluster
+  args:
+    executable: /bin/bash
+  when: inventory_hostname in groups['master']
+
+
+- name: Print Initializtion of PXF Cluster
+  debug: msg={{ sync_pxf_cluster }}
+  when: inventory_hostname in groups['master']
+
+
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_async.html
+- name: Run the PXF Cluster Start Command to Start PXF on Each Sgment Hosts
+  become_user: gpadmin
+  shell: |
+    source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start
+  async: 100
+  poll: 3
+  args:
+    executable: /bin/bash
+  register: async_start_pxf
+  when: inventory_hostname in groups['master']
+
+
+- name: Print Staring PXF Cluster
+  debug: msg={{ async_start_pxf }}
+  when: inventory_hostname in groups['master']
+
+
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_async.html
+#- name: Check the Sync Status of Start PXF
+#  async_status:
+#    jid: "{{ async_start_pxf.ansible_job_id }}"
+#  register: check_sync_status
+#  until: check_sync_status.finished
+#  retries: 100
+#  delay: 10
+#  ignore_errors: true
+#  when: inventory_hostname in groups['master']
+
+- name: Run the PXF Cluster Status Command to check PXF on Each Sgment Hosts
+  become_user: gpadmin
+  shell: |
+    source ~/.bashrc && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster status
+  args:
+    executable: /bin/bash
+  register: status_pxf_cluster
+  when: inventory_hostname in groups['master']
+
+
+- name: Print the Status of PXF Cluster
+  debug: msg={{ status_pxf_cluster }}
+  when: inventory_hostname in groups['master']
+

@@ -1,0 +1,73 @@
+---
+- name: Copy the PXF .{{ pxf.binary_type }} File to All Hosts in Greenplum Cluster
+  copy: src={{ pxf_package_name }} dest={{ gpdb.admin_home_dir }}/{{ pxf_package_name }} mode=0644 owner=gpadmin group=gpadmin
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+
+
+- name: Install PXF Package on Each Greenplum Database Hosts Using Package Management Utility for RedHat/CentOS/Rocky
+  yum:
+    name: "{{ gpdb.admin_home_dir }}/{{ pxf_package_name }}"
+    state: present
+    disable_gpg_check: true
+  async: 60
+  poll: 5
+  when:
+    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    - ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky"
+
+
+- name: Install PXF DEB Package on Each Greenplum Database Hosts Using Package Management Utility for Ubuntu/Debian
+  apt:
+    deb: "{{ gpdb.admin_home_dir }}/{{ pxf_package_name }}"
+    state: present
+  async: 60
+  poll: 5
+  when:
+    - inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+    - ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
+
+
+- name: Set the Ownership and Permissions of the PXF Installation Files to Enable Access By the GPAdmin User
+  file:
+    path: "{{ item }}"
+    owner: gpadmin
+    group: gpadmin
+    mode: 0755
+  with_items:
+    - "{{ gpdb.base_dir }}/pxf-{{ pxf.gpdb_version }}"
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+
+
+- name: Add the PXF Binary Directory to the PXF Owner’s $PATH
+  become_user: gpadmin
+  lineinfile:
+    path: "{{ gpdb.admin_home_dir }}/.bashrc"
+    line: "{{ item }}"
+    insertafter: EOF
+  with_items:
+    - "export PATH=$PATH:/usr/local/pxf-{{ pxf.gpdb_version }}/bin"
+    - "export JAVA_HOME={{ java_home }}"
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+
+
+- name: Chown GPAmdin User for PXF Directory
+  file:
+    dest: "{{ gpdb.base_dir }}/pxf-{{ pxf.gpdb_version }}"
+    owner: gpadmin
+    group: gpadmin
+    mode: u=rwX,g=rX,o=rX
+    recurse: yes
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+
+
+- name: Change JAVA_HOME in PXF_HOME/conf/pxf-env.sh
+  become_user: gpadmin
+  lineinfile:
+    dest: /usr/local/pxf-{{ pxf.gpdb_version }}/conf/pxf-env.sh
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^# export JAVA_HOME=/usr/java/default', line: 'export JAVA_HOME={{ java_home }}', state: present }
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
+

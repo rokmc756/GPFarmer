@@ -1,21 +1,19 @@
 ---
 # Uninstall Greenplum Streaming Server on GPDB Master and Kafka Broker
-# Remove configuraiton and sample data, table, database
-#
-- name: "Check if GPSS RPM package is installed"
+- name: Check if GPSS RPM Package is Installed
   package_facts:
     manager: "auto"
   when: inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
-#
-- name: Stop if GPSS rpm package is not installed
+
+- name: Stop if GPSS RPM Package is Not Installed
   fail: msg="GPSS rpm package is not installed!"
   when:
     - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
     - "'gpss' not in ansible_facts.packages"
 
-#
-- name: Uninstall GPSS rpm package
+
+- name: Uninstall GPSS RPM Package
   yum:
     name: gpss
     state: absent
@@ -24,7 +22,7 @@
   when:
     - inventory_hostname in groups['kafka_brokers']  # At Kafka Broker
 
-#
+
 - name: Delete Kafka Topic
   shell:
     "/usr/local/kafka/bin/kafka-topics.sh --bootstrap-server {{ kafka.broker_hosts }}:9092 --topic {{ item.topic_name }} --delete"
@@ -32,11 +30,12 @@
   with_items: "{{ kafka.jobs }}"
   when: inventory_hostname == hostvars[groups['kafka_brokers'][0]].ansible_hostname
 
-#
-- name: Delete Kafka working base directory
+
+- name: Delete Kafka Working Base Directory
   file:
     owner: root
     group: root
     path: "{{ kafka.base_dir }}"
     state: absent
   when: inventory_hostname in groups['kafka_brokers']
+

@@ -1,0 +1,92 @@
+---
+- name: Verify that Greenplum Database for Greenplum Streaming Server Extention is Installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ gpss.database_name }}'" )
+  register: gpss_database_installed
+  when: inventory_hostname in groups['master']
+
+
+- name: Create Database for Greenplum Streaming Server
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ gpss.database_name }} )
+  register: gpss_database_created
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' not in gpss_database_installed.stdout"
+
+
+- name: Create a Extension for Greenplum Streaming Server
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ gpss.database_name }} -tAc "CREATE extension gpss" )
+  register: gpss_extension_installed
+  when:
+    - inventory_hostname in groups['master']
+    - "'100' not in gpss_database_installed.stdout"
+
+
+- name: Chown GPAdmin User for Greenplum Streaming Server Install Directory
+  become: yes
+  file:
+    dest: "{{ gpdb.base_dir }}/gpss"
+    owner: gpadmin
+    group: gpadmin
+    mode: u=rwX,g=rX,o=rX
+    state: directory
+    recurse: yes
+  when: inventory_hostname in groups['master']  # At Kafka Broker
+
+
+- name: Create Working Base Directory for Kafka and Greenplum Streaming Server
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: gpadmin
+    group: gpadmin
+    mode: 0775
+  with_items:
+    - "{{ gpss.base_dir }}"
+    - "{{ gpss.log_dir }}"
+  when: inventory_hostname in groups['master']
+
+
+- name: Copy Create Table Query File and GPSS Config File and JSON loadcfg YML File
+  template: src=gpss/{{ item }}.j2 dest={{ gpss.base_dir }}/{{ item }} owner=gpadmin group=gpadmin mode=644 force=yes
+  register: create_table_query_copied
+  with_items:
+    - "gpss_config.json"
+    - "gpss_load_test_config.json"
+    - "gpss_delete_test_config.json"
+    - "create_table.sql"
+    - "create_table_load_test.sql"
+    - "check-gpss-mem.sh"
+    - "01-start-gpss-daemon.sh"
+    - "02-submit-jobs.sh"
+    - "03-list-all-jobs.sh"
+    - "04-start-gpss-jobs.sh"
+    - "06-print-status-gpss-jobs.sh"
+    - "delete-test-query.sh"
+  when: inventory_hostname in groups['master']
+  #  - "create_temp_table_delete_test.sql"
+  #  - "jsonload_cfg.yaml"
+  #  - "jsonload_cfg_load_test.yaml"
+  #  - "jsonload_cfg_delete_test.yaml"
+  #  - "create_table_delete_test.sql"
+  # - "05-print-new-contents.sh"
+  # - "07-get-off-shell-set.sh"
+
+
+- name: Create Table
+  become: yes
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ gpss.database_name }} -f {{ gpss.base_dir }}/{{ item }} )
+  register: gpss_table_created
+  with_items:
+    - "create_table.sql"
+    - "create_table_load_test.sql"
+  when: inventory_hostname in groups['master']
+  #  - "create_temp_table_delete_test.sql"
+  #  - "create_table_delete_test.sql"
+
+
+- debug: msg={{ gpss_table_created }}
+  when: inventory_hostname in groups['master'] and print_debug

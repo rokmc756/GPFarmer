@@ -1,0 +1,51 @@
+---
+- name: Verify if Greenplum Streaming Server Gppkg is Installed
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_gpss_installed }} )
+  args:
+    executable: /bin/bash
+  register: gpss_installed
+  changed_when: False
+  when: inventory_hostname in groups['master']
+
+
+- debug: msg={{ gpss_installed.stdout }}
+  when: inventory_hostname in groups['master']
+
+
+- name: Stop when Greenplum Streaming Server Gppkg is Installed
+  fail: msg="GPSS gppkg package is already installed!"
+  when: ( inventory_hostname in groups['master'] and 'gpss' in gpss_installed.stdout )
+
+
+- name: Copy Greenplum Streaming Server Tarball File
+  become_user: gpadmin
+  copy: src=gpss-{{ gpss.gpdb_version }}-{{ gpss.major_version }}.{{ gpss.minor_version }}{{ gpss.patch_version }}-{{ gpss.os_version }}-x86_64.tar.gz dest={{ gpdb.admin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  when:  inventory_hostname in groups['master'] and gpss.install_tar
+
+
+- name: Untar Greenplum Streaming Server Tarball Archive
+  become_user: gpadmin
+  unarchive: src={{ gpdb.admin_home_dir }}/gpss-{{ gpss.gpdb_version }}-{{ gpss.major_version }}.{{ gpss.minor_version }}{{ gpss.patch_version }}-{{ gpss.os_version }}-x86_64.tar.gz dest={{ gpdb.admin_home_dir }} copy=no owner=gpadmin group=gpadmin
+  when: inventory_hostname in groups['master'] and gpss.install_tar
+
+
+- name: Install Greenplum Streaming Server Tarball in {{ gpdb.base_dir }}
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && cd {{ gpdb.admin_home_dir }}/gpss-{{ gpss.gpdb_version }}-{{ gpss.major_version }}.{{ gpss.minor_version }}{{ gpss.patch_version }}-{{ gpss.os_version }}-x86_64/ ; ./install_gpdb_component )
+  async: 120
+  poll: 5
+  when: inventory_hostname in groups['master'] and gpss.install_tar
+
+
+- name: Copy Greenplum Streaming Server Gppkg File
+  become_user: gpadmin
+  copy: src={{ package_name }} dest={{ gpdb.admin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  when: ( inventory_hostname in groups['master'] and 'gpss' not in gpss_installed.stdout )
+
+
+- name: Install Greenplum Streaming Server Gppkg Package
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpdb.admin_home_dir }}/{{ package_name }} )
+  when: inventory_hostname in groups['master']
+
