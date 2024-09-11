@@ -85,6 +85,10 @@ pljava:
 plc:
 	make -f makefile_configs/Makefile.plcontainer r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 
+dsr:
+	make -f makefile_configs/Makefile.dsr r=${r} s=${s} c=${c} USERNAME=${USERNAME}
+
+
 
 boot: role-update control-vms.yml
 	ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} control-vms.yml --extra-vars "power_state=powered-on power_title=Power-On VMs"

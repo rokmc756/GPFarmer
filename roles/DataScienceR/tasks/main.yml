@@ -1,16 +1,39 @@
 ---
-# for now fail if it's not a Red Hat based system
-- name: Check OS (PGCC v2)
+# For Now Fail if It's Not a Red Hat/CentOS/Rocky based system
+- name: Check OS (DataSienceR)
   fail: msg="Not a Red Hat based system!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
-#
-- name: Install DataScienceR on {{ ansible_distribution }}
-  import_tasks: install.yml
+
+- name: Set Facts for DataScienceR
+  import_tasks: set-dsr-facts.yml
+  tags:
+    - install
+    - uninstall
+
+
+- name: Check if Greenplum Database is Installed and Running
+  import_tasks: 01-check-gpdb.yml
   tags: install
 
-#
-- name: Uninstall DataScienceR on {{ ansible_distribution }}
-  import_tasks: uninstall.yml
+
+- name: Install DataScienceR Gppkg Package
+  import_tasks: 02-install-dsr.yml
+  tags: install
+
+
+- name: Install a Database for DataScienceR and Restart Greenplum Database
+  import_tasks: 03-install-dsr-db.yml
+  tags: install
+
+
+- name: Remove a Database for DataScienceR
+  import_tasks: 41-remove-dsr-db.yml
   tags: uninstall
+
+
+- name: Remove DataScienceR Gppkg Package and Restart Greenplum Database
+  import_tasks: 42-remove-dsr-pkgs.yml
+  tags: uninstall
+
 

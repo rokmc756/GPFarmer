@@ -1,0 +1,34 @@
+---
+- name: Verify if DataScienceR Gppkg Package is Installed
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_dsr_installed }} )
+  ignore_errors: true
+  register: dsr_installed
+  changed_when: False
+  when: inventory_hostname in groups['master']
+
+
+- name: Print the Result if DataScienceR is Not Installed
+  debug:
+    msg: "{{ dsr_installed.stdout }}"
+  when: inventory_hostname in groups['master']
+
+
+- name: Stop if DataScienceR Gppkg Package is Not Installed
+  fail: msg="DataScienceR gppkg package is not installed!"
+  when: ( inventory_hostname in groups['master'] and 'DataScienceR' not in dsr_installed.stdout )
+
+
+- name: Uninstall the DataScienceR Gppkg Package
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} DataScienceR )
+  register: dsr_extension_uninstalled
+  when: ( inventory_hostname in groups['master'] and 'DataScienceR' in dsr_installed.stdout )
+
+
+- name: Restart the Greenplum Database
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when: inventory_hostname in groups['master']
