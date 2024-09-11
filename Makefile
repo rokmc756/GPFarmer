@@ -79,6 +79,9 @@ gpss:
 plr:
 	make -f makefile_configs/Makefile.plr r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 
+pljava:
+	make -f makefile_configs/Makefile.pljava r=${r} s=${s} c=${c} USERNAME=${USERNAME}
+
 
 
 boot: role-update control-vms.yml

@@ -1,0 +1,40 @@
+---
+- name: Set JAVA_HOME
+  become_user: root
+  lineinfile:
+    dest: /etc/environment
+    state: present
+    regexp: '^JAVA_HOME'
+    line: 'JAVA_HOME={{ java_home }}'
+
+
+- name: Replace JAVA_HOME and LD_LIBRARY_PATH to greenplum_path.sh
+  lineinfile:
+    dest: "/usr/local/greenplum-db/greenplum_path.sh"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^export JAVA_HOME=', line: 'export JAVA_HOME={{ java_home }}', state: present }
+    - { regexp: '^export LD_LIBRARY_PATH=', line: 'export LD_LIBRARY_PATH=$GPHOME/lib:$GPHOME/ext/python/lib:$JAVA_HOME/lib/server:$JAVA_HOME/lib/amd64/server:$JAVA_HOME/jre/lib/amd64/server:$JAVA_HOME/jre/lib/amd64/dcevm:$LD_LIBRARY_PATH', state: present }
+  when:
+    - inventory_hostname in groups['master']
+
+
+- name: The GPscp Command Copies the File to All hosts Specified in the hostfile.
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ remote_copy_cmd }} -f /home/gpadmin/hostfile $GPHOME/greenplum_path.sh =:/usr/local/greenplum-db/ )
+  args:
+    executable: /bin/bash
+  when: inventory_hostname in groups['master']
+
+
+- name: Restart Greenplum Database and Apply Parameters for PL/Java in greenplum_path.sh
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  args:
+    executable: /bin/bash
+  async: 300
+  poll: 5
+  when: inventory_hostname in groups['master']
+

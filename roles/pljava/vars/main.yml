@@ -1,20 +1,25 @@
 ---
-gpdb:
-  base_dir: "/usr/local"
-  gpadmin_home_dir: "/home/gpadmin"
+# gpdb:
+#  base_dir: "/usr/local"
+#  gpadmin_home_dir: "/home/gpadmin"
+#
+
 pljava:
   prefix_major_version: ""
   major_version: 2
   minor_version: 0
-  patch_version: 8
-  gpdb_version: 7
-  os_version: rhel8
+  patch_version: 9
+  gpdb_version: 6
+  os_version: rhel9
   arch_type: 'x86_64'
   database_name: pljava_testdb
   schema_name: pljava_test_scheme
 # os_version: ubuntu18.04
 # arch_type: 'amd64'
 
+
+# pljava-2.0.9-gp6-rhel9_x86_64.gppkg
 # pljava-2.0.4-gp6-rhel8_x86_64.gppkg
 # pljava-2.0.7-gp7-rhel8_x86_64.gppkg
 # pljava-2.0.4-gp6-ubuntu18.04_x86_64.gppkg
+

@@ -1,0 +1,85 @@
+---
+- name: Get Network Interface name From Prefix of IP Addresses Provided for Greenplum Nodes
+  set_fact:
+    netdev0: "{{ ansible_interfaces | map('regex_replace', '^', 'ansible_') | map('extract', vars) | selectattr('ipv4', 'defined') | selectattr('ipv4.address', 'match', gpcc.net.ipaddr0 ) | map(attribute='device') | first }}"
+    netdev1: "{{ ansible_interfaces | map('regex_replace', '^', 'ansible_') | map('extract', vars) | selectattr('ipv4', 'defined') | selectattr('ipv4.address', 'match', gpcc.net.ipaddr1 ) | map(attribute='device') | first }}"
+
+
+- name: Get IP Address from Provided Network Device Name
+  set_fact:
+    ipaddr0: "{{ hostvars[inventory_hostname]['ansible_'~netdev0].ipv4.address }}"
+    ipaddr1: "{{ hostvars[inventory_hostname]['ansible_'~netdev1].ipv4.address }}"
+
+
+#- name: Define Facts For All GPHOST's Hostname
+#  set_fact:
+#    all_ext1_hostnames: "{{ groups['all'] | map('extract', hostvars, ['ansible_hostname']) | join(' ') }}"
+#- debug: msg={{ all_ext1_hostnames }}
+#
+#
+#- name: Define Fact For All Hosts of First IP Addresses
+#  set_fact:
+#    all_net0_ipaddrs: "{{ groups['all'] | map('extract', hostvars, ['ansible_'~netdev0, 'ipv4', 'address']) | join(',') }}"
+#- debug: msg={{ all_net0_ipaddrs }}
+
+
+- name: Set Default Network Device and Address
+  set_fact:
+    _netdev: "{{ 'ansible_'~ netdev1 }}"
+    _ipaddr: "{{ ipaddr1 }}"
+
+
+- set_fact:
+    gpdb_network_range: "{{ hostvars[inventory_hostname][_netdev]['ipv4']['network'] }}/{{ ( hostvars[inventory_hostname][_netdev]['ipv4']['address'] + '/' + hostvars[inventory_hostname][_netdev]['ipv4']['netmask'] ) | ansible.utils.ipaddr('prefix') }}"
+
+
+- name: Get the Specific IP Address for All Hosts
+  set_fact:
+    prod_ip_addr_range: "{{ item }}"
+  with_items: "{{ ansible_all_ipv4_addresses }}"
+  when: "item | ansible.utils.ipaddr( gpdb_network_range )"
+
+
+- name: Get the CIDR of GPDB Network
+  set_fact:
+    gpdb_network_range: "{{ hostvars[inventory_hostname][_netdev]['ipv4']['network'] }}/{{ ( hostvars[inventory_hostname][_netdev]['ipv4']['address'] + '/' + hostvars[inventory_hostname][_netdev]['ipv4']['netmask'] ) | ansible.utils.ipaddr('prefix') }}"
+
+
+- name: Get the Specific IP Addresses
+  set_fact:
+    prod_ip_addr_range: "{{ item }}"
+  with_items: "{{ ansible_all_ipv4_addresses }}"
+  when:
+    - ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
+    - "item | ansible.utils.ipaddr( gpdb_network_range )"
+
+
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    gppkg_remove_cmd: "gppkg -r"
+    remote_copy_cmd: "gpscp"
+    check_pljava_installed: "gppkg -q --all | grep pljava | cut -d - -f 1"
+    pljava_package_name: pljava-{{ pljava.prefix_major_version }}{{ pljava.major_version }}.{{ pljava.minor_version }}.{{ pljava.patch_version }}-gp{{ pljava.gpdb_version }}-{{ pljava.os_version }}_{{ pljava.arch_type }}.gppkg
+    remove_pljava_package_name: pljava-{{ pljava.prefix_major_version }}{{ pljava.major_version }}.{{ pljava.minor_version }}.{{ pljava.patch_version }}-gp{{ pljava.gpdb_version }}-{{ pljava.os_version }}_{{ pljava.arch_type }}
+  when: inventory_hostname in groups['master'] and pljava.gpdb_version|int <= 6
+
+
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    gppkg_remove_cmd: "gppkg -a remove"
+    remote_copy_cmd: "gpsync"
+    check_pljava_installed: "gppkg query | grep pljava | awk '{print $1}'"
+    pljava_package_name: pljava-{{ pljava.major_version }}.{{ pljava.minor_version }}.{{ pljava.patch_version }}-gp{{ pljava.gpdb_version }}-{{ pljava.os_version }}_{{ pljava.arch_type }}.gppkg
+    remove_pljava_package_name: pljava
+  when: inventory_hostname in groups['master'] and pljava.gpdb_version|int >= 7
+
+
+- set_fact:
+    java_home: "/usr/lib/jvm/jre-1.8.0"
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" )
+
+
+- set_fact:
+    java_home: "/usr/lib/jvm/java-8-openjdk-amd64/jre"
+  when: ( ansible_distribution == "Ubuntu" or ansible_distribution == "Debian" )
+

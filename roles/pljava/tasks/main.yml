@@ -4,13 +4,44 @@
   fail: msg="Not a Red Hat based system!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
-#
-- name: Install PL/Java for {{ ansible_distribution }}
-  import_tasks: install.yml
+
+- name: Set Facts for PL/Java
+  import_tasks: set-pljava-facts.yml
+  tags:
+    - install
+    - uninstall
+
+
+- name: Check if Greenplum Database is Installed and Running
+  import_tasks: 01-check-gpdb.yml
   tags: install
 
-#
-- name: Uninstall PL/Java for {{ ansible_distribution }}
-  import_tasks: uninstall.yml
+
+- name: Install PL/Java
+  import_tasks: 02-install-pljava.yml
+  tags: install
+
+
+- name: Configure Java for PL/Java
+  import_tasks: 03-config-java.yml
+  tags: install
+
+- name: Configure PL/Java
+  import_tasks: 04-config-pljava.yml
+  tags: install
+
+
+- name: Check if Greenplum Database is Installed and Running including PL/Java Extension is Enabled
+  import_tasks: 41-check-pljava.yml
+  tags: uninstall
+
+
+- name: Remove PL/Java Extension
+  import_tasks: 42-remove-pljava-extension.yml
+  tags: uninstall
+
+
+- name: Remove PL/Java Database and Restart Greenplum Database
+  import_tasks: 43-remove-pljava-db.yml
   tags: uninstall
 

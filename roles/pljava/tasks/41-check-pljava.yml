@@ -1,0 +1,16 @@
+---
+- name: Check if the Greenplum Database Software is Already Installed
+  stat: path={{ gpdb.base_dir }}/greenplum-db
+  register: gpdb_installed
+
+
+- name: Stop if Greenplum Database Software is Not Installed
+  fail: msg="Greenplum Database software is not installed!"
+  when: gpdb_installed.stat.exists != True
+
+
+- name: Verify that Database for PL/Java is Installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ pljava.database_name }}'" )
+  register: pljava_database_installed
+  when: inventory_hostname in groups['master']

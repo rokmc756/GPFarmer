@@ -1,0 +1,15 @@
+---
+- name: Drop a Database for PL/Java
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ pljava.database_name }} )
+  register: pljava_database_deleted
+  when: ( inventory_hostname in groups['master'] and '100' in pljava_database_installed.stdout )
+
+
+- name: Restart the Greenplum Database
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when: inventory_hostname in groups['master']
+

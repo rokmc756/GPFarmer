@@ -1,0 +1,45 @@
+---
+- name: Verify that Database for PL/Java is Installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ pljava.database_name }}'" )
+  args:
+    executable: /bin/bash
+  register: pljava_database_installed
+  when: inventory_hostname in groups['master']
+
+
+- name: Create Database for PL/Java
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ pljava.database_name }} )
+  args:
+    executable: /bin/bash
+  register: pljava_database_created
+  when: ( inventory_hostname in groups['master'] and '100' not in pljava_database_installed.stdout )
+
+
+- name: Enabling PL/Java Language Support for Greenplum Database 4.x
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createlang pljava -d {{ pljava.database_name }} )
+  args:
+    executable: /bin/bash
+  register: pljava_language_support_enabled
+  when: ( inventory_hostname in groups['master'] and pljava.gpdb_version == "4.3" and '100' not in pljava_database_installed.stdout )
+
+
+- name: Enabling PL/Java Language Support for Greenplum Database 6.x or 7.x
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pljava.database_name }} -c "CREATE EXTENSION pljava;" )
+  args:
+    executable: /bin/bash
+  register: pljava_language_support_enabled
+  when: ( inventory_hostname in groups['master'] and pljava.gpdb_version|int <= 7 and '100' not in pljava_database_installed.stdout )
+
+
+- name: Set the pljava_classpath Server Configuration Parameter in the postgresql.conf File of Greenplum Database Master.
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c pljava_classpath -v 'examples.jar:pljava.jar' )
+  args:
+    executable: /bin/bash
+  register: pljava_classpath_set
+  when: (  inventory_hostname in groups['master'] and pljava.gpdb_version <= 7 and '100' not in pljava_database_installed.stdout )
+

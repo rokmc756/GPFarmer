@@ -1,0 +1,22 @@
+---
+- name: Remove PL/Java Support for Greenplum Database 4.x
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && droplang pljava -d {{ pljava.database_name }}; )
+  register: pljava_support_removed
+  when: ( inventory_hostname in groups['master'] and pljava.gpdb_version == "4.3" and '100' in pljava_database_installed.stdout )
+
+
+- name: Remove PL/Java Support far Greenplum Database 5.x/6.x
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pljava.database_name }} -c 'DROP EXTENSION pljava;' )
+  register: pljava_support_removed
+  ignore_errors: yes
+  when: ( inventory_hostname in groups['master'] and pljava.gpdb_version|int == 6 and '100' in pljava_database_installed.stdout )
+
+
+- name: Uninstall the PL/Java Language Extension
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ remove_pljava_package_name }} )
+  register: pljava_extension_uninstalled
+  ignore_errors: true
+  when: inventory_hostname in groups['master']
