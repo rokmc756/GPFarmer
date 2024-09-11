@@ -1,0 +1,9 @@
+plc:
+	@if [ "${r}" = "install" ]; then\
+		ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-plcontainer.yml --tags='install';\
+	elif [ "${r}" = "uninstall" ]; then\
+		ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-plcontainer.yml --tags='uninstall';\
+	else\
+		echo "No Actions for Installing and Uninstalling PL/Container";\
+		exit;\
+	fi

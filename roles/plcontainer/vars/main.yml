@@ -1,12 +1,15 @@
 ---
+# plcontainer-2.3.2-gp6-rhel9_x86_64.gppkg
+# plr-3.1.3-gp6-rhel9-x86_64.gppkg
+
 plcon:
   prefix_major_version: ""
   major_version: 2
   minor_version: 3
-  patch_version: 1
+  patch_version: 2
   python_version: 3
-  gpdb_version: 7
-  os_version: rhel8
+  gpdb_version: 6
+  os_version: rhel9
   arch_type: x86_64
   docker_minor_version: 1.3
   database_name: plcon_testdb
@@ -18,9 +21,9 @@ plr:
   prefix_major_version: ""
   major_version: 3
   minor_version: 1
-  patch_version: 2
-  gpdb_version: 7
-  os_version: rhel8
+  patch_version: 3
+  gpdb_version: 6
+  os_version: rhel9
   arch_type: x86_64
   database_name: plr_testdb
   schema_name: plr_test_scheme
@@ -43,3 +46,4 @@ upgrade_packages: false
 # plcontainer-python-image-2.1.3-gp6.tar.gz
 # plcontainer-python3-image-2.1.3-gp6.tar.gz
 # plcontainer-r-image-2.1.3-gp6.tar.gz
+

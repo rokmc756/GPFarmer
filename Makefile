@@ -82,6 +82,8 @@ plr:
 pljava:
 	make -f makefile_configs/Makefile.pljava r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 
+plc:
+	make -f makefile_configs/Makefile.plcontainer r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 
 
 boot: role-update control-vms.yml
