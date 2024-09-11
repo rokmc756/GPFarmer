@@ -1,0 +1,13 @@
+---
+- name: Verify that Database for DataSciencePython is Installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ dspython.database_name }}'" )
+  register: dspython_database_installed
+  when: inventory_hostname in groups['master']
+
+
+- name: Drop Database for DataSciencePython
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ dspython.database_name }} )
+  register: dspython_database_deleted
+  when: ( inventory_hostname in groups['master'] and '100' in dspython_database_installed.stdout )

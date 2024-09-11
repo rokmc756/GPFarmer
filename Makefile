@@ -88,6 +88,9 @@ plc:
 dsr:
 	make -f makefile_configs/Makefile.dsr r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 
+dspy:
+	make -f makefile_configs/Makefile.dspy r=${r} s=${s} c=${c} USERNAME=${USERNAME}
+
 
 
 boot: role-update control-vms.yml

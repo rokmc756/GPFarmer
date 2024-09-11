@@ -3,16 +3,19 @@ dspython:
   prefix_major_version: ""
   major_version: 3
   minor_version: 9
-  patch_version: 2.0.0
-  gpdb_version: 7
-  os_version: el8
+  patch_version: 2.0.1
+  gpdb_version: 6
+  os_version: rhel9
   arch_type: x86_64
   database_name: dspython_testdb
   schema_name: dspython_test_scheme
+
 # os_version: "rhel8"
 # os_version: ubuntu18.04
 # arch_type: amd64
 
+# DataSciencePython3.9-2.0.1-gp6-rhel9_x86_64.gppkg
 # DataSciencePython2.7-2.0.6-gp6-ubuntu18.04_x86_64.gppkg
 # DataSciencePython3.9-1.1.0-gp7-el8_x86_64.gppkg
 # DataSciencePython2.7-2.0.6-gp6-rhel8_x86_64.gppkg
+

@@ -4,13 +4,40 @@
   fail: msg="Not a Red Hat based system!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
-#
-- name: Install DataSciencePython on {{ ansible_distribution }}
-  import_tasks: install.yml
+
+- name: Set Facts for DataSciencePython
+  import_tasks: set-dspy-facts.yml
+  tags:
+    - install
+    - uninstall
+
+
+- name: Check if Greenplum Database is Installed and Running
+  import_tasks: 01-check-gpdb.yml
   tags: install
 
-#
-- name: Uninstall DataSciencePython on {{ ansible_distribution }}
-  import_tasks: uninstall.yml
+
+- name: Install DataSciencePython Gppkg Packages
+  import_tasks: 02-install-dspy-pkgs.yml
+  tags: install
+
+
+- name: Install a Database for DataSciencePython and Restart Greenplum Database
+  import_tasks: 03-install-dspy-db.yml
+  tags: install
+
+
+- name: Check if Greenplum Database is Installed and Running
+  import_tasks: 41-check-gpdb.yml
+  tags: uninstall
+
+
+- name: Drop a Database for DataSciencePython
+  import_tasks: 42-drop-dspy-db.yml
+  tags: uninstall
+
+
+- name: Uninstall DataSciencePython Gppkg Packages and Restart Greenplum Database
+  import_tasks: 43-uninstall-dspy-pkgs.yml
   tags: uninstall
 

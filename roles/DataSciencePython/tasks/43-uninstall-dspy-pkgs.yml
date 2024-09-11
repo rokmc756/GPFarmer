@@ -1,0 +1,36 @@
+---
+- name: Verify if DataSciencePython Gppkg Package is Installed
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_dspython_installed }} )
+  ignore_errors: true
+  register: dspython_installed
+  changed_when: False
+  when: inventory_hostname in groups['master']
+
+
+- name: Print the Result if DataSciencePython is Not Installed
+  debug:
+    msg: "{{ dspython_installed.stdout }}"
+  when: inventory_hostname in groups['master']
+
+
+- name: Stop if DataSciencePython Gppkg Package is Not Installed
+  fail: msg="PostGIS gppkg package is not installed!"
+  when: ( inventory_hostname in groups['master'] and 'DataSciencePython' not in dspython_installed.stdout )
+
+
+- name: Uninstall the DataSciencePython Gppkg Package
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ remove_dspython_package_name }} )
+  register: dspython_package_uninstalled
+  async: 3600
+  poll: 10
+  when:  inventory_hostname in groups['master']
+
+
+- name: Restart the Greenplum Database
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 150
+  poll: 5
+  when: inventory_hostname in groups['master']
