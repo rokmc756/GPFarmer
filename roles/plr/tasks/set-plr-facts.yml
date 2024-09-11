@@ -1,0 +1,73 @@
+---
+- name: Get Network Interface name From Prefix of IP Addresses Provided for Greenplum Nodes
+  set_fact:
+    netdev0: "{{ ansible_interfaces | map('regex_replace', '^', 'ansible_') | map('extract', vars) | selectattr('ipv4', 'defined') | selectattr('ipv4.address', 'match', gpcc.net.ipaddr0 ) | map(attribute='device') | first }}"
+    netdev1: "{{ ansible_interfaces | map('regex_replace', '^', 'ansible_') | map('extract', vars) | selectattr('ipv4', 'defined') | selectattr('ipv4.address', 'match', gpcc.net.ipaddr1 ) | map(attribute='device') | first }}"
+
+
+- name: Get IP Address from Provided Network Device Name
+  set_fact:
+    ipaddr0: "{{ hostvars[inventory_hostname]['ansible_'~netdev0].ipv4.address }}"
+    ipaddr1: "{{ hostvars[inventory_hostname]['ansible_'~netdev1].ipv4.address }}"
+
+
+#- name: Define Facts For All GPHOST's Hostname
+#  set_fact:
+#    all_ext1_hostnames: "{{ groups['all'] | map('extract', hostvars, ['ansible_hostname']) | join(' ') }}"
+#- debug: msg={{ all_ext1_hostnames }}
+#
+#
+#- name: Define Fact For All Hosts of First IP Addresses
+#  set_fact:
+#    all_net0_ipaddrs: "{{ groups['all'] | map('extract', hostvars, ['ansible_'~netdev0, 'ipv4', 'address']) | join(',') }}"
+#- debug: msg={{ all_net0_ipaddrs }}
+
+
+- name: Set Default Network Device and Address
+  set_fact:
+    _netdev: "{{ 'ansible_'~ netdev1 }}"
+    _ipaddr: "{{ ipaddr1 }}"
+
+
+- set_fact:
+    gpdb_network_range: "{{ hostvars[inventory_hostname][_netdev]['ipv4']['network'] }}/{{ ( hostvars[inventory_hostname][_netdev]['ipv4']['address'] + '/' + hostvars[inventory_hostname][_netdev]['ipv4']['netmask'] ) | ansible.utils.ipaddr('prefix') }}"
+
+
+- name: Get the Specific IP Address for All Hosts
+  set_fact:
+    prod_ip_addr_range: "{{ item }}"
+  with_items: "{{ ansible_all_ipv4_addresses }}"
+  when: "item | ansible.utils.ipaddr( gpdb_network_range )"
+
+
+- name: Get the CIDR of GPDB Network
+  set_fact:
+    gpdb_network_range: "{{ hostvars[inventory_hostname][_netdev]['ipv4']['network'] }}/{{ ( hostvars[inventory_hostname][_netdev]['ipv4']['address'] + '/' + hostvars[inventory_hostname][_netdev]['ipv4']['netmask'] ) | ansible.utils.ipaddr('prefix') }}"
+
+
+- name: Get the Specific IP Addresses
+  set_fact:
+    prod_ip_addr_range: "{{ item }}"
+  with_items: "{{ ansible_all_ipv4_addresses }}"
+  when:
+    - ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
+    - "item | ansible.utils.ipaddr( gpdb_network_range )"
+
+
+- set_fact:
+    gppkg_install_cmd: "gppkg -i"
+    gppkg_remove_cmd: "gppkg -r"
+    check_plr_installed: "gppkg -q --all | grep plr | cut -d - -f 1"
+    plr_package_name: plr-{{ plr.prefix_major_version }}{{ plr.major_version }}.{{ plr.minor_version }}.{{ plr.patch_version }}-gp{{ plr.gpdb_version }}-{{ plr.os_version }}-{{ plr.arch_type }}.gppkg
+    remove_plr_package_name: plr-{{ plr.prefix_major_version }}{{ plr.major_version }}.{{ plr.minor_version }}.{{ plr.patch_version }}
+  when: inventory_hostname in groups['master'] and plr.gpdb_version|int <= 6
+
+
+- set_fact:
+    gppkg_install_cmd: "gppkg -a install"
+    gppkg_remove_cmd: "gppkg -a -f remove"
+    check_plr_installed: "gppkg query | grep plr | awk '{print $1}'"
+    plr_package_name: plr-{{ plr.major_version }}.{{ plr.minor_version }}.{{ plr.patch_version }}-gp{{ plr.gpdb_version }}-{{ plr.os_version }}-{{ plr.arch_type }}.gppkg
+    remove_plr_package_name: plr
+  when: inventory_hostname in groups['master'] and plr.gpdb_version|int >= 7
+

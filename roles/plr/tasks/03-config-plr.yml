@@ -1,0 +1,27 @@
+---
+- name: Create Database for PL/R
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plr.database_name }} )
+  args:
+    executable: /bin/bash
+  register: plr_database_created
+  when: ( inventory_hostname in groups['master'] and '100' not in plr_database_installed.stdout )
+
+
+- name: Enabling PL/R Language Support for Greenplum Database 4.x
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createlang plr -d {{ plr.database_name }} )
+  args:
+    executable: /bin/bash
+  register: plr_language_support_enabled
+  when: ( inventory_hostname in groups['master'] and plr.gpdb_version == "4.3" and '100' not in plr_database_installed.stdout )
+
+
+- name: Enabling PL/R Language Support for Greenplum Database 6.x or 7.x
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr.database_name }} -c "CREATE EXTENSION plr;" )
+  args:
+    executable: /bin/bash
+  register: plr_language_support_enabled
+  when: ( inventory_hostname in groups['master'] and plr.gpdb_version|regex_replace('[^0-9]','')|int >= 6 and '100' not in plr_database_installed.stdout )
+

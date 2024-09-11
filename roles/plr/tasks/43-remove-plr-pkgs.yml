@@ -1,0 +1,28 @@
+---
+#- name: Drop Database for PL/R
+#  become_user: gpadmin
+#  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plr.database_name }} )
+#  register: plr_database_deleted
+#  when: ( inventory_hostname in groups['master'] and '100' in plr_database_installed.stdout )
+
+
+- name: Uninstall the PL/R Language Extension
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ remove_plr_package_name }} )
+  register: plr_package_uninstalled
+  ignore_errors: true
+  until: plr_package_uninstalled is succeeded
+  retries: 5
+  delay: 10
+  when: inventory_hostname in groups['master']
+# async: 300
+# poll: 5
+
+
+- name: Restart the Greenplum Database
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when: inventory_hostname in groups['master']
+
