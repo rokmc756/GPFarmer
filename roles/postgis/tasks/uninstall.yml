@@ -25,18 +25,18 @@
   when: inventory_hostname in groups['master']
 
 
-- set_fact:
-    postgis_package_name: "postgis-{{ postgis.major_version }}.{{ postgis.minor_version }}{{ postgis.patch_version }}"
-    gppkg_remove_cmd: "gppkg -r"
-    check_postgis_installed: "gppkg -q --all | grep postgis | cut -d - -f 1"
-  when: inventory_hostname in groups['master'] and postgis.gpdb_version|int <= 6
-
-
-- set_fact:
-    postgis_package_name: "postgis"
-    gppkg_remove_cmd: "gppkg -a -f remove"
-    check_postgis_installed: "gppkg query | grep postgis | awk '{print $1}'"
-  when: inventory_hostname in groups['master'] and postgis.gpdb_version|int >= 7
+#- set_fact:
+#    postgis_package_name: "postgis-{{ postgis.major_version }}.{{ postgis.minor_version }}{{ postgis.patch_version }}"
+#    gppkg_remove_cmd: "gppkg -r"
+#    check_postgis_installed: "gppkg -q --all | grep postgis | cut -d - -f 1"
+#  when: inventory_hostname in groups['master'] and postgis.gpdb_version|int <= 6
+#
+#
+#- set_fact:
+#    postgis_package_name: "postgis"
+#    gppkg_remove_cmd: "gppkg -a -f remove"
+#    check_postgis_installed: "gppkg query | grep postgis | awk '{print $1}'"
+#  when: inventory_hostname in groups['master'] and postgis.gpdb_version|int >= 7
 
 
 - name: Verify if PostGIS GPPKG is Installed

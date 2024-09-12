@@ -11,7 +11,6 @@ postgis:
   mdw_hostname: rh9-node01
 
 # postgis-2.5.4+pivotal.8.build.1-gp6-rhel9-x86_64.gppkg
-
 # postgis-2.5.4+pivotal.8.build.1-gp6-rhel7-x86_64.gppkg
 # postgis-3.3.2+pivotal.1.build.1-gp7-rhel8-x86_64.gppkg
 # postgis-2.5.4+pivotal.7.build.1-gp6-rhel8-x86_64.gppkg
@@ -24,3 +23,4 @@ postgis:
 # postgis-2.1.5+pivotal.2-2-gp6-rhel7-x86_64.gppkg
 # postgis-2.5.4+pivotal.2.build.3-gp6-rhel7-x86_64.gppkg
 # postgis-2.5.4+pivotal.4.build.3-gp6-rhel7-x86_64.gppkg
+

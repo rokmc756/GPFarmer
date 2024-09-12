@@ -1,0 +1,32 @@
+---
+- name: Verify that Database for PostGIS Extention is Installed
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ postgis.database_name }}'" )
+  register: postgis_database_installed
+  ignore_errors: true
+  when: inventory_hostname in groups['master']
+
+
+- name: Drop PostGIS Extensions
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis.database_name }} -c "{{ item }}" )
+  register: postgis_database_installed
+  ignore_errors: true
+  with_items:
+    - "DROP EXTENSION IF EXISTS address_standardizer_data_us;"
+    - "DROP EXTENSION IF EXISTS address_standardizer;"
+    - "DROP EXTENSION IF EXISTS postgis_tiger_geocoder;"
+    - "DROP EXTENSION IF EXISTS fuzzystrmatch;"
+    - "DROP EXTENSION IF EXISTS postgis;"
+  when:
+    - inventory_hostname in groups['master']
+    - postgis.major_version >= 2 and postgis.minor_version >= 5
+
+
+- name: Drop PostGIS Database
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ postgis.database_name }} )
+  register: postgis_database_dropped
+  ignore_errors: true
+  when: inventory_hostname in groups['master']
+

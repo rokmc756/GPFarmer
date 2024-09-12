@@ -1,0 +1,36 @@
+---
+- name: Verify if PostGIS Gppkg is Installed in Greenplum Database
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_postgis_installed }} )
+  register: postgis_installed
+  when: inventory_hostname in groups['master']
+
+
+- name: Print the Result if PostGIS Gppkg is Installed
+  debug:
+    msg: "{{ postgis_installed.stdout }}"
+  when: inventory_hostname in groups['master']
+
+
+- name: Stop if PostGIS GPPKG Gppkg Package is Installed
+  fail: msg="PostGIS GPPKG Package is Already Installed!"
+  when: ( inventory_hostname in groups['master'] and 'postgis' in postgis_installed.stdout )
+
+
+- name: Copy PostGIS Gppkg File
+  copy: src=postgis-{{ postgis.prefix_major_version }}{{ postgis.major_version }}.{{ postgis.minor_version }}{{ postgis.patch_version }}-gp{{ postgis.gpdb_version }}-{{ postgis.os_version }}-x86_64.gppkg dest={{ gpdb.admin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
+  when: ( inventory_hostname in groups['master'] and 'postgis' not in postgis_installed.stdout )
+
+
+# https://trstringer.com/systemd-inhibitor-locks/
+# stderr='warning: Unable to get systemd shutdown inhibition lock: Permission denied
+- name: Install PostGIS Gppkg Package
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpdb.admin_home_dir }}/postgis-{{ postgis.prefix_major_version }}{{ postgis.major_version }}.{{ postgis.minor_version }}{{ postgis.patch_version }}-gp{{ postgis.gpdb_version }}-{{ postgis.os_version }}-x86_64.gppkg )
+  register: postgis_package_installed
+  ignore_errors: true
+  until: postgis_package_installed is succeeded
+  retries: 10
+  delay: 30
+  when: ( inventory_hostname in groups['master'] and 'postgis' not in postgis_installed.stdout )
+

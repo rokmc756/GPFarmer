@@ -1,0 +1,21 @@
+---
+- name: Check if the Greenplum Database Software is Already Installed
+  stat: path={{ gpdb.base_dir }}/greenplum-db
+  register: gpdb_installed
+  ignore_errors: true
+
+
+- name: Stop if Greenplum Database Software is Not Installed
+  fail: msg="Greenplum Database software is not installed!"
+  ignore_errors: true
+  when: gpdb_installed.stat.exists != True
+
+
+- name: Verify that Database is Up and Running
+  become_user: gpadmin
+  changed_when: False
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
+  register: select_version
+  ignore_errors: true
+  failed_when: "'(Greenplum Database ' not in select_version.stdout"
+  when: inventory_hostname in groups['master']

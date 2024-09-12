@@ -1,16 +1,68 @@
 ---
-# for now fail if it's not a Red Hat based system
-- name: Check OS (PGCC v2)
-  fail: msg="Not a Red Hat based system!"
+- name: Check OS (PostGIS)
+  fail: msg="Not a Red Hat/CentOS/Rocky or Unbuntu/Debian based system!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
-#
-- name: Install PostGIS on {{ ansible_distribution }}
-  import_tasks: install.yml
+
+- name: Set Facts for PostGIS
+  import_tasks: set-postgis-facts.yml
+  tags:
+    - install
+    - uninstall
+
+
+#- name: Install PostGIS
+#  import_tasks: install.yml
+#  tags: install
+
+
+- name: Check if Greenplum Database is Installed and Running
+  import_tasks: 01-check-gpdb.yml
   tags: install
 
-#
-- name: Uninstall PostGIS on {{ ansible_distribution }}
-  import_tasks: uninstall.yml
+
+- name: Install PostGIS Gppkg Package
+  import_tasks: 02-install-postgis-pkgs.yml
+  tags: install
+
+
+- name: Create a Database for PostGIS
+  import_tasks: 03-create-postgis-db.yml
+  tags: install
+
+
+- name: Create and Enable PostGIS Extensions
+  import_tasks: 04-enable-postgis-extensions.yml
+  tags: install
+
+
+- name: Enable GDAL Extension
+  import_tasks: 05-enable-gdal-extension.yml
+  tags: install
+
+
+#- name: Uninstall PostGIS
+#  import_tasks: uninstall.yml
+#  tags: uninstall
+
+
+- name: Check if Greenplum Database is Installed and Running
+  import_tasks: 41-check-gpdb.yml
   tags: uninstall
+
+
+- name: Remove a Database of PostGIS
+  import_tasks: 42-remove-postgis-db.yml
+  tags: uninstall
+
+
+- name: Remove PostGIS Gppkg Package
+  import_tasks: 43-remove-postgis-pkgs.yml
+  tags: uninstall
+
+
+- name: Remove PostGIS Config Files and Restart Greenplum Database
+  import_tasks: 44-remove-postgis-config.yml
+  tags: uninstall
+
 

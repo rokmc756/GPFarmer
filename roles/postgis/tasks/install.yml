@@ -25,18 +25,18 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
 
-- set_fact:
-    gppkg_install_cmd: "gppkg -i"
-    check_postgis_installed: "gppkg -q --all | grep postgis | cut -d - -f 1"
-  when:
-    - inventory_hostname in groups['master'] and postgis.gpdb_version|int <= 6
-
-
-- set_fact:
-    gppkg_install_cmd: "gppkg -a install"
-    check_postgis_installed: "gppkg query | grep postgis | awk '{print $1}'"
-  when:
-    - inventory_hostname in groups['master'] and postgis.gpdb_version|int >= 7
+#- set_fact:
+#    gppkg_install_cmd: "gppkg -i"
+#    check_postgis_installed: "gppkg -q --all | grep postgis | cut -d - -f 1"
+#  when:
+#    - inventory_hostname in groups['master'] and postgis.gpdb_version|int <= 6
+#
+#
+#- set_fact:
+#    gppkg_install_cmd: "gppkg -a install"
+#    check_postgis_installed: "gppkg query | grep postgis | awk '{print $1}'"
+#  when:
+#    - inventory_hostname in groups['master'] and postgis.gpdb_version|int >= 7
 
 
 - name: Verify if PostGIS GPPKG is Installed in Greenplum Database

@@ -1,0 +1,22 @@
+---
+- name: Verify that Database is Existed for PostGIS
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ postgis.database_name }}'" )
+  register: postgis_database_installed
+  when: inventory_hostname in groups['master']
+
+
+- name: Create Database for PostGIS
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ postgis.database_name }} )
+  register: postgis_database_created
+  when: ( inventory_hostname in groups['master'] and '100' not in postgis_database_installed.stdout )
+
+
+- name: Restart Greenplum Database after Installing PostGIS Extension
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when: inventory_hostname in groups['master']
+

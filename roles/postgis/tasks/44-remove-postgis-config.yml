@@ -1,0 +1,23 @@
+---
+- name: Delete Lines Enabled in greenplum_path.sh for GDAL Raster Drivers
+  lineinfile:
+    path: "{{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh"
+    regexp: "{{ item }}"
+    state: absent
+    backup: yes
+  ignore_errors: true
+  with_items:
+    - "^export POSTGIS_GDAL_ENABLED_DRIVERS=*"
+    - "^export GDAL_DATA=*"
+    - "^export POSTGIS_ENABLE_OUTDB_RASTERS=*"
+    - "^export POSTGIS_GDAL_ENABLED_DRIVERS=*"
+
+
+- name: Restart Greenplum Database after Removing PostGIS Extension
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  ignore_errors: true
+  when: inventory_hostname in groups['master']
+

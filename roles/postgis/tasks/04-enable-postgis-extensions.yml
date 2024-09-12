@@ -1,0 +1,35 @@
+---
+- name: Enable PostGIS and PostGIS Raster in a Database when It's less than PostGIS 2.5
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh  && {{ gpdb.base_dir }}/greenplum-db/share/postgresql/contrib/postgis-{{ postgis.major_version }}.{{ postgis.minor_version }}/postgis_manager.sh {{ postgis.database_name }} install )
+  register: postgis_raster_enabled
+  when: ( inventory_hostname in groups['master'] and postgis.major_version|int <= 2 and postgis.minor_version|int <= 5 )
+
+
+- name: Create PostGIS Extension and Enable Raster in a Database
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis.database_name }} -tAc "CREATE EXTENSION postgis;" )
+  register: postgis_raster_enabled
+  when: inventory_hostname in groups['master']
+
+
+#- name: Enable PostGIS and PostGIS Raster in a Specific Schema
+#  become_user: gpadmin
+#  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis.database_name }} -tAc "SHOW search_path; CREATE SCHEMA {{ postgis.schema_name }}; SET search_path TO {{ postgis.schema_name }}; CREATE EXTENSION postgis WITH SCHEMA {{ postgis.schema_name }};" )
+#  register: postgis_raster_specific_enabled
+#  when: inventory_hostname in groups['master']
+
+
+- name: Enable PostGIS TIGER geocoder after Enabling the PostGIS Extension if Needed
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis.database_name }} -tAc "CREATE EXTENSION fuzzystrmatch ; CREATE EXTENSION postgis_tiger_geocoder;" )
+  register: postgis_raster_tiger_geocoder_enabled
+  when: inventory_hostname in groups['master']
+
+
+- name: Enable the Rules-based Address Standardizer and Add Rules Tables for the Standardizer
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis.database_name }} -tAc "CREATE EXTENSION address_standardizer ; CREATE EXTENSION address_standardizer_data_us ;" )
+  register: postgis_raster_rules_based_addr_standaizer_enabled
+  when: inventory_hostname in groups['master']
+

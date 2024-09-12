@@ -1,0 +1,52 @@
+---
+- name: Enabling GDAL Raster Drivers
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis.database_name }} -tAc "SET postgis.gdal_enabled_drivers TO 'GTiff PNG JPEG';" )
+  register: gdal_raster_drivers_enabled
+  when: inventory_hostname in groups['master']
+  # This SET command sets the enabled drivers to the default for a session.
+  # SET postgis.gdal_enabled_drivers = default;"
+
+
+- name: Check the List of Supported GDAL Raster Drivers for a Greenplum Database System
+  become_user: gpadmin
+  shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && raster2pgsql -G )
+  register: list_supported_gdal_raster_checked
+  when: inventory_hostname in groups['master']
+
+
+- name: Export Line Enables for GDAL Raster Drivers
+  lineinfile:
+    dest: "{{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh"
+    line: "{{ item }}"
+    state: present
+    insertafter: BOF
+  with_items:
+    - "export POSTGIS_GDAL_ENABLED_DRIVERS='GTiff PNG JPEG GIF'"
+    - "export GDAL_DATA=$GPHOME/share/gdal"
+    - "export POSTGIS_ENABLE_OUTDB_RASTERS=0"
+    - "export POSTGIS_GDAL_ENABLED_DRIVERS=DISABLE_ALL"
+
+
+- name: Update Settings in the greenplum_path.sh for GDAL Raster Drivers
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when: inventory_hostname in groups['master']
+
+
+- name: Display the Enabled Raster Drivers with the ST_GDALDrivers() Function
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis.database_name }} -tAc "SELECT short_name, long_name FROM ST_GDALDrivers();" )
+  register: raster_drivers_st_gdal_drivers_enabled
+  ignore_errors: true
+  when: inventory_hostname in groups['master']
+
+
+- name: Enabling Out-Of-Database Rasters
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ postgis.database_name }} -tAc "SET postgis.enable_outdb_rasters = true;" )
+  register: out_of_db_raster_enabled
+  when: inventory_hostname in groups['master']
+
