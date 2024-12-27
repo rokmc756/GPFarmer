@@ -1,5 +1,5 @@
 ---
-- name: Check OS (PL/R)
+- name: Check OS ( PL/R )
   fail: msg="Not a Red Hat based system!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-## 
+##
 REPOS_FILES="AppStream BaseOS"
 
 PARAM="hn"
@@ -67,3 +67,4 @@ done
 yum check-update
 yum repolist baseos -v
 yum repolist appstream -v
+

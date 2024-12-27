@@ -1,16 +1,15 @@
 ---
-
-# Install PL/PGSQL extention on Greenplum database
-
-- name: Check if the GPDB software is already installed
+- name: Check if the Greenplum Database Software is Already Installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
 
-- name: Stop if GPDB software is not installed
+
+- name: Stop if Greenplum Database Software is Not Installed
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_installed.stat.exists != True
 
-- name: Verify that database is up and running
+
+- name: Verify that Database is Up and Running
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
@@ -18,7 +17,8 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
-- name: Verify if PL/PGSQL gppkg is installed
+
+- name: Verify if PL/PGSQL Gppkg Package is Installed
   become_user: gpadmin
   command: 'rpm -q plpgsql --dbpath /usr/local/greenplum-db/share/packages/database'
   ignore_errors: true
@@ -26,39 +26,45 @@
   changed_when: False
   when: inventory_hostname in groups['master']
 
-- name: Stop if PL/PGSQL gppkg package is not installed
+
+- name: Stop if PL/PGSQL Gppkg Package is Not Installed
   fail: msg="plpgsql gppkg package is not installed!"
   when:
     - inventory_hostname in groups['master']
     - "'package plpgsql is not installed' not in plpgsql_installed.stdout"
 
-- name: Copy PL/PGSQL gppkg file
+
+- name: Copy PL/PGSQL Gppkg Pacakge File
   copy: src=plpgsql-{{ plpgsql.prefix_major_version }}{{ plpgsql.major_version }}.{{ plpgsql.minor_version }}.{{ plpgsql.patch_version }}-{{ plpgsql.gpdb_version }}-{{ plpgsql.os_version }}-x86_64.gppkg dest={{ gpdb.gpadmin_home_dir }} mode=0644 owner=gpadmin group=gpadmin
   when:
     - inventory_hostname in groups['master']
     - "'package plpgsql is not installed' in plpgsql_installed.stdout"
 
-- name: Install PL/PGSQL package
+
+- name: Install PL/PGSQL Gppkg Package
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -i {{ gpdb.gpadmin_home_dir }}/plpgsql-{{ plpgsql.prefix_major_version }}{{ plpgsql.major_version }}.{{ plpgsql.minor_version }}.{{ plpgsql.patch_version }}-{{ plpgsql.gpdb_version }}-{{ plpgsql.os_version }}-x86_64.gppkg )
   when:
     - inventory_hostname in groups['master']
     - "'package plpgsql is not installed' in plpgsql_installed.stdout"
 
-- name: Restart GPDB and apply parameters for PL/PGSQL in greenplum_path.sh
+
+- name: Restart Greenplum Database and Apply Parameters for PL/PGSQL in greenplum_path.sh
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
   when: inventory_hostname in groups['master']
 
-- name: Verify that database for PL/PGSQL is installed
+
+- name: Verify that Database for PL/PGSQL is Installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plpgsql.database_name }}'" )
   register: plpgsql_database_installed
   when: inventory_hostname in groups['master']
 
-- name: Create database for PL/PGSQL
+
+- name: Create Database for PL/PGSQL
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plpgsql.database_name }} )
   register: plpgsql_database_created
@@ -66,7 +72,8 @@
     - inventory_hostname in groups['master']
     - "'100' not in plpgsql_database_installed.stdout"
 
-- name: Enabling PL/PGSQL Language Support for GPDB 4.x
+
+- name: Enabling PL/PGSQL Language Support for Greenplum Database 4.x
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createlang plpgsql -d {{ plpgsql.database_name }} )
   register: plpgsql_language_support_enabled
@@ -75,7 +82,8 @@
     - plpgsql.gpdb_version == "GPDB4.3"
     - "'100' not in plpgsql_database_installed.stdout"
 
-- name: Enabling PL/PGSQL Language Support for GPDB 6.x
+
+- name: Enabling PL/PGSQL Language Support for Greenplum Database 6.x
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plpgsql.database_name }} -c "CREATE EXTENSION plpgsql;" )
   register: plpgsql_language_support_enabled
@@ -83,3 +91,4 @@
     - inventory_hostname in groups['master']
     - plpgsql.gpdb_version == "gpdb6"
     - "'100' not in plpgsql_database_installed.stdout"
+

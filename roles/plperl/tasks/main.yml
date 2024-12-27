@@ -1,16 +1,15 @@
 ---
-# for now fail if it's not a Red Hat based system
-- name: Check OS (PGCC v2)
-  fail: msg="Not a Red Hat based system!"
+- name: Check OS ( PL/Perl )
+  fail: msg="Not a Red Hat or Ubuntu based system!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
-#
-- name: Install PL/Perl for {{ ansible_distribution }}
+
+- name: Install PL/Perl
   import_tasks: install.yml
   tags: install
 
-#
-- name: Uninstall PL/Perl for {{ ansible_distribution }}
+
+- name: Uninstall PL/Perl
   import_tasks: uninstall.yml
   tags: uninstall
 

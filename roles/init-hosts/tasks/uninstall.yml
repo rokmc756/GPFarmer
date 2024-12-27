@@ -1,5 +1,4 @@
 ---
-#
 - name: Rollback defatul group to /etc/sudoers file
   lineinfile:
     dest: /etc/sudoers
@@ -7,7 +6,7 @@
     regexp: '^%{{ sudo_user }}'
     line: '%{{ sudo_user }}  ALL=(ALL)        ALL'
 
-#
+
 - name: Remove bash_history and .ssh directory
   file:
     path: "{{ item }}"
@@ -18,7 +17,7 @@
     - "/root/.ssh"
     - "/home/{{ sudo_user }}/.ssh"
 
-#
+
 - name: Remove hostname entries in /etc/hosts file
   lineinfile:
     dest: /etc/hosts
@@ -48,8 +47,9 @@
     name: "{{ sudo_user }}"
     group: "{{ sudo_group }}"
     state: absent
+    remove: true
 
-#
+
 - name: Uninstall Prerequest Software Packages
   package:
     name: "{{ item }}"
@@ -57,10 +57,11 @@
   with_items: "{{ install_pkgs }}"
   when: uninstall_deps_pkgs == true
 
-#
+
 - name: Disable Development Package Repository for RedHat Based Linux Distribution
   shell: |
     yum-config-manager --disable {{ item }}
   with_items:
     - "devel"
   when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky"
+

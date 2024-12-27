@@ -12,29 +12,29 @@
     - uninstall
 
 
-- name: Install PGBounder for {{ ansible_distribution }}
+- name: Install PGBouncer
   import_tasks: install.yml
   tags: install
 
 
-- name: Configure PGBouncer for {{ ansible_distribution }}
+- name: Configure PGBouncer
   import_tasks: configure.yml
   tags: install
 
 
-- name: Install monit for {{ ansible_distribution }}
+- name: Install MonIT
   import_tasks: monit.yml
   when: monit_protection is defined and monit_protection == true
   tags: install
 
 
-- name: Install collectd for {{ ansible_distribution }}
+- name: Install Collectd
   import_tasks: collectd.yml
   when: collectd_monitoring is defined and collectd_monitoring == true
   tags: install
 
 
-- name: Uninstall PGBouncer for {{ ansible_distribution }}
+- name: Uninstall PGBouncer
   import_tasks: uninstall.yml
   tags: uninstall
 

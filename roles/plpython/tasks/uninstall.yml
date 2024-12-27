@@ -1,28 +1,29 @@
 ---
-
-# Uninstall plpython extention on GPDB
-
-- name: Check if the GPDB software is already installed
+- name: Check if the Greenplum Database Software is Already Installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
 
-- name: Stop if GPDB software is not installed
+
+- name: Stop if Greenplum Database Software is Not Installed
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_installed.stat.exists != True
 
-- name: Verify that database for plpython is installed
+
+- name: Verify that Database for PL/Python is Installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plpython.database_name }}'" )
   register: plpython_database_installed
   when: inventory_hostname in groups['master']
 
-- name: Drop database for plpython
+
+- name: Drop a Database for PL/Python
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plpython.database_name }} )
   register: plpython_database_deleted
   when:
     - inventory_hostname in groups['master']
     - "'100' in plpython_database_installed.stdout"
+
 
 - name: Restart the Greenplum Database
   become_user: gpadmin

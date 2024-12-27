@@ -10,3 +10,4 @@ r:
 # RSPM_SERVER_VERSION=2023.04.0-6
 # curl -o rspm -f https://cdn.posit.co/package-manager/linux/amd64/rspm-cli-linux-${RSPM_SERVER_VERSION}
 # chmod +x rspm
+

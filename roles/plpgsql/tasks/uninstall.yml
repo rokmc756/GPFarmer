@@ -1,22 +1,22 @@
 ---
-
-# Uninstall PLContainer extention on GPDB
-
-- name: Check if the GPDB software is already installed
+- name: Check if the Greenplum Database Software is Already Installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
 
-- name: Stop if GPDB software is not installed
+
+- name: Stop if Greenplum Database Software is Not Installed
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_installed.stat.exists != True
 
-- name: Verify that database for PL/PGSQL is installed
+
+- name: Verify that Database for PL/PGSQL is Installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plpgsql.database_name }}'" )
   register: plpgsql_database_installed
   when: inventory_hostname in groups['master']
 
-- name: Remove PL/R Support far a Database of GPDB 4.x
+
+- name: Remove PL/R Support far a Database of Greenplum Database 4.x
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && droplang plpgsql -d {{ plpgsql.database_name }}; )
   register: plpgsql_support_removed
@@ -25,7 +25,8 @@
     - plpgsql_gpdb_version == "GPDB4.3"
     - "'100' in plpgsql_database_installed.stdout"
 
-- name: Remove PL/R Support far a Database of GPDB 6.x
+
+- name: Remove PL/R Support far a Database of Greenplum Database 6.x
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plpgsql_database_name }} -c 'DROP EXTENSION plcontainer CASCADE;' )
   register: plpgsql_support_removed
@@ -34,7 +35,8 @@
     - plpgsql_gpdb_version == "gpdb6"
     - "'100' in plpgsql_database_installed.stdout"
 
-- name: Drop database for PL/PGSQL
+
+- name: Drop a Database for PL/PGSQL
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plpgsql_database_name }} )
   register: plpgsql_database_deleted
@@ -42,11 +44,13 @@
     - inventory_hostname in groups['master']
     - "'100' in plpgsql_database_installed.stdout"
 
-- name: Uninstall the PL/R language extension
+
+- name: Uninstall the PL/PGSQL Language Extension
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gppkg -r plpgsql-{{ plpgsql.prefix_major_version }}{{ plpgsql.major_version }}.{{ plpgsql.minor_version }}.{{ plpgsql.patch_version }} )
   register: plr_extension_uninstalled
   when: inventory_hostname in groups['master']
+
 
 - name: Restart the Greenplum Database
   become_user: gpadmin

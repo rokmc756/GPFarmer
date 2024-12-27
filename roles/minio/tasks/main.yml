@@ -1,41 +1,40 @@
 ---
-# Define import tasks according to tags option to install or uninstall minio s3 object storage in Red Hat / CentOS / Rocky Linux
-#
-# for now fail if it's not a Red Hat based system
-- name: Check OS ( GPDB )
+# Define import tasks according to tags option to install or uninstall minio s3 object storage
+- name: Check OS ( MinIO )
   fail: msg="Not a Red Hat based system!"
   when: ansible_os_family != 'RedHat' or  ansible_os_family != 'CentOS' or  ansible_os_family != 'Rocky'
 
-#
-- name: Configure firewall for MinIO on {{ ansible_distribution }}
+
+- name: Configure firewall for MinIO
   import_tasks: firewalld.yml
   tags: install
   when: open_firewall
 
-#
-- name: Enable SSL on {{ ansible_distribution }}
+
+- name: Enable SSL
   import_tasks: enable-ssl.yml
   tags: install
   when: enable_ssl
 
-#
-- name: Install MinIO on {{ ansible_distribution }}
+
+- name: Install MinIO
   import_tasks: minio.yml
   tags: install
   when: install_minio
 
-#
-- name: Install Nginx on {{ ansible_distribution }}
+
+- name: Install Nginx
   import_tasks: nginx.yml
   tags: install
   when: use_nginx
 
-#
-- name: Uninstall MinIO on {{ ansible_distribution }}
+
+- name: Uninstall MinIO
   import_tasks: uninstall.yml
   tags: uninstall
 
-#
-- name: Upgrade MinIO on {{ ansible_distribution }}
+
+- name: Upgrade MinIO
   import_tasks: upgrade.yml
   tags: upgrade
+

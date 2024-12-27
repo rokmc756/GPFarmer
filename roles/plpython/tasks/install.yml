@@ -1,16 +1,15 @@
 ---
-
-# Install plpython extention on Greenplum database
-
-- name: Check if the GPDB software is already installed
+- name: Check if the Greenplum Database Software is Already Installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
 
-- name: Stop if GPDB software is not installed
+
+- name: Stop if Greenplum Database Software is Not Installed
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_installed.stat.exists != True
 
-- name: Verify that database is up and running
+
+- name: Verify that Database is Up and Running
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
@@ -18,7 +17,8 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
-- name: Restart GPDB and apply parameters for plpython in greenplum_path.sh
+
+- name: Restart Greenplum Database and Apply Parameters for PL/Python in greenplum_path.sh
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
@@ -26,13 +26,15 @@
   when:
     - inventory_hostname in groups['master']
 
-- name: Verify that database for plpython is installed
+
+- name: Verify that Database for PL/Python is Installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plpython.database_name }}'" )
   register: plpython_database_installed
   when: inventory_hostname in groups['master']
 
-- name: Create database for plpython
+
+- name: Create Database for PL/Python
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plpython.database_name }} )
   register: plpython_database_created
@@ -40,7 +42,8 @@
     - inventory_hostname in groups['master']
     - "'100' not in plpython_database_installed.stdout"
 
-- name: Enabling PL/Python Language Support for GPDB 6.x
+
+- name: Enabling PL/Python Language Support for Greenplum Database 6.x
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plpython.database_name }} -c "CREATE EXTENSION plpythonu;" )
   register: plpython_language_support_enabled
@@ -48,3 +51,4 @@
     - inventory_hostname in groups['master']
     - plpython.gpdb_version == "gp6"
     - "'100' not in plpython_database_installed.stdout"
+

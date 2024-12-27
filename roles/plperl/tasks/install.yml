@@ -1,15 +1,15 @@
 ---
-# Install PL/Perl Extention on Greenplum database
-#
-- name: Check if the GPDB software is already installed
+- name: Check if the Greenplum Database Software is Already Installed
   stat: path={{ gpdb_base_dir }}/greenplum-db
   register: gpdb_installed
 
-- name: Stop if GPDB software is not installed
+
+- name: Stop if Greenplum Database Software is Not Installed
   fail: msg="Greenplum Database software is not installed!"
   when: gpdb_installed.stat.exists != True
 
-- name: Verify that database is up and running
+
+- name: Verify that Database is Up and Running
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
@@ -17,21 +17,23 @@
   when: inventory_hostname in groups['master']
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
-- name: Restart GPDB and apply parameters for PL/Perl in greenplum_path.sh
+
+- name: Restart Greenplum Database and Apply Parameters for PL/Perl in greenplum_path.sh
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
-  when:
-    - inventory_hostname in groups['master']
+  when: inventory_hostname in groups['master']
 
-- name: Verify that database for PL/Perl is installed
+
+- name: Verify that Database for PL/Perl is Installed
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plperl.database_name }}'" )
   register: plperl_database_installed
   when: inventory_hostname in groups['master']
 
-- name: Create database for PL/Perl
+
+- name: Create a Database for PL/Perl
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ plperl.database_name }} )
   register: plperl_database_created
@@ -39,7 +41,8 @@
     - inventory_hostname in groups['master']
     - "'100' not in plperl_database_installed.stdout"
 
-- name: Enabling PL/Perl Language Support for GPDB 6.x
+
+- name: Enabling PL/Perl Language Support for Greenplum Database 6.x
   become_user: gpadmin
   shell: ( . {{ gpdb_base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plperl.database_name }} -c "CREATE EXTENSION plperlu;" )
   register: plperl_language_support_enabled
@@ -47,3 +50,4 @@
     - inventory_hostname in groups['master']
     - plperl.gpdb_version == "gp6"
     - "'100' not in plperl_database_installed.stdout"
+
