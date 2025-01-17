@@ -1,7 +1,5 @@
 ---
-# Install Greenplum Database on RedHat / CentOS / Rocky / Ubuntu / Debian
-#
-# For Now Fail if It's Not Suppoted OS
+# Install Greenplum Database
 - name: Check OS ( GPDB )
   fail: msg="{{ ansible_distribution }} is not supported for this ansible playbook!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
@@ -9,17 +7,13 @@
 
 - name: Check if Greenplum Database is Installed Already
   import_tasks: check-gpdb-installed.yml
-  tags:
-    - install
-    - uninstall
+  tags: install, uninstall
   when: check_install_gpdb == true
 
 
 - name: Set Facts for Greenplum Database
   import_tasks: set-gpdb-facts.yml
-  tags:
-    - install
-    - uninstall
+  tags: install, uninstall
   when: set_gpdb_facts == true
 
 
@@ -36,31 +30,31 @@
 
 
 - name: Initialize Greenplum Database
-  import_tasks: initialize-gpdb.yml
+  import_tasks: init-gpdb.yml
   tags: install
   when: initialize_gpdb == true
 
 
 - name: Enable LDAP Authentication
-  import_tasks: enable-ldap.yml
+  import_tasks: ldap/enable-ldap.yml
   tags: install
   when: enable_ldap == true
 
 
 - name: Enable Resource Group
-  import_tasks: enable-resource-group.yml
+  import_tasks: rg/enable-resource-group.yml
   tags: install
   when: config_rg == true
 
 
 - name: Enable SSL
-  import_tasks: enable-ssl.yml
+  import_tasks: ssl/enable-ssl.yml
   tags: install
   when: enable_ssl == true
 
 
 - name: Enable Kerberos Authentication
-  import_tasks: enable-kerberos.yml
+  import_tasks: krb5/enable-kerberos.yml
   tags: install
   when: enable_kerberos == true
 
@@ -72,19 +66,19 @@
 
 
 - name: Uninstall LDAP Authentication
-  import_tasks: uninstall-ldap.yml
+  import_tasks: ldap/uninstall-ldap.yml
   tags: uninstall
   when: enable_ldap == true
 
 
 - name: Uninstall Kerberos Authentication
-  import_tasks: uninstall-kerberos.yml
+  import_tasks: krb5/uninstall-kerberos.yml
   tags: uninstall
   when: enable_kerberos == true
 
 
 - name: Disable Resource Group
-  import_tasks: disable-resource-group.yml
+  import_tasks: rg/disable-resource-group.yml
   tags: uninstall
   when: config_rg == true
 

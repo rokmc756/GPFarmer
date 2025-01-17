@@ -1,0 +1,100 @@
+net.core.rmem_default = 25165824
+net.core.rmem_max = 33554432
+net.ipv4.tcp_rmem = 16777216   25165824       33554432
+net.ipv4.udp_rmem_min = 16777216
+
+
+고객자체에서 위와 같이 변경하고 나서 이슈가 해결이 되었다는데
+1:55
+보내주신 파라미터에서 보니깐 net.ipv4.tcp_rme 과 udp_rmem_min 이 어떻게 변경되었다라는 내용이 없네요.
+
+
+
+이 이슈 핸들링 하면서 고객이 적용했던 파라미터라고 합니다.
+2:09
+그리고 링버퍼에 대한 글인데요.
+2:09
+Counters like "discard" or "drop" in the output of ethtool -S ethX are caused by the exhaustion of the receive ring buffer.
+Each packet received by the NIC is stored in the ring buffer while an interrupt is sent to the kernel to fetch the packet into kernel memory.
+If the available buffer is filling up faster than the kernel can take the packets, there will be discarded packets.
+
+
+
+
+
+2:10
+그래서 링버퍼 사이즈를 늘려줘야 된다는 이야기 입니다.
+2:10
+If the packet drop rate is large enough:
+Increase the size of the ethernet device RX ring buffer. First, inspect the output of ethtool -g ethX for the maximum size:
+
+
+[root@host]# ethtool -g eth0
+ Ring parameters for eth0: 
+ Pre-set maximums: 
+ RX:             4080 
+ RX Mini:        0 
+ RX Jumbo:       16320 
+ TX:             255 
+ Current hardware settings: 
+ RX:             255 
+ RX Mini:        0 
+ RX Jumbo:       0 
+ TX:             255
+
+
+
+
+setXmitSocketOptions(int txfd)
+{
+        uint32          bufSize = 0;
+        /*
+         * The Gp_udp_bufsize_k guc should be set carefully.
+         *
+         * If it is small, such as 128K, and send queue depth and receive queue
+         * depth are large, then it is possible OS can not handle all of the UDP
+         * packets GPDB delivered to it. OS will introduce a lot of packet losses
+         * and disordered packets.
+         *
+         * In order to set Gp_udp_bufsize_k to a larger value, the OS UDP buffer
+         * should be set to a large enough value.
+         *
+         */
+        bufSize = (Gp_udp_bufsize_k != 0 ? Gp_udp_bufsize_k * 1024 : 2048 * 1024);
+        ic_control_info.socketRecvBufferSize = setSocketBufferSize(txfd, SO_RCVBUF, bufSize, 128 * 1024);
+        ic_control_info.socketSendBufferSize = setSocketBufferSize(txfd, SO_SNDBUF, bufSize, 128 * 1024);
+}
+
+
+
+
+
+9:01
+code 상에 보면 gp_udp_bufsize_k 값이 0 이면 0 이고 그래서 default 는 0k 이고 값을 넣어주게 되면 위와 같이 계산되어서 적용이 되네요.
+9:03
+일단 설명에 따르자면 OS 의 udp buffer 값에 의존하여 값을 적용해야 한다고 합니다..
+9:04
+이 값을 늘리리면  OS 의 udp buffer 값을 충분히 늘려줘야 하는게 포인트입니다.
+
+
+
+여기서는 16M 를 권고했네요.
+9:44
+아마도 net.ipv4.udp_rmem_min = 16777216 이 값에 대응하는 값을 권고 한거 같구요.
+
+
+
+
+
+9:44
+This parameter has 3 INTEGERS: min, pressure, max - (The settable value range)0 - 2147483647. A number of pages allowed for queueing by all UDP sockets. Default is calculated at boot time from the amount of available memory:
+min: Below this number of pages UDP is not bothered about its memory appetite. When the amount of memory allocated by UDP exceeds this number, UDP starts to moderate memory usage.
+pressure: This value was introduced to follow the format of tcp_mem.
+max: Number of pages allowed for queueing by all UDP sockets.
+9:44
+net.ipv4.udp_rmem_min
+Minimal size of the receive buffer used by UDP sockets in moderation. Each UDP socket is able to use the size for receiving data, even if total pages of UDP sockets exceed udp_mem pressure. The unit is a byte.
+INTEGER - (The settable value range)0 - 2147483647
+Default: 4096.
+
+

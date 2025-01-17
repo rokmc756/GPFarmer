@@ -1,5 +1,5 @@
 # Database installation
-#
+
 - name: Copy Greenplum Database {{ gpdb.major_version }} {{ gpdb.binary_type }} File
   copy: src={{ binary_installer_file }}.{{ gpdb.binary_type }} dest=/home/gpadmin/{{ binary_installer_file }}.{{ gpdb.binary_type }} mode=0644 owner=gpadmin group=gpadmin
 
@@ -89,6 +89,15 @@
   async: 360
   poll: 5
   when: ( gpdb_install == True and gpdb.binary_type == 'deb' )
+
+
+- name: Create Symlink for Greenplum Database Install Directory
+  file:
+    src: "{{ gpdb.base_dir }}/{{ install_path }}"
+    dest: "{{ gpdb.base_dir }}/greenplum-db"
+    owner: gpadmin
+    group: gpadmin
+    state: link
 
 
 - name: Remove Temp Installer Directory
