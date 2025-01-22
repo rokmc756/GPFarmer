@@ -1,6 +1,8 @@
-# Database installation
+##########################################################################################################################################################################
+# Greenplum MPP Database installation
+##########################################################################################################################################################################
 
-- name: Copy Greenplum Database {{ gpdb.major_version }} {{ gpdb.binary_type }} File
+- name: Copy Greenplum Database {{ gpdb.major_version }} {{ gpdb.binary_type|upper }} Packages
   copy: src={{ binary_installer_file }}.{{ gpdb.binary_type }} dest=/home/gpadmin/{{ binary_installer_file }}.{{ gpdb.binary_type }} mode=0644 owner=gpadmin group=gpadmin
 
 
@@ -94,7 +96,7 @@
 - name: Create Symlink for Greenplum Database Install Directory
   file:
     src: "{{ gpdb.base_dir }}/{{ install_path }}"
-    dest: "{{ gpdb.base_dir }}/greenplum-db"
+    dest: "{{ gpdb.base_dir }}/{{ gpdb.pkg_name }}"
     owner: gpadmin
     group: gpadmin
     state: link

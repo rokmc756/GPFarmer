@@ -1,21 +1,56 @@
 ---
-# Install Greenplum Database
-#
-# installation: {{ gpdb.base_dir }}/greenplum-db must not exist
-#   linkchange: {{ gpdb.base_dir }}/greenplum-db points to another directory
-
-
-- name: Check if Any Version of Greenplum Database is Already Installed
-  stat: path={{ gpdb.base_dir }}/greenplum-db
-  register: gpdb_link_existed
+- name: Check if Any Version of Greenplum MPP Database is Already Installed
+  stat: path={{ gpdb.base_dir }}/{{ link_path }}
+  register: check_gpdb_link
 
 
 - name: Check if the Greenplum Database Version is Already Installed
-  stat: path={{ gpdb.base_dir }}/greenplum-db-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}
-  register: gpdb_dir_existed
+  stat: path={{ gpdb.base_dir }}/{{ install_path }}
+  register: check_gpdb_dir
 
 
-- name: Sanity Check for {{ gpdb.base_dir }}/greenplum-db
-  fail: msg="{{ gpdb.base_dir }}/greenplum-db is supposed to be a symlink!"
-  when: gpdb_link_existed.stat.exists == True and gpdb_link_existed.stat.islnk != True
+- name: Sanity Check for {{ gpdb.base_dir }}/{{ gpdb.pkg_name }}
+  fail: msg="{{ gpdb.base_dir }}/cloudberry-db or {{ gpdb.base_dir }}/{{ install_path }} Already Exists!"
+  when: check_gpdb_link.stat.exists == True or check_gpdb_link.stat.exists == True
+
+
+- name: Set Default Values for Run Mode Variables
+  set_fact:
+    gpdb_install: False
+    gpdb_linkchange: False
+
+
+- name: Identify Greenplum Database Installation
+  set_fact:
+    gpdb_install: True
+  when: check_gpdb_dir.stat.exists != True and check_gpdb_link.stat.exists != True
+
+
+# If the link points to a different existing directory, it's a link change
+- name: Identify Greenplum Database Linkchange
+  set_fact:
+    gpdb_linkchange: True
+  when: check_gpdb_link.stat.exists != True
+
+
+- name: Greenplum Database Installation
+  debug: msg="New Greenplum Database installation"
+  when: gpdb_install == True
+
+
+- name: Greenplum Database Link Change
+  debug: msg="Changing link to Greenplum Database version"
+  when: gpdb_linkchange == True
+
+
+- name: Greenplum Database - Nothing to do
+  debug: msg="Nothing to do (no installation/upgrade required)"
+  when: gpdb_install == False and gpdb_linkchange == False
+
+
+- debug: msg={{ gpdb_install }}
+- debug: msg={{ gpdb_linkchange }}
+- debug: msg={{ gpdb_install }}
+- debug: msg={{ install_path }}
+- debug: msg={{ link_path }}
 

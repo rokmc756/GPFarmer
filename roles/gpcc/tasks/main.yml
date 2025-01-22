@@ -1,5 +1,4 @@
 ---
-# For Now Fail If It's Not Spported OS
 - name: Check OS ( GPCC )
   fail: msg="{{ ansible_distribution }} is not supported for this ansible playbook!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
@@ -7,70 +6,83 @@
 
 - name: Set Facts for Greenplum Command Center
   import_tasks: set-gpcc-facts.yml
-  tags:
-    - install
-    - uninstall
-
-#- name: Install Greenplum Command Center
-#  import_tasks: install.yml
-#  tags: install
+  tags: install, uninstall
 
 
 - name: Add GPMON User
   import_tasks: 01-add-gpmon-user.yml
-  tags: install
+  tags: install, create
+  when: ( user is defined and user == true ) or ( gpcc_all is defined and gpcc_all == true )
+
 
 - name: Create GPPerfmon Agent
   import_tasks: 02-create-gpperfmon-agent.yml
-  tags: install
+  tags: install, create
+  when: ( gpperfmon is defined and gpperfmon == true ) or ( gpcc_all is defined and gpcc_all == true )
+
 
 - name: Setup Greenplum Command Center Software
   import_tasks: 03-setup-gpcc-bin.yml
-  tags: install
+  tags: install, create
+  when: ( bin is defined and bin == true ) or ( gpcc_all is defined and gpcc_all == true )
+
 
 - name: Enable SSL Connection for GPCC Web UI
   import_tasks: 04-enable-ssl.yml
-  tags: install
+  tags: install, create
+  when: ( ssl is defined and ssl == true ) or ( gpcc_all is defined and gpcc_all == true )
+
 
 - name: Install Greenplum Command Center Software
   import_tasks: 05-install-gcc.yml
-  tags: install
+  tags: install, create
+  when: ( cc is defined and cc == true ) or ( gpcc_all is defined and gpcc_all == true )
+
 
 - name: Enable Metric Collector
   import_tasks: 06-enable-metric-collector.yml
-  tags: install
+  tags: install, create
+  when: ( mc is defined and user == true ) or ( gpcc_all is defined and gpcc_all == true )
+
 
 - name: Configure Greenplum Command Center
   import_tasks: 07-config-gpcc.yml
-  tags: install
+  tags: install, create, config
+  when: ( conf is defined and conf == true ) or ( gpcc_all is defined and gpcc_all == true )
 
 
 - name:  Stop GPCC
   import_tasks: 41-stop-gpcc.yml
-  tags: uninstall
+  tags: stop
+  when: ( cc is defined and cc == true ) or ( gpcc_all is defined and gpcc_all == true )
+
 
 - name: Uninstll MetricCollector
   import_tasks: 42-uninstall-metrics-collector.yml
-  tags: uninstall
+  tags: uninstall, delete
+  when: ( mc is defined and mc == true ) or ( gpcc_all is defined and gpcc_all == true )
+
 
 - name: Stop GPCC
   import_tasks: 43-check-stop-gpcc.yml
-  tags: uninstall
+  tags: uninstall, delete
+  when: ( cc is defined and cc == true ) or ( gpcc_all is defined and gpcc_all == true )
+
 
 - name: Disable MetricsCollector
   import_tasks: 44-disable-metrics-collector.yml
-  tags: uninstall
+  tags: uninstall, delete, disable
+  when: ( mc is defined and mc == true ) or ( gpcc_all is defined and gpcc_all == true )
+
 
 - name: Remove GPMon User Role
   import_tasks: 45-remove-gpmon-user-role.yml
-  tags: uninstall
+  tags: uninstall, delete, remove
+  when: ( mon is defined and mon == true ) or ( gpcc_all is defined and gpcc_all == true )
+
 
 - name: Remove GPCC Config
   import_tasks: 46-remove-gpcc-config.yml
-  tags: uninstall
-
-
-#- name: Uninstall Greenplum Command Center
-#  import_tasks: uninstall.yml
-#  tags: uninstall
+  tags: uninstall, delete, remove
+  when: ( conf is defined and conf == true ) or ( gpcc_all is defined and gpcc_all == true )
 

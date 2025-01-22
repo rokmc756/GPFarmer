@@ -1,16 +1,18 @@
----
-- name: Get Network Interface name From Prefix of IP Addresses Provided
+- name: Get Network Interface name From Prefix of IP Addresses Provided for Greenplum Nodes
   set_fact:
     netdev0: "{{ ansible_interfaces | map('regex_replace', '^', 'ansible_') | map('extract', vars) | selectattr('ipv4', 'defined') | selectattr('ipv4.address', 'match', gpdb.net.ipaddr0 ) | map(attribute='device') | first }}"
     netdev2: "{{ ansible_interfaces | map('regex_replace', '^', 'ansible_') | map('extract', vars) | selectattr('ipv4', 'defined') | selectattr('ipv4.address', 'match', gpdb.net.ipaddr2 ) | map(attribute='device') | first }}"
+    # netdev1: "{{ ansible_interfaces | map('regex_replace', '^', 'ansible_') | map('extract', vars) | selectattr('ipv4', 'defined') | selectattr('ipv4.address', 'match', gpdb.net.ipaddr1 ) | map(attribute='device') | first }}"
 
 
 - name: Get IP Address from Provided Network Device Name
   set_fact:
     ipaddr0: "{{ hostvars[inventory_hostname]['ansible_'~netdev0].ipv4.address }}"
     ipaddr2: "{{ hostvars[inventory_hostname]['ansible_'~netdev2].ipv4.address }}"
+    # ipaddr1: "{{ hostvars[inventory_hostname]['ansible_'~netdev1].ipv4.address }}"
 
 
+# https://stackoverflow.com/questions/36328907/ansible-get-all-the-ip-addresses-of-a-group
 - name: Define Facts For All GPHOST's Hostname
   set_fact:
     all_ext_hostnames: "{{ groups['all'] | map('extract', hostvars, ['ansible_hostname']) | join(' ') }}"
@@ -22,7 +24,6 @@
     all_net0_ipaddrs: "{{ groups['all'] | map('extract', hostvars, ['ansible_'~netdev0, 'ipv4', 'address']) | join(',') }}"
     all_net2_ipaddrs: "{{ groups['all'] | map('extract', hostvars, ['ansible_'~netdev2, 'ipv4', 'address']) | join(',') }}"
 - debug: msg={{ all_net0_ipaddrs }}
-- debug: msg={{ all_net2_ipaddrs }}
 
 
 - name: Set Default Network Device and Address
@@ -31,24 +32,52 @@
     _ipaddr: "{{ ipaddr2 }}"
 
 
+
+- name: Set Default Values for Run Mode Variables
+  set_fact:
+    gpdb_install: False
+    gpdb_linkchange: False
+
+
+- name: Identify Greenplum Database Installation
+  set_fact:
+    gpdb_install: True
+  when: gpdb_dir_existed.stat.exists != True and gpdb_dir_existed.stat.exists != True
+
+
+# If the link points to a different existing directory, it's a link change
+- name: Identify Greenplum Database Linkchange
+  set_fact:
+    gpdb_linkchange: True
+  when: gpdb_link_existed.stat.exists != True
+
+
+- name: Greenplum Database Installation
+  debug: msg="New Greenplum Database installation"
+  when: gpdb_install == True
+
+
+- name: Greenplum Database Link Change
+  debug: msg="Changing link to Greenplum Database version"
+  when: gpdb_linkchange == True
+
+
+- name: Greenplum Database - Nothing to do
+  debug: msg="Nothing to do (no installation/upgrade required)"
+  when: gpdb_install == False and gpdb_linkchange == False
+
+
 - name: Set Name for Binary Installer File ( Name Includes Build Number )
   set_fact:
-    binary_installer_file: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.patch_version }}-{{ gpdb.os_name }}-{{ gpdb.arch_name }}"
-    install_path: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.patch_version }}"
-    link_path: "{{ gpdb.pkg_name }}"
-    remove_pkg_name: "{{ gpdb.package_name }}-{{ gpdb.major_version }}"
-    # remove_pkg_name: "{{ gpdb.package_name }}-{{ gpdb.major_version }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.patch_version }}-{{ gpdb.build_version }}.{{ gpdb.os_name }}.{{ gpdb.arch_name }}"
-    # greenplum-db-6-6.26.1-1.el9.x86_64
+    binary_installer_file: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}-{{ gpdb.os_name }}-{{ gpdb.arch_name }}"
+    install_path: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}"
   when: gpdb.build_version is defined and gpdb.build_version != None
 
 
 - name: Set Name for Binary Installer File ( Name Does Not Include Build Number )
   set_fact:
-    binary_installer_file: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.patch_version }}-{{ gpdb.os_name }}-{{ gpdb.arch_name }}"
-    install_path: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.patch_version }}"
-    link_path: "{{ gpdb.pkg_name }}"
-    remove_pkg_name: "{{ gpdb.package_name }}-{{ gpdb.major_version }}"
-    # remove_pkg_name: "{{ gpdb.package_name }}-{{ gpdb.major_version }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.patch_version }}-{{ gpdb.build_version }}"
+    binary_installer_file: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}-{{ gpdb.os_name }}-{{ gpdb.arch_name }}"
+    install_path: "{{ gpdb.package_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}{{ gpdb.build_version }}"
   when: gpdb.build_version is not defined or ( gpdb.build_version is defined and gpdb.build_version == None )
 
 
@@ -87,7 +116,6 @@
     shmmax_var: "{{ shmmax_fact.stdout }}"
 
 
-# - debug: msg={{ shmall_var }}
-# - debug: msg={{ shmmax_var }}
-
+- debug: msg={{ shmall_var }}
+- debug: msg={{ shmmax_var }}
 

@@ -1,18 +1,18 @@
 ###########################################################
 # Basic OS Setup
-
-- name: Add GPAdmin Group
+#
+- name: Add gpadmin Group
   group:
     name: gpadmin
     state: present
 
 
 # Do not create ssh keys since this conflicts somehow with gpssh-exkeys
-- name: Add GPAdmin User
+- name: Add gpadmin User
   user:
     name: gpadmin
     password: "{{ 'changeme' | password_hash('sha512') }}"
-    comment: 'Greenplum MPP Database Administrator'
+    comment: 'Greenplum Administrator'
     createhome: yes
     shell: /bin/bash
     generate_ssh_key: no
@@ -53,8 +53,8 @@
 - name: Disable SELinux
   selinux: state=disabled
   notify:
-    - Restart System
-    - Waiting for Server to Come Back after Reboot
+    - Restart system
+    - Waiting for server to come back after reboot
 
 
 - name: Modify /etc/systemd/logingd.conf to Not Remove
@@ -66,7 +66,7 @@
   with_items:
     - { regexp: '^#RemoveIPC=', line: 'RemoveIPC=no', state: present }
   notify:
-    - Reload Systemd-Logind
+    - Reload systemd-logind
 
 
 - name: Modify /etc/sysctl.d/98-sysctl-gpdb.conf
@@ -78,7 +78,7 @@
     create: yes
   with_items: "{{ common_gpdb_kernel_parameters }}"
   notify:
-    - Reload Sysctl
+    - Reload sysctl
 
 
 - name: Modify /etc/sysctl.d/98-sysctl-gpdb.conf
@@ -90,7 +90,7 @@
     create: yes
   with_items: "{{ rhel7_gpdb_kernel_parameters }}"
   notify:
-    - Reload Sysctl
+    - Reload sysctl
   when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' or ansible_distribution == 'Rocky' ) and hostvars[inventory_hostname].ansible_distribution_major_version|int <= 7
 
 
@@ -103,15 +103,15 @@
   with_items:
     - { regexp: '^PermitRootLogin', line: 'PermitRootLogin yes', state: present }
   notify:
-    - Reload SSHd
+    - Reload sshd
 
 
+# Move the security limits in it's own file, Instead of adding them to the main config file
 - name: Security limits
   copy: src=security_limits.conf dest=/etc/security/limits.d/95-gpdb.conf
   notify:
-    - Restart System
-    - Waiting for Server to Come Back after Reboot
-
+    - Restart system
+    - Waiting for server to come back after reboot
 
 # Need to add XFS options
 # Need to check I/O scheduler

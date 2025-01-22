@@ -63,203 +63,57 @@ ANSIBLE_TARGET_PASS="changeme"  # # It should be changed with password of sudo u
 
 #### 3) Configure inventory for hostname, ip address, username and user's password
 ```
-$ vi ansible-hosts
 [all:vars]
 ssh_key_filename="id_rsa"
 remote_machine_username="jomoon"
 remote_machine_password="changeme"
 
+
 [master]
-rh7-master ansible_ssh_host=192.168.0.71
+rk9-node01 ansible_ssh_host=192.168.2.191
+
 
 [standby]
-rh7-slave ansible_ssh_host=192.168.0.72
+rk9-node02 ansible_ssh_host=192.168.2.192
+
 
 [segments]
-rh7-node01 ansible_ssh_host=192.168.0.73
-rh7-node02 ansible_ssh_host=192.168.0.74
-rh7-node03 ansible_ssh_host=192.168.0.75
-
-[kafka_brokers]
-co7-node01 ansible_ssh_host=192.168.0.63
-co7-node02 ansible_ssh_host=192.168.0.64
-co7-node03 ansible_ssh_host=192.168.0.65
+rk9-node03 ansible_ssh_host=192.168.2.193
+rk9-node04 ansible_ssh_host=192.168.2.194
+rk9-node05 ansible_ssh_host=192.168.2.195
 ```
 
-#### 4) Configure variables for GPDB
+#### 4) Install Greenplum MPP Database
 ```
-$ vi role/gpdb/var/main.yml
----
-gpdb:
-  master_data_dir: /data/master/gpseg-1
-  data_dir: /data
-  base_dir: /usr/local
-  admin_user: gpadmin
-  admin_passwd: changeme
-  package_name: greenplum-db
-  major_version: 6
-  minor_version: 25.3
-  build_version:
-  os_name: 'rhel7'
-  arch_name: 'x86_64'
-  binary_type: 'rpm'
-  number_segments: 4
-  mirror_enable: true
-  spread_mirrors: ""
-  initdb_single: False
-  initdb_with_standby: True
-  seg_serialized_install: False
-~~ snip
+$ make gpdb r=prepare
+$ make gpdb r=install s=db
 ```
 
-#### 5) Configure variables for GPText
+#### 5) Install GPText
 ```
-$ vi role/gpcc/var/main.yml
----
-gpdb_major_version: 6
-gpdb_minor_version: 23.0
-gpdb_build_version:
-gpcc_major_version: 6
-gpcc_minor_version: 8.4
-
-gpdb_metric_major_version: 6
-gpdb_metric_minor_version: 23.0
-gpdb_metric_build_version:
-gpcc_metric_arch: 'x86_64'
-gpcc_os_name: 'rhel8'
-
-gpccws_port: 28080
-gpmon_password: "changeme"
-master_data_dir: "/data/master/gpseg-1"
-~~ snip
 ```
 
 #### 6) Configure variables for GPText
 ```
-$ vi role/gptext/var/main.yml
----
-# greenplum-text-3.3.1-rhel7_x86_64.tar.gz
-# greenplum-text-3.9.1-rhel8_x86_64.tar.gz
-gptext_major_version: 3
-gptext_minor_version: 9.1
-gptext_patch_version:
-gptext_build_version:
-gptext_gpdb_version:
-gptext_java_version: 1.8.0
-gptext_rhel_name: rhel8
-gptext_database_name: gptext_testdb
-gptext_all_hosts: "rk8-master rk8-slave rk8-node01 rk8-node02 rk8-node03"
 ```
 
 #### 7) Configure variables for MADLib
 ```
-$ vi role/madlib/var/main.yml
----
-madlib_prefix_major_version:
-madlib_major_version: 1
-madlib_minor_version: 21
-madlib_patch_version: 0
-madlib_build_version: 1
-madlib_gpdb_version: 6
-madlib_os_version: rhel8
-madlib_arch_type: x86_64
-madlib_database_name: madlib_testdb
-madlib_mdw_hostname: rk8-master
-~~ snip
 ```
 
 #### 8) Configure variables for PostGIS
 ```
-$ vi role/postgis/var/mail.yml
----
-postgis_prefix_major_version:
-postgis_major_version: 2
-postgis_minor_version: 5
-postgis_patch_version: .4+pivotal.8.build.1
-postgis_gpdb_version: 6
-postgis_os_version: rhel8
-postgis_database_name: postgis_testdb
-postgis_schema_name: postgis_test_scheme
-postgis_mdw_hostname: rk8-master
 ```
 
 #### 9) Configure order of roles in GPFarmer anisble playbook and deploy GPDB and extentions
 ```
-$ vi setup-host.yml
----
-- hosts: all
-  become: true
-  roles:
-   - { role: init-hosts }
-   - { role: gpdb }
-   - { role: madlib }
-   - { role: postgis }
-   - { role: pljava }
-   - { role: plcontainer }
-   - { role: DataSciencePython }
-   - { role: DataScienceR }
-   - { role: pxf }
-   - { role: gptext }
-   - { role: plr }
-
-- hosts: rk8-master,rk8-slave
-  become: true
-  become_user: gpadmin
-  roles:
-    - { role: gpcc }
-
-$ make install
 ```
 #### 10) Configure order of roles in GPFarmer anisble playbook and upgrade GPDB
 ```
-$ vi install-hosts.yml
----
-- hosts: all
-  become: true
-  become_user: gpadmin
-  roles:
-    - { role: gpdb }
-
-$ vi roles/gpdb/var/main.yml
-~~ snip
-upgrade:
-  major_version: 6
-  minor_version: 25.3
-  build_version:
-  os_name: 'rhel7'
-  arch_name: 'x86_64'
-  binary_type: 'rpm'
-~~ snip
-
-$ make upgrade
 ```
 
 #### 11) Configure order of roles in GPFarmer anisble playbook and destroy GPDB and extentions
 ```
-$ vi uninstall-host.yml
----
-- hosts: rk8-master,rk8-slave
-  become: true
-  become_user: gpadmin
-  roles:
-    - { role: gpcc }
-
-- hosts: all
-  become: true
-  roles:
-   - { role: plr }
-   - { role: gptext }
-   - { role: pxf }
-   - { role: DataScienceR }
-   - { role: DataSciencePython }
-   - { role: plcontainer }
-   - { role: pljava }
-   - { role: postgis }
-   - { role: madlib }
-   - { role: gpdb }
-   - { role: init-hosts }
-
-$ make uninstall
 ```
 
 ## Planning

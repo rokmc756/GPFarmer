@@ -33,11 +33,15 @@ gpdb:
   admin_passwd: "changeme"
   admin_home_dir: "/home/gpadmin"
   master_data_dir: "/data/master/gpseg-1"
+  coordinator_data_dir: "/data/master/gpseg-1"
+  # coordinator_data_dir: "/data/coordinator/gpseg-1"
   data_dir: "/data"
   package_name: "greenplum-db"
+  pkg_name: "greenplum-db"
   major_version: 6
-  minor_version: 26.1
-  build_version:
+  minor_version: 26
+  patch_version: 1
+  build_version: 1
   os_name: 'rhel9'
   arch_name: 'x86_64'
   binary_type: 'rpm'
@@ -60,9 +64,9 @@ gpdb:
   net:
     type: "virtual"                # Or Physical
     gateway: "192.168.0.1"
-    ipaddr0: "192.168.0.7"
-    ipaddr1: "192.168.1.7"
-    ipaddr2: "192.168.2.7"
+    ipaddr0: "192.168.0.19"
+    ipaddr1: "192.168.1.19"
+    ipaddr2: "192.168.2.19"
   client:
     net:
       type: "virtual"              # Or Physical
@@ -74,6 +78,10 @@ gpdb:
     net:
       ipaddr0: "192.168.0."
       ipaddr1: "192.168.1."
+  vms:
+    rk9: [ "rk9-freeipa", "rk9-node01", "rk9-node02", "rk9-node03", "rk9-node04", "rk9-node05" ]
+    ubt24: [ "rk9-freeipa", "ubt24-node01", "ubt24-node02", "ubt24-node03", "ubt24-node04", "ubt24-node05" ]
+  debug_opt: ""  # --debug
 
 
 jdk:

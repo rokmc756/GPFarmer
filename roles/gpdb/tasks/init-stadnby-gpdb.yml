@@ -1,0 +1,96 @@
+---
+- name: Check if Any Version of Greenplum MPP Database is Already Linked
+  stat: path={{ gpdb.base_dir }}/{{ gpdb.pkg_name }}
+  register: check_gpdb_link
+
+
+- name: Check if the Greenplum MPP Database Version is Already Installed
+  stat: path={{ gpdb.base_dir }}/{{ install_path }}
+  register: check_gpdb_dir
+  # stat: path={{ gpdb.base_dir }}/{{ gpdb.pkg_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.patch_version }}
+
+
+- name: Sanity Check for {{ gpdb.base_dir }}/{{ gpdb.pkg_name }}
+  fail: msg="CloudBerry Database Software is not existed"
+  when: check_gpdb_dir.stat.exists != True and check_gpdb_link.stat.islnk != True
+
+
+- name: Set Name for Binary Installer File ( Name Includes Build Number )
+  set_fact:
+    gpdb_dir: "{{ gpdb.pkg_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.patch_version }}"
+    gpdb_package_name: "{{ gpdb.pkg_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}.{{ gpdb.patch_version }}-{{ gpdb.build_version }}"
+    binary_installer_file: "{{ gpdb.pkg_name }}-{{ gpdb.major_version }}.{{ gpdb.minor_version }}-{{ gpdb.patch_version }}.{{ gpdb.os_name }}-{{ gpdb.arch_name }}"
+
+
+- name: Identify Greenplum MPP Database Uninstallation
+  set_fact:
+    init_gpdb_standby: true
+  when: check_gpdb_dir.stat.exists == True and check_gpdb_link.stat.islnk == True
+
+
+- name: Greenplum MPP Database Uninstallation
+  debug: msg="Uninstall CloudBerry Database"
+  when: init_gpdb_standby == true
+
+
+# Greenplum MPP Database Uninstallation
+- name: Check if Greenplum MPP Database is Running
+  stat: path=/tmp/.s.PGSQL.5432
+  register: gpdb_running
+  when: inventory_hostname in groups['master'] and init_gpdb_standby == True
+
+
+- name: Add Greenplum MPP Standby Master Database
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/{{ gpdb.pkg_name }}/greenplum_path.sh && gpinitstandby -D -a -s {{ hostvars[groups['standby'][0]]['ansible_hostname'] }} )
+  args:
+    executable: /bin/bash
+  async: 600
+  poll: 5
+  register: init_db
+  when: inventory_hostname in groups['master'] and init_gpdb_standby == True
+  failed_when: init_db.rc > 1
+
+
+- name: Add COORDINATOR_DATA_DIRECTORY to greenplum_path.sh
+  become_user: gpadmin
+  lineinfile:
+    dest: "{{ gpdb.base_dir }}/{{ install_path }}/greenplum_path.sh"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { regexp: '^export COORDINATOR_DATA_DIRECTORY=', line: 'export COORDINATOR_DATA_DIRECTORY={{ gpdb.coordinator_data_dir }}', state: present }
+  when: inventory_hostname in groups['standby'] and init_gpdb_standby == True
+
+
+- name: Restart Greenplum MPP Database after Initialization
+  become_user: gpadmin
+  shell: ( . {{ gpdb.base_dir }}/{{ gpdb.pkg_name }}/greenplum_path.sh && gpstop -ra )
+  async: 60
+  poll: 5
+  when: inventory_hostname in groups['master'] and init_gpdb_standby == True
+
+
+- name: Check if Greenplum MPP Database is Running
+  stat: path=/tmp/.s.PGSQL.5432
+  register: gpdb_running_nothing
+  when: inventory_hostname in groups['master'] and init_gpdb_standby == True
+
+
+- name: Validate if Greenplum MPP Standby Master is Running Normally
+  become_user: gpadmin
+  shell: |
+    source {{ gpdb.base_dir }}/{{ gpdb.pkg_name }}/greenplum_path.sh && gpstate -f | grep "WAL Sender State:" | cut -d ' ' -f 5
+  register: check_gpdb_standby_master
+  until: check_gpdb_standby_master.stdout.find("streaming") != 1
+  retries: 20
+  delay: 10
+  args:
+    chdir: "{{ gpdb.admin_home_dir }}"
+  environment:
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+  when: inventory_hostname in groups['master'] and ( init_gpdb_standby == True )
+- debug: msg={{ check_gpdb_standby_master }}
+  when: print_debug == true and inventory_hostname in groups['master'] and init_gpdb_standby == True
+

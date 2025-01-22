@@ -1,16 +1,16 @@
 ---
-- name: Check if the Greenplum Database Software is Already Installed
+- name: Check if the Greenplum MPP Database Software is Already Installed
   stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_installed
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
 
 
-- name: Stop if Greenplum Dtabase Software is Not Installed
+- name: Stop if Greenplum MPP Dtabase Software is Not Installed
   fail: msg="Greenplum Database software is not installed!"
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_installed.stat.exists != True )
 
 
-- name: Verify that Greenplum Database is Up and Running
+- name: Verify that Greenplum MPP Database is Up and Running
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c 'SELECT VERSION()' )
   args:
@@ -62,7 +62,7 @@
   # when: ( inventory_hostname in groups['master'] and select_gpperfmon.stdout.find('    0') != -1 ) or ( inventory_hostname in groups['standby'] and select_gpperfmon.stdout.find('    0') != -1 )
 
 
-- name: Reload Greenplum Database
+- name: Reload Greenplum MPP Database
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   args:
     executable: /bin/bash

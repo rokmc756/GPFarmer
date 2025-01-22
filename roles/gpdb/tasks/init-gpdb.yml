@@ -1,7 +1,6 @@
-###########################################################
-# Status: Greenplum Database Software is Installed
-###########################################################
-# Database initialization
+#############################################################################################################################################################################
+# Greenplum MPP Database initialization
+#############################################################################################################################################################################
 
 - name: Create Empty Variable for Data Directories
   set_fact: data_dirs=""
@@ -179,7 +178,7 @@
   when: ( inventory_hostname in groups['segments'] and gpdb.initdb_with_standby == true ) and ( gpdb_initialized.stat.exists != True or gpdb_initialized.stat.exists == True )
 
 
-- name: Install Greeplum Database Binary into Segment Nodes by Running gpseginstall
+- name: Install Greeplum MPP Database Binary into Segment Nodes by Running gpseginstall
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpseginstall -f /home/gpadmin/hostfile )
   async: 120
@@ -193,7 +192,7 @@
 # python -m pip install psutil
 
 
-- name: Initialize Greenplum Database Cluster
+- name: Initialize Greenplum Greenplum Database Cluster
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -a -c /home/gpadmin/gpinitsystem_config -h /home/gpadmin/hostfile {{ gpdb.spread_mirrors }} )
   args:

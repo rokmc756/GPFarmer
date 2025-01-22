@@ -1,94 +1,93 @@
 ---
-# Install Greenplum Database
 - name: Check OS ( GPDB )
   fail: msg="{{ ansible_distribution }} is not supported for this ansible playbook!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
 
-- name: Check if Greenplum Database is Installed Already
-  import_tasks: check-gpdb-installed.yml
-  tags: install, uninstall
-  when: check_install_gpdb == true
-
-
-- name: Set Facts for Greenplum Database
+- name: Set Facts for Greenplum MPP Database
   import_tasks: set-gpdb-facts.yml
-  tags: install, uninstall
-  when: set_gpdb_facts == true
+  tags: install, uninstall, prepare, add
+
+
+- name: Check if Greenplum MPP Database is Installed Already
+  import_tasks: check-gpdb-installed.yml
+  tags: prepare, install, deploy, init, enable
 
 
 - name: Prepare OS Parameters
   import_tasks: prepare-os-parameters.yml
-  tags: install
-  when: prepare_os_parameters == true
+  tags: prepare
 
 
-- name: Install Greenplum Database Software Binary
+- name: Install Greenplum MPP Database Software Binary
   import_tasks: install-gpdb.yml
-  tags: install
-  when: install_gpdb == true
+  tags: install, deploy, init
+  when: ( db is defined and db == true )
 
 
-- name: Initialize Greenplum Database
+- name: Initialize Greenplum MPP Database
   import_tasks: init-gpdb.yml
-  tags: install
-  when: initialize_gpdb == true
+  tags: install, init, deploy
+  when: ( db is defined and db == true )
+
+
+- name: Finalize Greenplum MPP Database
+  import_tasks: finalize-gpdb.yml
+  tags: install, deploy
+  when: ( db is defined and db == true )
 
 
 - name: Enable LDAP Authentication
   import_tasks: ldap/enable-ldap.yml
-  tags: install
-  when: enable_ldap == true
+  tags: enable, install
+  when: ( ldap is defined and ldap == true )
 
 
 - name: Enable Resource Group
   import_tasks: rg/enable-resource-group.yml
-  tags: install
-  when: config_rg == true
+  tags: enable, install
+  when: ( rg is defined and rg == true )
 
 
 - name: Enable SSL
   import_tasks: ssl/enable-ssl.yml
-  tags: install
-  when: enable_ssl == true
+  tags: enable, install
+  when: ( ssl is defined and ssl == true )
 
 
 - name: Enable Kerberos Authentication
   import_tasks: krb5/enable-kerberos.yml
-  tags: install
-  when: enable_kerberos == true
-
-
-- name: Finalize Greenplum Database
-  import_tasks: finalize-gpdb.yml
-  tags: install
-  when: finalize_gpdb == true
+  tags: enable, install
+  when: ( krb5 is defined and krb5 == true )
 
 
 - name: Uninstall LDAP Authentication
   import_tasks: ldap/uninstall-ldap.yml
-  tags: uninstall
-  when: enable_ldap == true
+  tags: disable, uninstall
+  when: ( ldap is defined and ldap == true )
 
 
 - name: Uninstall Kerberos Authentication
   import_tasks: krb5/uninstall-kerberos.yml
-  tags: uninstall
-  when: enable_kerberos == true
+  tags: disable, uninstall
+  when: ( krb5 is defined and krb5 == true )
 
 
 - name: Disable Resource Group
   import_tasks: rg/disable-resource-group.yml
-  tags: uninstall
-  when: config_rg == true
+  tags: disable, uninstall
+  when: ( rg is defined and rg == true )
 
 
-- name: Uninstall Greenplum Database
+- name: Uninstall Greenplum MPP Database
   import_tasks: uninstall.yml
-  tags: uninstall
+  tags: uninstall, destroy
+  when: ( db is defined and db == true )
 
 
-- name: Upgrade Greenplum Database
+- name: Upgrade Greenplum MPP Database
   import_tasks: upgrade.yml
   tags: upgrade
+  when: ( db is defined and db == true )
+
 
