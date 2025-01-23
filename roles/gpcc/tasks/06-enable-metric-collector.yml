@@ -1,5 +1,6 @@
 ---
 - name: Verify if MetricsCollector GPPKG Pakcage is Installed
+  become_user: gpadmin
   shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_gpmetrics_installed }} )
   args:
     executable: /bin/bash
@@ -15,6 +16,7 @@
 
 
 - name: Install MetricsCollector Extension Package
+  become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_install_cmd }} {{ gpcc_prefix_dir }}/gppkg/{{ gpmetrics_package_name }} )
   args:
     executable: /bin/bash
@@ -23,6 +25,7 @@
 
 
 - name: Create MetricsCollector Extension
+  become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d gpperfmon -c "CREATE EXTENSION metrics_collector;" )
   args:
     executable: /bin/bash
@@ -58,6 +61,7 @@
 
 
 - name: Reload Greenplum Database
+  become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   args:
     executable: /bin/bash

@@ -1,5 +1,5 @@
 ---
-pxf:
+_pxf:
   major_version: 6
   minor_version: 9.0
   patch_version: 2
@@ -10,13 +10,13 @@ pxf:
   database_name: pxf_testdb
   username: pxf_user
   install: true
-nfs:
+_nfs:
   access: false
   base_work_dir: "{{ gpdb.admin_home_dir }}/pxf-nfs-base"
   share_dir: "{{ gpdb.admin_home_dir }}/nfsshare"
   expose_dir: "/extra-usb-storage/nfsshare"
   server_ip_addr: 192.168.0.101
-hadoop:
+_hadoop:
   access: false
   user: hadoop
   home_dir: /home/hadoop
@@ -70,20 +70,21 @@ hadoop:
     # - "pxf-hdfs-avro.sh"
     # - "pxf-hdfs-tdir.sh"                            # Need to test manually
     # access_test_scripts:
-oracle:
+_oracle:
   access: false
   base_work_dir: "{{ gpdb.admin_home_dir }}/pxf-oracle-base"
   dbname: cdb1
   user: oracleuser
   user_pass: changeme
-mssql:
+_mssql:
   access: false
   base_work_dir: "{{ gpdb.admin_home_dir }}/pxf-mssql-base"
   dbname: testdb
   user: mssqluser
   user_pass: "Changeme!@#$"
-minio:
+_minio:
   access: false
   base_work_dir: "{{ gpdb.admin_home_dir }}/pxf-minio-base"
   s3_access_key: minioadmin
   s3_secret_key: changeme
+

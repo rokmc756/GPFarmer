@@ -6,6 +6,7 @@
 
 
 - name: Create SSL Directory
+  become_user: gpadmin
   file: path={{ gpdb.admin_home_dir }}/certs state=directory owner=gpadmin group=gpadmin
   changed_when: False
   register: dir_sslkey_installed
@@ -13,6 +14,7 @@
 
 
 - name: Create SSL Key for Greenplum Command Center
+  become_user: gpadmin
   shell: ( openssl req -newkey rsa:2048 -x509 -keyout {{ gpcc.ssl_dir }}/cert.pem -out {{ gpcc.ssl_dir }}/cert.pem -days {{ gpcc.ssl_days }} -nodes -subj "/C={{ gpcc.ssl_country }}/ST={{ gpcc.ssl_state }}/L={{ gpcc.ssl_location }}/O={{ gpcc.ssl_organization }}/CN={{ gpcc.ssl_common_name }}/emailAddress={{ gpcc.ssl_email }}" )
   args:
     executable: /bin/bash

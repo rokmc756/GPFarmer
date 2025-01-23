@@ -6,6 +6,7 @@
 
 
 - name: Install GPPerfmon Agents
+  become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpperfmon_install --enable --password '{{ gpcc.gpmon_password }}' --port 5432 )
   args:

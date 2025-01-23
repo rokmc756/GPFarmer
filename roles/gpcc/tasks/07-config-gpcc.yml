@@ -1,5 +1,6 @@
 ---
 - name: Add the Path of GPCC Variable File into .bashrc
+  become_user: gpadmin
   lineinfile:
     dest: /home/gpadmin/.bashrc
     line: "source {{ gpcc.base_dir }}/greenplum-cc/gpcc_path.sh"
@@ -8,6 +9,7 @@
 
 
 - name: Create Password File for GPMon User to Login Greenplum Command Center
+  become_user: gpadmin
   copy:
     dest: "/home/gpadmin/.pgpass"
     content: "*:5432:gpperfmon:gpmon:changeme"
@@ -15,6 +17,7 @@
 
 
 - name: Change Permission of Password File for GPMon User to Login Greenplum Command Center
+  become_user: gpadmin
   file:
     path: "/home/gpadmin/.pgpass"
     state: file
@@ -34,6 +37,7 @@
 
 
 - name: Start Greenplum Command Center {{ gpcc.major_version  }}.{{ gpcc.minor_version }}
+  become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_prefix_dir }}/gpcc_path.sh && gpcc start )
   args:

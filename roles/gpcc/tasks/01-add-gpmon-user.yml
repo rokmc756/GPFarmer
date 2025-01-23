@@ -11,6 +11,7 @@
 
 
 - name: Verify that Greenplum MPP Database is Up and Running
+  become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c 'SELECT VERSION()' )
   args:
@@ -28,6 +29,7 @@
 
 
 - name: Verify that GPPerfmon is Not Installed
+  become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT COUNT(*) AS count FROM pg_database WHERE datname = 'gpperfmon'" )
   args:
@@ -47,6 +49,7 @@
 
 
 - name: Add GPMon User to pg_hba.conf to Authenticate Greenplum Command Center
+  become: true
   lineinfile:
     dest: "{{ gpdb.master_data_dir }}/pg_hba.conf"
     line: "{{ item.line }}"
@@ -63,6 +66,7 @@
 
 
 - name: Reload Greenplum MPP Database
+  become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   args:
     executable: /bin/bash

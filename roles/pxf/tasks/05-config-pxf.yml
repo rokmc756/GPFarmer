@@ -12,7 +12,7 @@
 - name: Create Database for PXF
   become_user: gpadmin
   shell: |
-    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ pxf.database_name }}
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && createdb {{ _pxf.database_name }}
   args:
     executable: /bin/bash
   register: pxf_database_created
@@ -22,7 +22,7 @@
 - name: Create the PXF Extension
   become_user: gpadmin
   shell: |
-    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "CREATE EXTENSION pxf;"
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ _pxf.database_name }} -c "CREATE EXTENSION pxf;"
   args:
     executable: /bin/bash
   register: pxf_extension_created
@@ -32,7 +32,7 @@
 - name: Check if PXF Extension is Installed on Greenplum Database
   become_user: gpadmin
   shell: |
-    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "select count(*) FROM pg_extension where extname='pxf';" | tr -d " " | sed '/^$/d'
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ _pxf.database_name }} -c "select count(*) FROM pg_extension where extname='pxf';" | tr -d " " | sed '/^$/d'
   args:
     executable: /bin/bash
   register: pxf_extension_install_checked
@@ -47,7 +47,7 @@
 - name: Create User for PXF
   become_user: gpadmin
   shell: |
-    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "CREATE USER {{ pxf.username }};"
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "CREATE USER {{ _pxf.username }};"
   args:
     executable: /bin/bash
   register: pxf_user_created
@@ -57,7 +57,7 @@
 - name: Add a Role into User for PXF
   become_user: gpadmin
   shell: |
-    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "ALTER ROLE {{ pxf.username }} superuser createdb;"
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "ALTER ROLE {{ _pxf.username }} superuser createdb;"
   args:
     executable: /bin/bash
   register: pxf_role_added
@@ -67,7 +67,7 @@
 - name: Grant a Specific Role Access to the PXF Protocol
   become_user: gpadmin
   shell: |
-    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "GRANT SELECT ON PROTOCOL pxf TO {{ pxf.username }};"
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ _pxf.database_name }} -c "GRANT SELECT ON PROTOCOL pxf TO {{ _pxf.username }};"
   args:
     executable: /bin/bash
   register: pxf_role_access_granted
@@ -77,7 +77,7 @@
 - name: Write Data to an External Data Store with PXF
   become_user: gpadmin
   shell: |
-    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "GRANT INSERT ON PROTOCOL pxf TO {{ pxf.username }};"
+    source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ _pxf.database_name }} -c "GRANT INSERT ON PROTOCOL pxf TO {{ _pxf.username }};"
   args:
     executable: /bin/bash
   register: pxf_data_writed

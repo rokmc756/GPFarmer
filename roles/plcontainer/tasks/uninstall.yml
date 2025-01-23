@@ -34,6 +34,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && plcontainer image-list )
   register: docker_images_listed
+  ignore_errors: true
   when: inventory_hostname in groups['master']
 
 
@@ -41,6 +42,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plcon.database_name }}'" )
   register: plcon_database_installed
+  ignore_errors: true
   when: inventory_hostname in groups['master']
 
 
@@ -48,6 +50,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plcon.database_name }} -c 'DROP EXTENSION plcontainer CASCADE;' )
   register: plcon_support_removed
+  ignore_errors: true
   when: ( inventory_hostname in groups['master'] and '100' in plcon_database_installed.stdout )
 
 
@@ -55,6 +58,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plcon.database_name }} )
   register: plcon_database_deleted
+  ignore_errors: true
   when: ( inventory_hostname in groups['master'] and '100' in plcon_database_installed.stdout )
 
 
@@ -62,6 +66,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -tAc "SELECT 100 FROM pg_database WHERE datname='{{ plr.database_name }}'" )
   register: plr_database_installed
+  ignore_errors: true
   when: inventory_hostname in groups['master']
 
 
@@ -69,6 +74,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ plr.database_name }} -c 'DROP EXTENSION plr CASCADE;' )
   register: plr_support_removed
+  ignore_errors: true
   when: ( inventory_hostname in groups['master'] and '100' in plr_database_installed.stdout )
 
 
@@ -76,6 +82,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ plr.database_name }} )
   register: plr_database_deleted
+  ignore_errors: true
   when: ( inventory_hostname in groups['master'] and '100' in plr_database_installed.stdout )
 
 
@@ -83,6 +90,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -s shared_preload_libraries )
   register: shared_preload_libraries_listed
+  ignore_errors: true
   when: inventory_hostname in groups['master']
 
 
@@ -90,6 +98,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -r shared_preload_libraries )
   register: shared_preload_libraries_removed
+  ignore_errors: true
   when: ( inventory_hostname in groups['master'] and shared_preload_libraries_listed.stdout.find('plc_coordinator') != -1 )
 
 
@@ -97,6 +106,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpconfig -c shared_preload_libraries -v 'diskquota' )
   register: shared_preload_libraries_removed
+  ignore_errors: true
   when: ( inventory_hostname in groups['master'] and shared_preload_libraries_listed.stdout.find('plc_coordinator') != -1 and shared_preload_libraries_listed.stdout_lines|length >= 2 )
 
 
@@ -105,6 +115,7 @@
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
+  ignore_errors: true
   when: inventory_hostname in groups['master']
 
 
@@ -139,6 +150,7 @@
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
   poll: 5
+  ignore_errors: true
   when: inventory_hostname in groups['master']
 
 # shell: plcontainer image-delete

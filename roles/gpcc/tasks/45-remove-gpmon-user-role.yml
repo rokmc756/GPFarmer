@@ -10,8 +10,8 @@
     - "function gpcc_schema.read_pghba(text)"
     - "table gpcc_schema.pghba_lock"
     - "function gpcc_schema.read_file(text)"
-  ignore_errors: yes
   register: gpmon_role_denpendencies_dropped
+  ignore_errors: yes
   when: inventory_hostname in groups['master'] and ( gpcc.major_version|int <= 6 and gpcc.minor_version|int < 7 )
 # when: gpmon_role_denpendencies_dropped.rc != 0 )
 
@@ -20,6 +20,7 @@
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -qAt -d template1 -c "select pg_terminate_backend(pid) from pg_stat_activity where datname = 'gpperfmon' and usename = 'gpmon';" )
   register: terminate_pids
+  ignore_errors: yes
   until: terminate_pids.stdout == ""
   retries: 10
   delay: 5
@@ -29,6 +30,7 @@
 - name: Drop the GPPerfmon Database if You Do Not Want to Keep Your Historical Greenplum Command Center Data
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb gpperfmon )
+  ignore_errors: yes
   async: 180
   poll: 5
   when: inventory_hostname in groups['master']

@@ -7,9 +7,7 @@
 
 - name: Set Facts for MADLib Extension
   import_tasks: set-madlib-facts.yml
-  tags:
-    - install
-    - uninstall
+  tags: install, uninstall
 
 
 #- name: Install MADLib on {{ ansible_distribution }}
@@ -17,37 +15,37 @@
 #  tags: install
 
 
-- name: Check Greenplum Database Installed on {{ ansible_distribution }}
+- name: Check Greenplum Database Installed
   import_tasks: 01-check-gpdb-installed.yml
   tags: install
 
 
-- name: Install MADLib Package on {{ ansible_distribution }}
+- name: Install MADLib Package
   import_tasks: 02-install-madlib-pkg.yml
   tags: install
 
 
-- name: Create MADLib Database on {{ ansible_distribution }}
+- name: Create MADLib Database
   import_tasks: 03-create-madlib-database.yml
   tags: install
 
 
-- name: Create MADLib Extension on {{ ansible_distribution }}
+- name: Create MADLib Extension
   import_tasks: 04-create-madlib-extension.yml
   tags: install
 
 
-- name: Check MADLib Database Installed on {{ ansible_distribution }}
+- name: Check MADLib Database Installed
   import_tasks: 41-check-gpdb-database.yml
   tags: uninstall
 
 
-- name: Uninstall MADLib Extension on {{ ansible_distribution }}
+- name: Uninstall MADLib Extension
   import_tasks: 42-uninstall-madlib-extension.yml
   tags: uninstall
 
 
-- name: Uninstall MADLib Config on {{ ansible_distribution }}
+- name: Uninstall MADLib Config
   import_tasks: 43-uninstall-madlib-config.yml
   tags: uninstall
 

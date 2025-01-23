@@ -6,99 +6,112 @@
 
 - name: Set Facts for Greenplum PXF
   import_tasks: set-pxf-facts.yml
-  tags:
-    - install
-    - uninstall
+  tags: install, uninstall
 
 
 - name: Check if Greenplum Database is Installed
   import_tasks: 01-check-gpdb.yml
   tags: install
-  when: pxf.install == true
+  when: ( pxf is defined and pxf == true )
+  # when: pxf.install == true
 
 
 - name: Install Java
   import_tasks: 02-install-java.yml
   tags: install
-  when: pxf.install == true
+  when: ( pxf is defined and pxf == true )
+  # when: pxf.install == true
 
 
 - name: Install Greenplum PXF
   import_tasks: 03-install-pxf.yml
   tags: install
-  when: pxf.install == true
+  when: ( pxf is defined and pxf == true )
+  # when: pxf.install == true
 
 
 - name: Start Greenplum PXF
   import_tasks: 04-start-pxf.yml
   tags: install
-  when: pxf.install == true
+  when: ( pxf is defined and pxf == true )
+  # when: pxf.install == true
 
 
 - name: Config Greenplum PXF
   import_tasks: 05-config-pxf.yml
   tags: install
-  when: pxf.install == true
+  when: ( pxf is defined and pxf == true )
+  # when: pxf.install == true
 
 
 - name: Setup NFS Access
   import_tasks: setup-nfs-access.yml
   tags: install
-  when: nfs.access == true
+  when: ( nfs is defined and nfs == true )
+  # when: nfs.access == true
 
 
 - name: Setup HDFS Access
   import_tasks: setup-hadoop-access.yml
   tags: install
-  when: hadoop.access == true
+  when: ( hadoop is defined and hadoop == true )
+  # when: hadoop.access == true
 
 
 - name: Setup Oracle Access
   import_tasks: setup-oracle-access.yml
   tags: install
-  when: oracle.access == true
+  when: ( oracle is defined and oracle == true )
+  # when: oracle.access == true
 
 
 - name: Setup MS-SQL Access
   import_tasks: setup-mssql-access.yml
   tags: install
-  when: mssql.access == true
+  when: ( mssql is defined and mssql == true )
+  # when: mssql.access == true
 
 
 - name: Setup Minio Access
   import_tasks: setup-minio-access.yml
   tags: install
-  when: minio.access == true
+  when: ( minio is defined and minio == true )
+  # when: minio.access == true
 
 
 - name: Uninstall NFS Access
   import_tasks: uninstall-nfs.yml
   tags: uninstall
-  when: nfs.access == true
+  when: ( nfs is defined and nfs == true )
+  # when: nfs.access == true
 
 
 - name: Uninstall HDFS Access
   import_tasks: uninstall-hadoop.yml
   tags: uninstall
-  when: hadoop.access == true
+  when: ( hadoop is defined and hadoop == true )
+  # when: hadoop.access == true
 
 
 - name: Uninstall Oracle Access
   import_tasks: uninstall-oracle.yml
   tags: uninstall
-  when: oracle.access == true
+  when: ( oracle is defined and oracle == true )
+  # when: oracle.access == true
 
 
 - name: Uninstall MS-SQL Access
   import_tasks: uninstall-mssql.yml
   tags: uninstall
-  when: mssql.access == true
+  when: ( mssql is defined and mssql == true )
+  # when: mssql.access == true
 
 
 - name: Uninstall Minio Access
   import_tasks: uninstall-minio.yml
   tags: uninstall
-  when: minio.access == true
+  when: ( minio is defined and minio == true )
+  # when: minio.access == true
 
 
 - name: Stop Greenplum PXF
@@ -118,5 +131,5 @@
 
 - name: Upgrade PXF
   import_tasks: upgrade.yml
-  tags: upgrade.yml
+  tags: upgrade
 

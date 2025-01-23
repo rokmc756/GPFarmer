@@ -6,15 +6,15 @@
     group: gpadmin
     path: "{{ gpdb.master_data_dir }}/gpperfmon/{{ item }}"
     state: absent
-  register: gpcc_data_logs_cleaned
+  register: clean_gpcc_data_logs
+  ignore_errors: true
   with_items:
     - data
     - logs
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
 
-- name:  Remove Out the GPMON Entries in pg_hba.conf
-  become: yes
+- name: Remove Out the GPMON Entries in pg_hba.conf
   become_user: gpadmin
   lineinfile:
     path: "{{ gpdb.master_data_dir }}/pg_hba.conf"
@@ -23,7 +23,8 @@
     # State is set to Absent to remove if the Searching Line is found
     state: absent
     backup: yes
-  register: gpmon_entries_removed
+  register: remove_gpmon_entries
+  ignore_errors: true
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
 
@@ -33,6 +34,7 @@
     group: gpadmin
     path:  "{{ gpcc_prefix_dir }}"
     state: absent
+  ignore_errors: true
   delegate_to: "{{ item }}"
   with_items: "{{ groups['all'] }}"
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists == True ) and ( gpcc.major_version >= 6 and gpcc.minor_version >= 2 )
@@ -44,19 +46,23 @@
     group: gpadmin
     path: "{{ gpcc_prefix_dir }}-{{ gpcc.major_version }}.{{ gpcc.minor_version }}"
     state: absent
+  ignore_errors: true
   delegate_to: "{{ item }}"
   with_items: "{{ groups['all'] }}"
   when: ( inventory_hostname in groups['master'] and gpcc_installed.stat.exists == True ) and ( gpcc.major_version >= 6 and gpcc.minor_version >= 2 )
 
 
 - name: Remove a Line Including PATH Variable for GPCC
+  become_user: gpadmin
   lineinfile:
     path: "{{ item }}"
     regexp: "^source (.*)greenplum-cc(.*)gpcc_path.sh$"
     state: absent
   register: remove_gpcc_path
+  ignore_errors: true
   with_items:
     - "/home/{{ gpdb.admin_user }}/.bashrc"
+  when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby']
 
 
 - name: Restart Greenplum Database
@@ -64,6 +70,7 @@
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 180
   poll: 5
-  register: gpdb_restarted
+  register: restart_gpdb
+  ignore_errors: true
   when: inventory_hostname in groups['master']
 

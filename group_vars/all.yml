@@ -3,6 +3,7 @@ ansible_become_pass: "changeme"
 
 gpcc:
   base_dir: "/usr/local"
+  prefix_dir: "greenplum-cc"
   major_version: 6
   minor_version: 10
   patch_version: 0
@@ -21,9 +22,9 @@ gpcc:
   net:
     type: "virtual"                # Or Physical
     gateway: "192.168.0.1"
-    ipaddr0: "192.168.0.7"
-    ipaddr1: "192.168.1.7"
-    ipaddr2: "192.168.2.7"
+    ipaddr0: "192.168.0.19"
+    ipaddr1: "192.168.1.19"
+    ipaddr2: "192.168.2.19"
 
 
 gpdb:

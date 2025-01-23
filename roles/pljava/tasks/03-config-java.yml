@@ -34,7 +34,7 @@
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   args:
     executable: /bin/bash
-  async: 300
+  async: 120
   poll: 5
   when: inventory_hostname in groups['master']
 

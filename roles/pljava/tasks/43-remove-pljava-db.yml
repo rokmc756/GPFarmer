@@ -9,7 +9,7 @@
 - name: Restart the Greenplum Database
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
-  async: 60
+  async: 100
   poll: 5
   when: inventory_hostname in groups['master']
 

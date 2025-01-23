@@ -68,20 +68,15 @@
     - gpdb.major_version|int >= 7
 
 
-- name: Set Prefix Directory for Installation Path of Greenplum Command Center
+- name: Set GPCC Base Directory
   set_fact:
-    gpcc_prefix_dir: "/usr/local/greenplum-cc-web"
-    gpcc_base_dir: "/usr/local/greenplum-cc-web"
-  when:
-    - ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
-    - gpcc.major_version|int <= 6 and gpcc.minor_version|int < 2
+    gpcc_base_dir: "{{ gpcc_prefix_dir }}"
+  when: ( gpcc.major_version >= 6 and gpcc.minor_version >= 2 )
 
 
-- name: Set Prefix Directory for Installation Path of Greenplum Command Center
+- name: Set GPCC Base Directory
   set_fact:
-    gpcc_prefix_dir: "/usr/local/greenplum-cc"
-    gpcc_base_dir: "/usr/local/greenplum-cc-{{ gpcc.major_version }}.{{ gpcc.minor_version }}"
-  when:
-    - ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] )
-    - ( gpcc.major_version|int >= 6 and gpcc.minor_version|int >= 2 ) or ( gpcc.major_version|int >= 7 and gpcc.minor_version|int >= 0 )
+    gpcc_base_dir: "{{ gpcc_prefix_dir }}-{{ gpcc.major_version }}.{{ gpcc.minor_version }}"
+  when: ( gpcc.major_version >= 6 and gpcc.minor_version >= 2 )
+
 

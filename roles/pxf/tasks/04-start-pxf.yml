@@ -3,7 +3,7 @@
 - name: Export the PXF JAVA_HOME Setting and Run the PXF Cluster Init Command to Initialize the PXF Service on All GPDB Hosts
   become_user: gpadmin
   shell: |
-    source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_CONF=/usr/local/pxf-{{ pxf.gpdb_version }}/conf /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster register
+    source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && PXF_CONF=/usr/local/pxf-{{ _pxf.gpdb_version }}/conf /usr/local/pxf-{{ _pxf.gpdb_version }}/bin/pxf cluster register
   args:
     executable: /bin/bash
   register: init_pxf_cluster
@@ -20,7 +20,7 @@
 - name: Synchronize the PXF Server Configuration to the Greenplum Cluster
   become_user: gpadmin
   shell: |
-    source ~/.bashrc && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster sync
+    source ~/.bashrc && /usr/local/pxf-{{ _pxf.gpdb_version }}/bin/pxf cluster sync
   register: sync_pxf_cluster
   args:
     executable: /bin/bash
@@ -36,7 +36,7 @@
 - name: Run the PXF Cluster Start Command to Start PXF on Each Sgment Hosts
   become_user: gpadmin
   shell: |
-    source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster start
+    source ~/.bashrc && source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && export JAVA_HOME={{ java_home }} && /usr/local/pxf-{{ _pxf.gpdb_version }}/bin/pxf cluster start
   async: 100
   poll: 3
   args:
@@ -64,7 +64,7 @@
 - name: Run the PXF Cluster Status Command to check PXF on Each Sgment Hosts
   become_user: gpadmin
   shell: |
-    source ~/.bashrc && /usr/local/pxf-{{ pxf.gpdb_version }}/bin/pxf cluster status
+    source ~/.bashrc && /usr/local/pxf-{{ _pxf.gpdb_version }}/bin/pxf cluster status
   args:
     executable: /bin/bash
   register: status_pxf_cluster

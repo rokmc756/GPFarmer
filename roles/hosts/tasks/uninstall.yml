@@ -60,7 +60,7 @@
 
 - name: Disable Development Package Repository for RedHat Based Linux Distribution
   shell: |
-    yum-config-manager --disable {{ item }}
+    dnf config-manager --set-disabled {{ item }}
   with_items:
     - "devel"
   when: ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky"

@@ -5,18 +5,16 @@
 
 
 - name: Apply Facts for All Hosts
-  import_tasks: set-facts.yml
-  tags:
-    - install
-    - uninstall
+  import_tasks: set-gptext-facts.yml
+  tags: install, uninstall
 
 
 - name: Install GPText
-  import_tasks: install.yml
+  import_tasks: install-gptext.yml
   tags: install
 
 
 - name: Uninstall GPText
-  import_tasks: uninstall.yml
+  import_tasks: uninstall-gptext.yml
   tags: uninstall
 

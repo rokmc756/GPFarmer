@@ -11,7 +11,7 @@
 - name: Drop PXF Extension
   become: yes
   become_user: "{{ gpdb.admin_user }}"
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ pxf.database_name }} -c "DROP EXTENSION pxf;")
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d {{ _pxf.database_name }} -c "DROP EXTENSION pxf;")
   register: pxf_extension_dropped
   ignore_errors: yes
   when: inventory_hostname in groups['master'] and '1' in pxf_extension_install_checked.stdout
@@ -20,7 +20,7 @@
 - name: Drop Database for PXF
   become: yes
   become_user: "{{ gpdb.admin_user }}"
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ pxf.database_name }} )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && dropdb {{ _pxf.database_name }} )
   register: pxf_database_dropped
   ignore_errors: yes
   when: inventory_hostname in groups['master']
@@ -29,7 +29,7 @@
 - name: Drop User for PXF
   become: yes
   become_user: "{{ gpdb.admin_user }}"
-  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "DROP USER {{ pxf.username }};" )
+  shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "DROP USER {{ _pxf.username }};" )
   register: pxf_user_dropped
   ignore_errors: yes
   when: inventory_hostname in groups['master']

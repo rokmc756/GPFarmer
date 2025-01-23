@@ -1,5 +1,5 @@
 ---
-- name: Copy the PXF .{{ pxf.binary_type }} File to All Hosts in Greenplum Cluster
+- name: Copy the PXF .{{ _pxf.binary_type }} File to All Hosts in Greenplum Cluster
   copy: src={{ pxf_package_name }} dest={{ gpdb.admin_home_dir }}/{{ pxf_package_name }} mode=0644 owner=gpadmin group=gpadmin
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
@@ -34,7 +34,7 @@
     group: gpadmin
     mode: 0755
   with_items:
-    - "{{ gpdb.base_dir }}/pxf-{{ pxf.gpdb_version }}"
+    - "{{ gpdb.base_dir }}/pxf-{{ _pxf.gpdb_version }}"
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 
@@ -45,14 +45,14 @@
     line: "{{ item }}"
     insertafter: EOF
   with_items:
-    - "export PATH=$PATH:/usr/local/pxf-{{ pxf.gpdb_version }}/bin"
+    - "export PATH=$PATH:/usr/local/pxf-{{ _pxf.gpdb_version }}/bin"
     - "export JAVA_HOME={{ java_home }}"
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 
 - name: Chown GPAmdin User for PXF Directory
   file:
-    dest: "{{ gpdb.base_dir }}/pxf-{{ pxf.gpdb_version }}"
+    dest: "{{ gpdb.base_dir }}/pxf-{{ _pxf.gpdb_version }}"
     owner: gpadmin
     group: gpadmin
     mode: u=rwX,g=rX,o=rX

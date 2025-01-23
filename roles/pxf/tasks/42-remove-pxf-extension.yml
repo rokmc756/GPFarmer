@@ -30,7 +30,7 @@
 - name: Remove PXF RPM Package
   become: yes
   become_user: root
-  yum: name=pxf-{{ pxf.gpdb_version }} state=absent
+  yum: name=pxf-{{ _pxf.gpdb_version }} state=absent
   when:
     -  inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
     - ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 5

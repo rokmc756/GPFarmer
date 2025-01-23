@@ -4,6 +4,7 @@
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_prefix_dir }}/gpcc_path.sh && gpcc status )
   register: gpcc_running
+  when: inventory_hostname in groups['standby']
 
 - debug:
     msg: "{{ gpcc_running.stdout_lines[1].split(' ').4.split('/').0 }}"
@@ -14,12 +15,18 @@
 
 - name: Check if Greenplum Command Center is Running
   debug: msg="Greenplum Command Center is not running normally!"
-  when: ( gpcc.major_version >= 6 and gpcc.minor_version >= 7 ) and ( inventory_hostname in groups['standby'] and gpcc_installed.stat.exists == True ) and ( gpcc_running.stdout_lines[1].split(' ').4.split('/').0|int < 1 )
+  when:
+    - inventory_hostname in groups['standby'] and gpcc_installed.stat.exists == True
+    - gpcc.major_version >= 6 and gpcc.minor_version >= 7
+    - gpcc_running.stdout_lines[1].split(' ').4.split('/').0|int < 1
 
 
 - name: Stop Command Center Instance
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && . {{ gpcc_prefix_dir }}/gpcc_path.sh && gpcc stop )
-  when: ( gpcc.major_version >= 6 and gpcc.minor_version >= 2 ) and ( inventory_hostname in groups['standby'] and gpcc_installed.stat.exists == True ) and ( gpcc_running.stdout_lines[1].split(' ').4.split('/').0|int > 0 )
+  when:
+    - inventory_hostname in groups['standby'] and gpcc_installed.stat.exists == True
+    - gpcc.major_version >= 6 and gpcc.minor_version >= 2
+    - gpcc_running.stdout_lines[1].split(' ').4.split('/').0|int > 0
 

@@ -4,24 +4,30 @@
   shell: ( source {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ check_gpmetrics_installed }} )
   args:
     executable: /bin/bash
+  register: check_install_mc
   ignore_errors: true
-  register: mc_installed
   changed_when: False
-  when: inventory_hostname in groups['master'] and ( gpcc.major_version >= 6 and gpcc.minor_version >= 7 )
+  when: inventory_hostname in groups['master']
 
 
 - name: Stop if MetricsCollector Extension Package Is Not Installed
   fail: msg="MetricsCollector extension package is not installed!"
-  when: ( gpcc.major_version >= 6 and gpcc.minor_version >= 7 ) and ( inventory_hostname in groups['master'] and 'MetricsCollector' not in mc_installed.stdout )
+  ignore_errors: true
+  when:
+    - inventory_hostname in groups['master']
+    - ( gpcc.major_version >= 6 and gpcc.minor_version >= 7 ) and ( inventory_hostname in groups['master'] and 'MetricsCollector' not in check_install_mc.stdout )
 
 
 - name: Drop MetricsCollector Extension
+  become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -d gpperfmon -c "DROP EXTENSION metrics_collector;" )
   args:
     executable: /bin/bash
-  ignore_errors: yes
-  register: mc_extension_dropped
-  when: ( gpcc.major_version >= 6 and gpcc.minor_version <= 7 ) and ( inventory_hostname in groups['master'] and 'MetricsCollector' in mc_installed.stdout )
+  register: drop_mc_extension
+  ignore_errors: true
+  when:
+    - inventory_hostname in groups['master']
+    - ( gpcc.major_version >= 6 and gpcc.minor_version <= 7 ) and ( inventory_hostname in groups['master'] and 'MetricsCollector' in check_install_mc.stdout )
   # shared_preload_libraries = 'metrics_collector'
   # gp_enable_query_metrics = on
 
@@ -29,5 +35,8 @@
 - name: Unnstall MetricsCollector Extension Package
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ gpmetrics_package_version }} )
-  when: ( gpcc.major_version >= 6 and gpcc.minor_version >= 7 ) and ( inventory_hostname in groups['master'] and 'MetricsCollector' in mc_installed.stdout )
+  ignore_errors: true
+  when:
+    - inventory_hostname in groups['master']
+    - ( gpcc.major_version >= 6 and gpcc.minor_version >= 7 ) and ( inventory_hostname in groups['master'] and 'MetricsCollector' in check_install_mc.stdout )
 
