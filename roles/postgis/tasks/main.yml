@@ -1,19 +1,12 @@
 ---
-- name: Check OS (PostGIS)
+- name: Check OS ( PostGIS )
   fail: msg="Not a Red Hat/CentOS/Rocky or Unbuntu/Debian based system!"
   when: ansible_distribution != 'RedHat' or ansible_distribution != 'CentOS' or ansible_distribution != 'Rocky' or ansible_distribution != 'Debian' or ansible_distribution != 'Ubuntu'
 
 
 - name: Set Facts for PostGIS
   import_tasks: set-postgis-facts.yml
-  tags:
-    - install
-    - uninstall
-
-
-#- name: Install PostGIS
-#  import_tasks: install.yml
-#  tags: install
+  tags: install, uninstall
 
 
 - name: Check if Greenplum Database is Installed and Running
@@ -41,11 +34,6 @@
   tags: install
 
 
-#- name: Uninstall PostGIS
-#  import_tasks: uninstall.yml
-#  tags: uninstall
-
-
 - name: Check if Greenplum Database is Installed and Running
   import_tasks: 41-check-gpdb.yml
   tags: uninstall
@@ -64,5 +52,4 @@
 - name: Remove PostGIS Config Files and Restart Greenplum Database
   import_tasks: 44-remove-postgis-config.yml
   tags: uninstall
-
 

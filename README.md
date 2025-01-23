@@ -2,7 +2,7 @@
 ![alt text](https://github.com/rokmc756/GPFarmer/blob/main/roles/gpdb/images/greenplum_architecture.webp)
 
 ## What is GPFarmer?
-GPFarmer is ansible playbook to deploy Greenplum Database conveniently on Baremetal, Virtual Machines and Cloud Infrastructure.
+GPFarmer is Ansible Playbook to deploy Greenplum Database conveniently on Baremetal, Virtual Machines and Cloud Infrastructure.
 It provide also many extensions to install such GPText, madlib, GPCC, postgis as well. The main purpose of this project is actually
 very simple. Because i have many jobs to install different kind of GPDB versions and reproduce issues & test features  as a support
 engineer. I just want to spend less time for it.
@@ -33,14 +33,14 @@ Supported OS for ansible target host should be prepared with package repository 
 
 ## Prepare ansible host to run GPFarmer
 * MacOS
-```
+```yaml
 $ xcode-select --install
 $ brew install ansible
 $ brew install https://raw.githubusercontent.com/kadwanev/bigboybrew/master/Library/Formula/sshpass.rb
 ```
 
 * Fedora/CentOS/RHEL
-```
+```yaml
 $ sudo yum install ansible
 ```
 
@@ -49,20 +49,20 @@ Configure Yum / Local & EPEL Repostiory
 
 ## Download / configure / run GPFarmer
 #### 1) Clone GPFarmer ansible playbook and go to that directory
-```
+```yaml
 $ git clone https://github.com/rokmc756/GPFarmer
 $ cd GPFarmer
 ```
 
 #### 2) Configure password for sudo user in VMs where GPDB would be deployed
-```
+```yaml
 $ vi Makefile
 ANSIBLE_HOST_PASS="changeme"  # It should be changed with password of user in ansible host that gpfarmer would be run.
 ANSIBLE_TARGET_PASS="changeme"  # # It should be changed with password of sudo user in managed nodes that gpdb would be installed.
 ```
 
 #### 3) Configure inventory for hostname, ip address, username and user's password
-```
+```yaml
 [all:vars]
 ssh_key_filename="id_rsa"
 remote_machine_username="jomoon"
@@ -83,37 +83,30 @@ rk9-node04 ansible_ssh_host=192.168.2.194
 rk9-node05 ansible_ssh_host=192.168.2.195
 ```
 
-#### 4) Install Greenplum MPP Database
-```
+#### 4) Deploy Greenplum MPP Database Cluster
+```yaml
 $ make gpdb r=prepare
 $ make gpdb r=install s=db
 ```
 
-#### 5) Install GPText
-```
-```
-
-#### 6) Configure variables for GPText
-```
+#### 5) Deploy Greenplum Command Center
+```yaml
+$ make gpcc r=install s=all
 ```
 
-#### 7) Configure variables for MADLib
-```
-```
-
-#### 8) Configure variables for PostGIS
-```
+#### 6) Deploy Greenplum Text
+```yaml
+$ make gptext r=install
 ```
 
-#### 9) Configure order of roles in GPFarmer anisble playbook and deploy GPDB and extentions
-```
-```
-#### 10) Configure order of roles in GPFarmer anisble playbook and upgrade GPDB
-```
+#### 7) Deploy MADLib
+```yaml
+$ make madlib r=install
 ```
 
-#### 11) Configure order of roles in GPFarmer anisble playbook and destroy GPDB and extentions
-```
+#### 8) Deploy PostGIS
+```yaml
+$ make postgis r=install
 ```
 
 ## Planning

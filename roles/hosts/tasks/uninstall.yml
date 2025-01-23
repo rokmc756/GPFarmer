@@ -22,11 +22,11 @@
   lineinfile:
     dest: /etc/hosts
     regexp: "{{ domain_name }}"
-    line: "{{ hostvars[ item ][ 'ansible_'~netdev0 ][ 'ipv4' ][ 'address' ] }} {{ item }}"
+    line: "{{ hostvars[ item ][ _netdev ][ 'ipv4' ][ 'address' ] }} {{ item }}"
     state: absent
     backup: yes
   register: hosts_deleted
-  when: hostvars[ item ][ 'ansible_'~netdev0 ]['ipv4']['address'] is defined
+  when: hostvars[ item ][ _netdev ]['ipv4']['address'] is defined
   with_items: "{{ groups['all'] }}"
 
 
