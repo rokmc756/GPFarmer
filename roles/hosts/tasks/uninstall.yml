@@ -31,15 +31,16 @@
 
 
 - name: Kill Processes Hold On User Directory
-  become: true
+  become_user: root
   shell: |
-    nohup pkill -U {{ sudo_user }}
+    {{ item }}{{ sudo_user }}
     sleep 3
   register: kill_user_processes
   until: kill_user_processes is succeeded
   retries: 10
-  # sleep 3
-  # nohup fuser -k /home/{{ sudo_user }}
+  with_items:
+    - "nohup pkill -U "
+    - "nohup fuser -k /home/"
 
 
 - name: Delete "{{ sudo_user }}" user and group
