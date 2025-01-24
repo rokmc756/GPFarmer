@@ -85,7 +85,6 @@ rk9-node05 ansible_ssh_host=192.168.2.195
 
 #### 4) Deploy Greenplum MPP Database Cluster
 ```yaml
-$ make gpdb r=prepare
 $ make gpdb r=install s=db
 ```
 
@@ -110,6 +109,7 @@ $ make postgis r=install
 ```
 
 ## Planning
+Need to fix installing postgis that error, stderr='warning: Unable to get systemd shutdown inhibition lock: Permission denied
 Change CentOS and Rocky Linux repository into local mirror in Korea\
 Converting Makefile.init from original project\
 Adding GPCR role\

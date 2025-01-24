@@ -9,11 +9,12 @@
 - name: Check if the Greenplum Database Software is Already Installed
   stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_installed
+  when: inventory_hostname in groups['master']
 
 
 - name: Stop if Greenplum Database Software is Not Installed
   fail: msg="Greenplum Database software is not installed!"
-  when: gpdb_installed.stat.exists != True
+  when: inventory_hostname in groups['master'] and gpdb_installed.stat.exists != True
 
 
 - name: Verify that Greenplum Database is Up and Running

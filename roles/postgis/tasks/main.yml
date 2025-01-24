@@ -14,7 +14,7 @@
   tags: install
 
 
-- name: Install PostGIS Gppkg Package
+- name: Install PostGIS GPpkg Package
   import_tasks: 02-install-postgis-pkgs.yml
   tags: install
 
@@ -44,7 +44,7 @@
   tags: uninstall
 
 
-- name: Remove PostGIS Gppkg Package
+- name: Remove PostGIS GPpkg Package
   import_tasks: 43-remove-postgis-pkgs.yml
   tags: uninstall
 

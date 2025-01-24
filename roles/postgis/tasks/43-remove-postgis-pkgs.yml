@@ -26,9 +26,9 @@
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && {{ gppkg_remove_cmd }} {{ postgis_package_name }} )
   register: postgis_package_uninstalled
   ignore_errors: true
-  until: postgis_package_uninstalled is succeeded
-  retries: 10
-  delay: 30
+  # until: postgis_package_uninstalled is succeeded
+  # delay: 180
+  # retries: 10
   changed_when: postgis_database_installed == True
   when: inventory_hostname in groups['master']
 

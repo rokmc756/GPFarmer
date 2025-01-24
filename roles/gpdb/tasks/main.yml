@@ -6,7 +6,7 @@
 
 - name: Set Facts for Greenplum MPP Database
   import_tasks: set-gpdb-facts.yml
-  tags: install, uninstall, prepare, add
+  tags: install, uninstall, prepare
 
 
 - name: Check if Greenplum MPP Database is Installed Already
@@ -17,42 +17,43 @@
 - name: Prepare OS Parameters
   import_tasks: prepare-os-parameters.yml
   tags: prepare
+  when: ( env is defined and env == true ) or ( gpdb_all is defined and gpdb_all == true )
 
 
 - name: Install Greenplum MPP Database Software Binary
   import_tasks: install-gpdb.yml
   tags: install, deploy, init
-  when: ( db is defined and db == true )
+  when: ( db is defined and db == true ) or ( gpdb_all is defined and gpdb_all == true )
 
 
 - name: Initialize Greenplum MPP Database
   import_tasks: init-gpdb.yml
   tags: install, init, deploy
-  when: ( db is defined and db == true )
+  when: ( db is defined and db == true ) or ( gpdb_all is defined and gpdb_all == true )
 
 
 - name: Finalize Greenplum MPP Database
   import_tasks: finalize-gpdb.yml
   tags: install, deploy
-  when: ( db is defined and db == true )
+  when: ( db is defined and db == true ) or ( gpdb_all is defined and gpdb_all == true )
+
+
+- name: Enable Resource Group
+  import_tasks: rg/enable-resource-group.yml
+  tags: enable
+  when: ( rg is defined and rg == true ) or ( gpdb_all is defined and gpdb_all == true )
+
+
+- name: Enable SSL
+  import_tasks: ssl/enable-ssl.yml
+  tags: enable
+  when: ( ssl is defined and ssl == true ) or ( gpdb_all is defined and gpdb_all == true )
 
 
 - name: Enable LDAP Authentication
   import_tasks: ldap/enable-ldap.yml
   tags: enable, install
   when: ( ldap is defined and ldap == true )
-
-
-- name: Enable Resource Group
-  import_tasks: rg/enable-resource-group.yml
-  tags: enable, install
-  when: ( rg is defined and rg == true )
-
-
-- name: Enable SSL
-  import_tasks: ssl/enable-ssl.yml
-  tags: enable, install
-  when: ( ssl is defined and ssl == true )
 
 
 - name: Enable Kerberos Authentication
@@ -76,18 +77,18 @@
 - name: Disable Resource Group
   import_tasks: rg/disable-resource-group.yml
   tags: disable, uninstall
-  when: ( rg is defined and rg == true )
+  when: ( rg is defined and rg == true ) or ( gpdb_all is defined and gpdb_all == true )
 
 
 - name: Uninstall Greenplum MPP Database
   import_tasks: uninstall.yml
   tags: uninstall, destroy
-  when: ( db is defined and db == true )
+  when: ( db is defined and db == true ) or ( gpdb_all is defined and gpdb_all == true )
 
 
 - name: Upgrade Greenplum MPP Database
   import_tasks: upgrade.yml
   tags: upgrade
-  when: ( db is defined and db == true )
+  when: ( db is defined and db == true ) or ( gpdb_all is defined and gpdb_all == true )
 
 
