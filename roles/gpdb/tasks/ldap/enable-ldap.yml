@@ -1,5 +1,5 @@
 ---
-- name: Verify that Greenplum Database is Up and Running
+- name: Verify that Greenplum MPP Database is Up and Running
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
@@ -49,7 +49,7 @@
   when: inventory_hostname in groups['master']
 
 
-- name: Add LDAP User into FreeIPA Server for Greenplum Database Authentication
+- name: Add LDAP User into FreeIPA Server for Greenplum MPP Database Authentication
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit -p {{ freeipa.admin_user }}
     echo {{ item.passwd }} | ipa user-add {{ item.username }} --first={{ item.first_name }} --last={{ item.last_name }} --password
@@ -61,7 +61,7 @@
   when: inventory_hostname in groups['master']
 
 
-- name: Add Service for Greenplum Database into FreeIPA Server
+- name: Add Service for Greenplum MPP Database into FreeIPA Server
   shell: |
     echo {{ freeipa.admin_passwd }} | kinit {{ freeipa.admin_user }}
     ipa service-add postgres/{{ freeipa.client_fqdn }}.{{ freeipa.client_domain }}@{{ freeipa.client_realm }}
@@ -71,7 +71,7 @@
   when: inventory_hostname in groups['master']
 
 
-- name: Add LDAP Configuration File to Authenticate LDAP User into Greenplum Database
+- name: Add LDAP Configuration File to Authenticate LDAP User into Greenplum MPP Database
   become_user: gpadmin
   lineinfile:
     dest: "{{ gpdb.master_data_dir }}/{{ item.file }}"
@@ -106,7 +106,7 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
 
-- name: Restart Greenplum Database to Apply Changes
+- name: Restart Greenplum MPP Database to Apply Changes
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )

@@ -113,7 +113,7 @@
   when: ( inventory_hostname in groups['master'] and gpdb_install == True )
 
 
-- name: Change Permission of Greenplum Database Directory
+- name: Change Permission of Greenplum MPP Database Directory
   file:
     path: "{{ item.dir }}"
     state: "{{ item.state }}"
@@ -126,7 +126,7 @@
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
 
-- name: Change Permission of Greenplum Database Link since Above Task does not Work for Link
+- name: Change Permission of Greenplum MPP Database Link since Above Task does not Work for Link
   shell: "chown -R gpadmin:gpadmin {{ gpdb.base_dir }}/greenplum-db"
   when: inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] or inventory_hostname in groups['segments']
 
@@ -192,7 +192,7 @@
 # python -m pip install psutil
 
 
-- name: Initialize Greenplum Greenplum Database Cluster
+- name: Initialize Greenplum Greenplum MPP Database Cluster
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -a -c /home/gpadmin/gpinitsystem_config -h /home/gpadmin/hostfile {{ gpdb.spread_mirrors }} )
   args:
@@ -204,7 +204,7 @@
   failed_when: init_db.rc > 1
 
 
-- name: Initialize Greenplum Database Cluster with Standby Master
+- name: Initialize Greenplum MPP Database Cluster with Standby Master
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpinitsystem -c /home/gpadmin/gpinitsystem_config -a {{ gpdb.spread_mirrors }} -h /home/gpadmin/hostfile -s {{ hostvars[groups['standby'][0]]['ansible_hostname'] }} )
   args:
@@ -229,7 +229,7 @@
   when: ( inventory_hostname in groups['master'] or inventory_hostname in groups['standby'] ) and ( gpdb_install == True or gpdb_linkchange == True )
 
 
-- name: Restart Greenplum Database after Initialization
+- name: Restart Greenplum MPP Database after Initialization
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )
   async: 60
@@ -237,13 +237,13 @@
   when: inventory_hostname in groups['master'] and ( gpdb_install == True or gpdb_linkchange == True )
 
 
-- name: Check if Greenplum Database is Running
+- name: Check if Greenplum MPP Database is Running
   stat: path=/tmp/.s.PGSQL.5432
   register: gpdb_running_nothing
   when: inventory_hostname in groups['master'] and ( gpdb_install == True and gpdb_linkchange == True )
 
 
-- name: Start Greenplum Database
+- name: Start Greenplum MPP Database
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstart -a )
   async: 60

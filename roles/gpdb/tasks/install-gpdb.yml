@@ -2,7 +2,7 @@
 # Greenplum MPP Database installation
 ##########################################################################################################################################################################
 
-- name: Copy Greenplum Database {{ gpdb.major_version }} {{ gpdb.binary_type|upper }} Packages
+- name: Copy Greenplum MPP Database {{ gpdb.major_version }} {{ gpdb.binary_type|upper }} Packages
   copy: src={{ binary_installer_file }}.{{ gpdb.binary_type }} dest=/home/gpadmin/{{ binary_installer_file }}.{{ gpdb.binary_type }} mode=0644 owner=gpadmin group=gpadmin
 
 
@@ -19,24 +19,24 @@
 
 
 - block:
-  - name: Unzip Greenplum Database {{ gpdb.major_version }} archive (Ansible < 2.2)
+  - name: Unzip Greenplum MPP Database {{ gpdb.major_version }} archive (Ansible < 2.2)
     unarchive: src=/home/gpadmin/{{ binary_installer_file }}.zip dest=/home/gpadmin/gpdb{{ gpdb.major_version }}-tmp-install remote_src=yes copy=no owner=gpadmin group=gpadmin
     when: ansible_version.full is version_compare('2.2.0.0', operator='<', strict=False)
 
-  - name: Unzip Greenplum Database {{ gpdb.major_version }} archive (Ansible >= 2.2)
+  - name: Unzip Greenplum MPP Database {{ gpdb.major_version }} archive (Ansible >= 2.2)
     unarchive: src=/home/gpadmin/{{ binary_installer_file }}.zip dest=/home/gpadmin/gpdb{{ gpdb.major_version }}-tmp-install remote_src=yes owner=gpadmin group=gpadmin
     when: ansible_version.full is version_compare('2.2.0.0', operator='>=', strict=False)
 
   when: gpdb_install == True and (  gpdb.binary_type != 'rpm' and gpdb.binary_type != 'deb' )
 
 
-- name: Check if Greenplum Database is Running
+- name: Check if Greenplum MPP Database is Running
   stat: path=/tmp/.s.PGSQL.5432
   register: gpdb_running
   when: inventory_hostname in groups['master']
 
 
-- name: Shutdown Greenplum Database
+- name: Shutdown Greenplum MPP Database
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
   args:
@@ -66,7 +66,7 @@
   when: ( inventory_hostname in groups['master'] and gpdb_install == True ) and ( gpdb.binary_type != 'rpm' and gpdb.binary_type != 'deb' )
 
 
-- name: Install Greenplum Database Software Binary in {{ gpdb.base_dir }}
+- name: Install Greenplum MPP Database Software Binary in {{ gpdb.base_dir }}
   become_user: gpadmin
   command: /home/gpadmin/gpdb{{ gpdb.major_version }}-tmp-install/{{ binary_installer_file }}.bin
   async: 120
@@ -74,7 +74,7 @@
   when: ( gpdb_install == True and gpdb.binary_type == 'zip' )
 
 
-- name: Install Greenplum Database Software RPM Package in {{ gpdb.base_dir }}
+- name: Install Greenplum MPP Database Software RPM Package in {{ gpdb.base_dir }}
   package:
     name: /home/gpadmin/{{ binary_installer_file }}.{{ gpdb.binary_type }}
     state: present
@@ -84,7 +84,7 @@
   when: ( gpdb_install == True and gpdb.binary_type == 'rpm' )
 
 
-- name: Install Greenplum Database Software DEB Package in {{ gpdb.base_dir }}
+- name: Install Greenplum MPP Database Software DEB Package in {{ gpdb.base_dir }}
   apt:
     deb: /home/gpadmin/{{ binary_installer_file }}.{{ gpdb.binary_type }}
     state: present
@@ -93,7 +93,7 @@
   when: ( gpdb_install == True and gpdb.binary_type == 'deb' )
 
 
-- name: Create Symlink for Greenplum Database Install Directory
+- name: Create Symlink for Greenplum MPP Database Install Directory
   file:
     src: "{{ gpdb.base_dir }}/{{ install_path }}"
     dest: "{{ gpdb.base_dir }}/{{ gpdb.pkg_name }}"
@@ -108,12 +108,12 @@
   when: ( gpdb_install == True and gpdb.binary_type == 'zip' )
 
 
-- name: Check Again if the Greenplum Database Version is Already Installed
+- name: Check Again if the Greenplum MPP Database Version is Already Installed
   stat: path={{ gpdb.base_dir }}/{{ install_path }}
   register: gpdb_installed_verify
 
 
-- name: Stop if Greenplum Database Software is not Installed
-  fail: msg="Installing Greenplum Database Software is currently failed!"
+- name: Stop if Greenplum MPP Database Software is not Installed
+  fail: msg="Installing Greenplum MPP Database Software is currently failed!"
   when: gpdb_installed_verify.stat.exists != True
 

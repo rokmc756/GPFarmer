@@ -1,5 +1,5 @@
 ---
-- name: Add the Path of Greenplum Database Variable file into .bashrc
+- name: Add the Path of Greenplum MPP Database Variable file into .bashrc
   become_user: gpadmin
   lineinfile:
     dest: /home/gpadmin/.bashrc
@@ -7,7 +7,7 @@
     state: present
 
 
-- name: Verify that Greenplum Database is Up and Running
+- name: Verify that Greenplum MPP Database is Up and Running
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
@@ -29,12 +29,12 @@
   failed_when: "'(Greenplum Database ' not in select_version.stdout"
 
 
-- name: Greenplum Database Installation
-  debug: msg="Greenplum Database {{ install_path }} installed"
+- name: Greenplum MPP Database Installation
+  debug: msg="Greenplum MPP Database {{ install_path }} installed"
   when: gpdb_install == True
 
 
-- name: Greenplum Database Version switched
-  debug: msg="Greenplum Database {{ install_path }} is active"
+- name: Greenplum MPP Database Version switched
+  debug: msg="Greenplum MPP Database {{ install_path }} is active"
   when: gpdb_linkchange == True
 

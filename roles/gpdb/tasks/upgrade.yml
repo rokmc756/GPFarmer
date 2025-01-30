@@ -1,10 +1,10 @@
 ---
-# Upgrade Greenplum Database on Red Hat / CentOS / Rocky / Ubuntu / Debian
+# Upgrade Greenplum MPP Database on Red Hat / CentOS / Rocky / Ubuntu / Debian
 # upgrade: {{ gpdb.base_dir }}/greenplum-db-{ new version } must not exist
 # linkchange: {{ gpdb.base_dir }} /greenplum-db points to another directory
 
 
-- name: Check if GPDB link is Already Existed
+- name: Check if Greenplum MPP Database Installation Link is Already Existed
   stat: path={{ gpdb.base_dir }}/greenplum-db
   register: gpdb_linked
 
@@ -40,20 +40,20 @@
 
 
 # If {{ gpd.base_dir }}/greenplum-db-{ new version } does not exists, it's an upgrade
-- name: Identify Greenplum Database Upgrade
+- name: Identify Greenplum MPP Database Upgrade
   set_fact:
     gpdb_upgrade: True
   when: gpdb_linked.stat.exists == True and gpdb_installed.stat.exists != True
 
 
 # If the link points to a different existing directory, it's a link change
-- name: Identify Greenplum Database Linkchange
+- name: Identify Greenplum MPP Database Linkchange
   set_fact:
     gpdb_linkchange: True
   when: ( gpdb_linked.stat.exists == True and gpdb_installed.stat.exists == True and gpdb_linked.stat.lnk_source != "{{ gpdb.base_dir }}/greenplum-db-{{ upgrade.major_version }}.{{ upgrade.minor_version }}" )
 
 
-- name: Check if Greenplum Database is Running
+- name: Check if Greenplum MPP Database is Running
   stat: path=/tmp/.s.PGSQL.5432
   register: gpdb_running
   when:
@@ -62,7 +62,7 @@
 - debug: msg={{ gpdb_running }}
 
 
-- name: Shutdown Greenplum Database
+- name: Shutdown Greenplum MPP Database
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -a )
   async: 60
@@ -74,14 +74,14 @@
 - debug: msg={{ database_shutdowned }}
 
 
-- name: Copy Greenplum Database {{ upgrade.major_version }} {{ upgrade.binary_type }} Package
+- name: Copy Greenplum MPP Database {{ upgrade.major_version }} {{ upgrade.binary_type }} Package
   copy: src={{ binary_upgrade_file }}.rpm dest=/home/gpadmin/{{ binary_upgrade_file }}.rpm mode=0644 owner=gpadmin group=gpadmin
   when:
     - gpdb_upgrade == True or gpdb_linkchange == True
     - upgrade.binary_type == 'rpm'
 
 
-- name: Install Greenplum Database Software in {{ gpdb.base_dir }}
+- name: Install Greenplum MPP Database Software in {{ gpdb.base_dir }}
   package:
     name: /home/gpadmin/{{ binary_upgrade_file }}.rpm
     state: latest
@@ -157,7 +157,7 @@
     - gpdb_upgrade == True or gpdb_linkchange == True
 
 
-- name: Start Greenplum Database after Upgrade
+- name: Start Greenplum MPP Database after Upgrade
   become_user: gpadmin
   shell: ( . {{ gpdb.base_dir }}/{{ upgrade_path }}/greenplum_path.sh && gpstart -a )
   async: 60

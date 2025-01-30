@@ -4,7 +4,7 @@
   register: check_gpdb_link
 
 
-- name: Check if the Greenplum Database Version is Already Installed
+- name: Check if the Greenplum MPP Database Version is Already Installed
   stat: path={{ gpdb.base_dir }}/{{ install_path }}
   register: check_gpdb_dir
 
@@ -20,30 +20,30 @@
     gpdb_linkchange: False
 
 
-- name: Identify Greenplum Database Installation
+- name: Identify Greenplum MPP Database Installation
   set_fact:
     gpdb_install: True
   when: check_gpdb_dir.stat.exists != True and check_gpdb_link.stat.exists != True
 
 
 # If the link points to a different existing directory, it's a link change
-- name: Identify Greenplum Database Linkchange
+- name: Identify Greenplum MPP Database Linkchange
   set_fact:
     gpdb_linkchange: True
   when: check_gpdb_link.stat.exists != True
 
 
-- name: Greenplum Database Installation
-  debug: msg="New Greenplum Database installation"
+- name: Greenplum MPP Database Installation
+  debug: msg="New Greenplum MPP Database installation"
   when: gpdb_install == True
 
 
-- name: Greenplum Database Link Change
-  debug: msg="Changing link to Greenplum Database version"
+- name: Greenplum MPP Database Link Change
+  debug: msg="Changing link to Greenplum MPP Database version"
   when: gpdb_linkchange == True
 
 
-- name: Greenplum Database - Nothing to do
+- name: Greenplum MPP Database - Nothing to do
   debug: msg="Nothing to do (no installation/upgrade required)"
   when: gpdb_install == False and gpdb_linkchange == False
 

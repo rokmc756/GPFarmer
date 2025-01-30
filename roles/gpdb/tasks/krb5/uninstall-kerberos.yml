@@ -1,5 +1,5 @@
 ---
-- name: Verify that Greenplum Database is Up and Running
+- name: Verify that Greenplum MPP Database is Up and Running
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && psql -c "SELECT VERSION()" )
@@ -65,7 +65,7 @@
 
 
 # State is set to Absent to remove if the Searching Line is found
-- name: Remove krb5 Configuration File to Authenticate Kerberos User into Greenplum Database
+- name: Remove krb5 Configuration File to Authenticate Kerberos User into Greenplum MPP Database
   become_user: gpadmin
   lineinfile:
     path: "{{ gpdb.master_data_dir }}/{{ item.file }}"
@@ -125,7 +125,7 @@
   register: hostname_ipaddr_entries_removed
 
 
-- name: Restart Greenplum Database to Apply Changes
+- name: Restart Greenplum MPP Database to Apply Changes
   become_user: gpadmin
   changed_when: False
   shell: ( . {{ gpdb.base_dir }}/greenplum-db/greenplum_path.sh && gpstop -ra )

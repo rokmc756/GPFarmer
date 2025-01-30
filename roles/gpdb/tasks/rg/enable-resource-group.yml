@@ -1,6 +1,30 @@
 ###########################################################
-# Resource Group configuration
-#
+# Resource Group V1 Configuration
+
+- name: Enabling Resource Groups V1
+  become_user: root
+  shell: |
+    grubby --update-kernel=/boot/vmlinuz-$(uname -r) --args="systemd.unified_cgroup_hierarchy=0 systemd.legacy_systemd_cgroup_controller"
+  args:
+    executable: /bin/bash
+  register: enable_rg_v1
+  notify:
+    - Restart System
+    - Waiting for Server to Come Back after Reboot
+
+
+- meta: flush_handlers
+
+
+- name: Start Greenplum MPP Database
+  become_user: gpadmin
+  shell: ( . {{ cbdb.base_dir }}/{{ cbdb.pkg_name }}/greenplum_path.sh && gpstart -a )
+  args:
+    executable: /bin/bash
+  register: start_gpdb
+  when: inventory_hostname in groups['master']
+
+
 # Downloaded From Here - https://pkgs.sysadmins.ws/el9/base/x86_64/
 - name: Copy libcgroup RPM Packages for Enabling Cgroup v1
   copy: src={{ item }} dest=/home/gpadmin/{{ item }} mode=0644 owner=gpadmin group=gpadmin
