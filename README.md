@@ -110,10 +110,10 @@ $ make postgis r=install
 
 ## Planning
 - [x] Need to fix installing postgis that error, stderr='warning: Unable to get systemd shutdown inhibition lock: Permission denied
-- [x] Change CentOS and Rocky Linux repository into local mirror in Korea\
-- [x] Converting Makefile.init from original project\
-- [x] Adding GPCR role\
-- [x] Adding SELinux role\
-- [x] Adding tuned role\
+- [x] Change CentOS and Rocky Linux repository into local mirror in Korea
+- [x] Converting Makefile.init from original project
+- [x] Adding GPCR role
+- [x] Adding SELinux role
+- [x] Adding tuned role
 - [x] Adding gpupgrade
 
