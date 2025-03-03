@@ -1,14 +1,14 @@
 ###########################################################
 # Basic OS Setup
 
-- name: Add GPAdmin Group
+- name: Add gpadmin group
   group:
     name: gpadmin
     state: present
 
 
 # Do not create ssh keys since this conflicts somehow with gpssh-exkeys
-- name: Add GPAdmin User
+- name: Add gpadmin user
   user:
     name: gpadmin
     password: "{{ 'changeme' | password_hash('sha512') }}"

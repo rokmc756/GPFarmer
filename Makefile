@@ -5,7 +5,7 @@ ANSIBLE_TARGET_PASS="changeme"
 
 
 # Define Boot CMD
-VMWARE_BOOT_CMD="power-on"
+VMWARE_BOOT_CMD="powered-on"
 VMWARE_SHUTDOWN_CMD="shutdown-guest"
 VMWARE_ROLE_CONFIG="control-vms-vmware.yml"
 KVM_BOOT_CMD="start"
@@ -13,6 +13,7 @@ KVM_SHUTDOWN_CMD="shutdown"
 KVM_ROLE_CONFIG="control-vms-kvm.yml"
 KVM_HOST_CONFIG="ansible-hosts-fedora"
 VMWARE_HOST_CONFIG="ansible-hosts-vmware"
+
 
 BOOT_CMD=${KVM_BOOT_CMD}
 SHUTDOWN_CMD=${KVM_SHUTDOWN_CMD}
